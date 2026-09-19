@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><meta name="theme-color" content="#101a2b" /><title>Certificados digitais · Alquiler Rent Car</title><link rel="stylesheet" href="styles.css" /><link rel="stylesheet" href="assistente.css" /></head>
+<body data-page="certificados">
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <section id="certificate-login" class="login-shell hidden">
+    <div class="login-card">
+      <div class="brand-mark">A</div><div class="eyebrow">ÁREA PROTEGIDA</div>
+      <h1>Certificados digitais</h1>
+      <p>Entre com o usuário do Supabase para gerenciar os arquivos dos certificados.</p>
+      <form id="certificate-login-form">
+        <label for="certificate-email">E-mail</label><input id="certificate-email" type="email" autocomplete="username" required />
+        <label for="certificate-password">Senha da conta</label><input id="certificate-password" type="password" autocomplete="current-password" required />
+        <button id="certificate-login-button" class="btn btn-primary" type="submit">Entrar</button>
+      </form>
+      <p class="login-note"><a href="clientes.html">Voltar aos cadastros de clientes</a></p>
+    </div>
+    <div class="login-aside"><div class="eyebrow">ARQUIVOS PRIVADOS</div><h2>Controle de validade e certificados em um só lugar.</h2><p>Os arquivos A1 ficam em um bucket privado. A senha do certificado não é salva aqui.</p></div>
+  </section>
+  <div id="certificate-app" class="app-shell hidden"><aside class="sidebar">
+    <div class="sidebar-brand"><div class="brand-mark">A</div><div><strong>Alquiler</strong><small>Rent Car · gestão</small></div></div>
+    <nav class="sidebar-tree" aria-label="Menu principal"><details open><summary><span class="tree-icon">▦</span>Cadastros</summary><div class="tree-children">
+      <a class="tree-link" href="clientes.html"><span class="tree-icon">•</span>Clientes</a>
+      <a class="tree-link" href="fornecedores.html"><span class="tree-icon">•</span>Fornecedores</a>
+      <a class="tree-link" href="carros.html"><span class="tree-icon">•</span>Carros</a>
+      <a class="tree-link" href="contratos.html"><span class="tree-icon">•</span>Contratos</a>
+      <a class="tree-link active" aria-current="page" href="certificados.html"><span class="tree-icon">•</span>Certificados digitais</a>
+    </div></details></nav>
+    <div class="sidebar-bottom"><span class="online-dot"></span><span id="certificate-user">Conta autorizada</span><button id="certificate-logout" class="logout" type="button">Sair</button></div>
+  </aside><main class="main">
+    <div class="topbar"><div><div class="eyebrow">CADASTROS</div><h1>Certificados digitais</h1><p>Controle os titulares, os arquivos A1 e as datas de validade.</p></div><button id="new-certificate" class="btn btn-primary" type="button">＋ Novo certificado</button></div>
+    <div class="metrics"><div class="metric"><span>Total</span><strong id="certificate-total">—</strong></div><div class="metric"><span>Vencem em 30 dias</span><strong id="certificate-soon">—</strong></div><div class="metric"><span>Vencidos</span><strong id="certificate-expired">—</strong></div></div>
+    <section class="panel"><div class="panel-top"><div><h2>Lista de certificados</h2><p id="certificate-count">Carregando…</p></div><button id="refresh-certificates" class="btn btn-quiet" type="button">↻ Atualizar</button></div>
+      <div class="filters"><label class="search"><span>⌕</span><input id="certificate-search" type="search" placeholder="Buscar por titular, identificação ou emissor" /></label><select id="certificate-filter" aria-label="Filtrar validade"><option value="todos">Todas as validades</option><option value="validos">Válidos</option><option value="proximos">Próximos do vencimento</option><option value="vencidos">Vencidos</option></select></div>
+      <div class="table-scroll"><table><thead><tr><th>TITULAR</th><th>TIPO</th><th>IDENTIFICAÇÃO</th><th>VALIDADE</th><th>ARQUIVO</th><th class="actions-head">AÇÕES</th></tr></thead><tbody id="certificates-body"></tbody></table></div>
+      <div id="certificates-empty" class="empty hidden"><div class="empty-icon">⌕</div><strong>Nenhum certificado encontrado</strong></div>
+    </section>
+  </main></div>
+  <dialog id="certificate-dialog" class="client-dialog"><form id="certificate-form" class="client-form" novalidate>
+    <div class="dialog-header"><div><div class="eyebrow">CADASTRO</div><h2 id="certificate-dialog-title">Novo certificado</h2></div><button id="close-certificate-dialog" class="icon-button" type="button" aria-label="Fechar">×</button></div>
+    <div class="dialog-body"><div class="form-section"><h3>Identificação</h3><div class="form-grid">
+      <label><span>Titular *</span><input name="titular" maxlength="180" required /></label>
+      <label><span>Tipo *</span><select name="tipo"><option value="A1">A1 (arquivo)</option><option value="A3">A3 (token/cartão)</option></select></label>
+      <label><span>CPF ou CNPJ do titular</span><input name="identificador" inputmode="numeric" maxlength="18" /></label>
+      <label><span>Autoridade emissora</span><input name="emissor" maxlength="180" /></label>
+      <label><span>Número de série</span><input name="numero_serie" maxlength="180" /></label>
+      <label><span>Válido de</span><input name="valido_de" type="date" /></label>
+      <label><span>Válido até *</span><input name="valido_ate" type="date" required /></label>
+      <label><span>Finalidade</span><input name="finalidade" maxlength="180" placeholder="Ex.: integração Senatran" /></label>
+      <label class="wide"><span>Observações</span><textarea name="observacoes" rows="3"></textarea></label>
+    </div></div><div id="certificate-file-section" class="form-section"><h3>Arquivo A1</h3><p class="section-note">Envie .pfx ou .p12, até 10 MB. O arquivo só pode ser acessado pela conta autorizada. A senha do certificado não é armazenada.</p><input id="certificate-file" type="file" accept=".pfx,.p12,application/x-pkcs12" /><button id="download-certificate" class="file-link hidden" type="button">Baixar arquivo atual</button></div></div>
+    <div class="dialog-footer"><button id="cancel-certificate" class="btn btn-quiet" type="button">Cancelar</button><button id="save-certificate" class="btn btn-primary" type="submit">Salvar certificado</button></div>
+  </form></dialog>
+  <script type="module" src="certificados.js"></script>
+  <script type="module" src="assistente.js"></script>
+</body></html>

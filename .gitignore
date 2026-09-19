@@ -1,0 +1,15 @@
+# Segredos e configurações locais
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+*.pem
+*.key
+credentials*.json
+
+# Dependências, registros e sistema
+node_modules/
+*.log
+.DS_Store
+Thumbs.db

@@ -1,7 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireAuth, bindLogout } from "./auth-guard.js";
 
 const db = createClient("https://xtelzwclrzzlsqjecscl.supabase.co", "sb_publishable_37VAv7_GhtRLum-WVwMv0w_EiD0HqZ3");
-const AUTHORIZED_EMAIL = "alquilerentcar@gmail.com";
+const session = await requireAuth(db);
+bindLogout(db);
 const BUCKET = "certificados-digitais";
 const $ = (selector) => document.querySelector(selector);
 const state = { rows: [], editing: null, loading: false };
@@ -40,30 +42,59 @@ function status(row) {
   return "validos";
 }
 function dateBR(value) { return value ? value.split("-").reverse().join("/") : "—"; }
-
-function showLogin() {
-  $("#certificate-app").classList.add("hidden");
-  $("#certificate-login").classList.remove("hidden");
-  $("#certificate-dialog").close?.();
+function dateISO(value) {
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) return "";
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
 }
-function showApp(email) {
-  $("#certificate-user").textContent = email;
-  $("#certificate-login").classList.add("hidden");
-  $("#certificate-app").classList.remove("hidden");
-  loadCertificates();
+function attributeValue(attributes, shortName) {
+  return attributes.find((item) => item.shortName === shortName)?.value || "";
 }
-
-async function signIn(event) {
-  event.preventDefault();
-  const email = $("#certificate-email").value.trim().toLowerCase();
-  if (email !== AUTHORIZED_EMAIL) return notify("Use o usuário autorizado para certificados.", true);
-  const button = $("#certificate-login-button");
+function certificateIdentifier(commonName) {
+  const match = String(commonName).match(/(?:^|:)(\d{11}|\d{14})(?::|$)/);
+  return match?.[1] || "";
+}
+function certificateName(commonName) {
+  return String(commonName).replace(/:(\d{11}|\d{14})(?::.*)?$/, "").trim();
+}
+async function readCertificate() {
+  const file = $("#certificate-file").files[0];
+  const passwordInput = $("#certificate-read-password");
+  const button = $("#read-certificate");
+  const status = $("#certificate-read-status");
+  if (!file) return notify("Selecione o arquivo .pfx ou .p12.", true);
+  if (!/\.(pfx|p12)$/i.test(file.name) || file.size > 10 * 1024 * 1024) return notify("O arquivo precisa ser .pfx ou .p12 e ter até 10 MB.", true);
   button.disabled = true;
-  const { data, error } = await db.auth.signInWithPassword({ email, password: $("#certificate-password").value });
-  button.disabled = false;
-  $("#certificate-password").value = "";
-  if (error) return notify(errorText(error), true);
-  showApp(data.user.email);
+  status.textContent = "Lendo…";
+  try {
+    const dataUrl = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error("Falha ao ler o arquivo.")); reader.readAsDataURL(file); });
+    const response = await fetch("/api/certificados/ler", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ data: String(dataUrl).split(",")[1], password: passwordInput.value }) });
+    const certificate = await response.json();
+    if (!response.ok) throw new Error(certificate.error || "Não foi possível abrir o certificado.");
+    const form = $("#certificate-form");
+    const commonName = certificate.titular || String(certificate.subject || "").match(/CN=([^,]+)/i)?.[1] || "";
+    const values = {
+      titular: certificateName(commonName),
+      identificador: certificateIdentifier(`${commonName}:${certificate.subject || ""}`),
+      emissor: certificate.issuer || "",
+      numero_serie: String(certificate.serial || "").toUpperCase().match(/.{1,2}/g)?.join(":") || "",
+      valido_de: certificate.valido_de || "",
+      valido_ate: certificate.valido_ate || "",
+    };
+    for (const [field, value] of Object.entries(values)) if (value) form.elements.namedItem(field).value = value;
+    status.textContent = "Informações preenchidas.";
+    notify("Certificado lido. Confira as informações antes de salvar.");
+  } catch (error) {
+    status.textContent = "Não foi possível ler.";
+    notify(errorText(error), true);
+  } finally {
+    passwordInput.value = "";
+    button.disabled = false;
+  }
+}
+
+function showApp(email) {
+  $("#certificate-user").textContent = window.alquilerContext?.user?.nome || email;
+  loadCertificates();
 }
 
 async function loadCertificates() {
@@ -120,11 +151,13 @@ function openCertificate(row = null) {
   state.editing = row;
   const form = $("#certificate-form");
   form.reset();
+  $("#certificate-read-status").textContent = "";
   $("#certificate-dialog-title").textContent = row ? "Editar certificado" : "Novo certificado";
   for (const field of fields) form.elements.namedItem(field).value = row?.[field] ?? "";
   if (!row) form.elements.namedItem("tipo").value = "A1";
   form.elements.namedItem("tipo").disabled = Boolean(row);
   $("#download-certificate").classList.toggle("hidden", !row?.arquivo_path);
+  $("#delete-certificate").classList.toggle("hidden", !row);
   toggleFile();
   $("#certificate-dialog").showModal();
 }
@@ -181,21 +214,43 @@ async function downloadCertificate() {
   setTimeout(() => URL.revokeObjectURL(url), 120000);
 }
 
+async function deleteCertificate() {
+  const row = state.editing;
+  if (!row) return;
+  if (!window.confirm(`Excluir o certificado de ${row.titular}? Esta ação não poderá ser desfeita.`)) return;
+  const button = $("#delete-certificate");
+  button.disabled = true;
+  try {
+    const { error } = await db.from("certificados_digitais").delete().eq("id", row.id);
+    if (error) throw error;
+    let fileWarning = false;
+    if (row.arquivo_path) {
+      const removal = await db.storage.from(BUCKET).remove([row.arquivo_path]);
+      fileWarning = Boolean(removal.error);
+    }
+    $("#certificate-dialog").close();
+    state.editing = null;
+    notify(fileWarning ? "Cadastro excluído, mas o arquivo precisa ser removido manualmente." : "Certificado excluído.", fileWarning);
+    await loadCertificates();
+  } catch (error) {
+    notify(errorText(error), true);
+  } finally {
+    button.disabled = false;
+  }
+}
+
 async function init() {
-  $("#certificate-login-form").addEventListener("submit", signIn);
-  $("#certificate-logout").addEventListener("click", async () => { await db.auth.signOut(); showLogin(); });
   $("#new-certificate").addEventListener("click", () => openCertificate());
   $("#refresh-certificates").addEventListener("click", loadCertificates);
   $("#certificate-search").addEventListener("input", render);
   $("#certificate-filter").addEventListener("change", render);
   $("#certificate-form").addEventListener("submit", saveCertificate);
   $("#certificate-form").elements.namedItem("tipo").addEventListener("change", toggleFile);
+  $("#read-certificate").addEventListener("click", readCertificate);
   $("#close-certificate-dialog").addEventListener("click", () => $("#certificate-dialog").close());
   $("#cancel-certificate").addEventListener("click", () => $("#certificate-dialog").close());
   $("#download-certificate").addEventListener("click", downloadCertificate);
-  db.auth.onAuthStateChange((event) => { if (event === "SIGNED_OUT") showLogin(); });
-  const { data, error } = await db.auth.getSession();
-  if (error || data?.session?.user?.email?.toLowerCase() !== AUTHORIZED_EMAIL) showLogin();
-  else showApp(data.session.user.email);
+  $("#delete-certificate").addEventListener("click", deleteCertificate);
+  showApp(session.user.email);
 }
 init();

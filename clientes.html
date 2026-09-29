@@ -4,17 +4,17 @@
 <body data-page="clientes">
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <div class="app-shell"><aside class="sidebar">
-      <div class="sidebar-brand"><div class="brand-mark">A</div><div><strong>Alquiler</strong><small>Rent Car · gestão</small></div></div>
+      <div class="sidebar-brand"><div class="brand-mark">A</div><div><strong class="global-company">Alquiler Rent a Car</strong><small>Módulo Locação</small></div></div>
       <nav class="sidebar-tree" aria-label="Menu principal">
         <details open><summary><span class="tree-icon">▦</span>Cadastros</summary><div class="tree-children">
-          <a class="tree-link active" aria-current="page" href="clientes.html"><span class="tree-icon">•</span>Clientes</a>
+          <a class="tree-link" href="empresa.html"><span class="tree-icon">•</span>Empresa</a><a class="tree-link active" aria-current="page" href="clientes.html"><span class="tree-icon">•</span>Clientes</a>
           <a class="tree-link" href="fornecedores.html"><span class="tree-icon">•</span>Fornecedores</a>
-          <a class="tree-link" href="carros.html"><span class="tree-icon">•</span>Carros</a>
-          <a class="tree-link" href="contratos.html"><span class="tree-icon">•</span>Contratos</a>
+          <a class="tree-link" href="carros.html"><span class="tree-icon">•</span>Veículos</a><a class="tree-link" href="modelos-contrato.html"><span class="tree-icon">•</span>Modelos de documentos</a>
+
           <a class="tree-link" href="certificados.html"><span class="tree-icon">•</span>Certificados digitais</a>
-        </div></details>
+        </div></details><details><summary><span class="tree-icon">▤</span>Locação</summary><div class="tree-children"><a class="tree-link" href="locacoes.html"><span class="tree-icon">•</span>Locações</a><a class="tree-link" href="contratos.html"><span class="tree-icon">•</span>Contratos</a></div></details>
       </nav>
-      <div class="sidebar-bottom"><span class="online-dot"></span><span>Acesso sem login</span></div>
+      <div class="sidebar-bottom"><span class="online-dot"></span><span class="global-user">Usuário</span><button class="logout global-logout" type="button">Sair</button></div>
     </aside>
       <main class="main">
         <div class="topbar"><div><div class="eyebrow">CADASTROS</div><h1>Clientes</h1><p>Consulte, atualize e organize os dados dos locatários.</p></div><button id="new-client-button" class="btn btn-primary" type="button"><span>＋</span> Novo cliente</button></div>
@@ -37,7 +37,7 @@
             <label class="pf-field"><span>CPF</span><input name="cpf" inputmode="numeric" placeholder="Somente 11 dígitos" /></label>
             <label class="pj-field hidden"><span>CNPJ</span><input name="cnpj" inputmode="numeric" placeholder="Somente 14 dígitos" /></label>
             <label class="pj-field hidden"><span>Nome fantasia</span><input name="nome_fantasia" /></label>
-            <label class="pf-field"><span>Data de nascimento</span><input name="data_nascimento" type="date" /></label>
+            <label class="pf-field"><span>Data de nascimento</span><input name="data_nascimento" type="date" /></label><label class="pf-field"><span>CNH</span><input name="cnh" /></label><label class="pf-field"><span>Nacionalidade</span><input name="nacionalidade" placeholder="brasileiro(a)" /></label><label class="pf-field"><span>Profissão</span><input name="profissao" /></label>
             <label class="pf-field"><span>RG</span><input name="rg" /></label>
             <label class="pj-field hidden"><span>Inscrição estadual</span><input name="inscricao_estadual" /></label>
             <label class="pf-field"><span>Estado civil</span><select name="estado_civil"><option value="">Não informado</option><option>Solteiro(a)</option><option>Casado(a)</option><option>União estável</option><option>Divorciado(a)</option><option>Viúvo(a)</option></select></label>
@@ -60,4 +60,4 @@
     </dialog>
   <script type="module" src="app.js"></script>
   <script type="module" src="assistente.js"></script>
-</body></html>
+<script src="sidebar.js"></script></body></html>

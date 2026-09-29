@@ -13,3 +13,17 @@ node_modules/
 *.log
 .DS_Store
 Thumbs.db
+importacao_documentos/
+tmp/
+__pycache__/
+prompt
+*.zip
+
+# Dados operacionais usados somente na implantação local
+locatarios_importados.md
+importar_40_carros.sql
+
+# Arquivos gerados pelo desenvolvimento
+*.pid
+coverage/
+.vercel/

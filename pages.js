@@ -1,10 +1,13 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireAuth, bindLogout } from "./auth-guard.js";
 
 const supabase = createClient(
   "https://xtelzwclrzzlsqjecscl.supabase.co",
   "sb_publishable_37VAv7_GhtRLum-WVwMv0w_EiD0HqZ3",
   { auth: { persistSession: true, autoRefreshToken: true } },
 );
+await requireAuth(supabase);
+bindLogout(supabase);
 const BUCKET = "documentos-clientes";
 const $ = (selector) => document.querySelector(selector);
 const digits = (value) => (value || "").replace(/\D/g, "");

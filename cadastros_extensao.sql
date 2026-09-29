@@ -16,6 +16,7 @@ create table if not exists public.carros (
   renavam text,
   chassi text,
   valor_diaria numeric(12,2),
+  caucao numeric(12,2),
   situacao text not null default 'Disponível',
   observacoes text,
   criado_em timestamptz not null default now()

@@ -12,6 +12,12 @@
 .ai-bot { align-self: flex-start; background: #fff; border: 1px solid #dfe7f1; }
 .ai-user { align-self: flex-end; background: #2368d4; color: #fff; }
 .ai-actions { padding: 9px 14px 0; }
+.ai-setup { padding: 12px 14px; background: #fff8df; border-top: 1px solid #eadca4; border-bottom: 1px solid #eadca4; }
+.ai-setup strong, .ai-setup span { display: block; }
+.ai-setup span { margin: 3px 0 9px; color: #665b39; font-size: 12px; }
+.ai-setup div { display: flex; gap: 7px; }
+.ai-key { min-width: 0; flex: 1; border: 1px solid #c8b96f; border-radius: 8px; padding: 8px; }
+.ai-key-save { border: 0; border-radius: 8px; padding: 8px 12px; color: #fff; background: #2368d4; cursor: pointer; }
 .ai-file-button { display: inline-block; color: #1c5ebd; cursor: pointer; font-weight: 600; }
 .ai-form { display: flex; gap: 8px; padding: 10px 14px; }
 .ai-input { flex: 1; min-width: 0; border: 1px solid #cbd7e5; border-radius: 10px; padding: 10px; }

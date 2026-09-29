@@ -39,11 +39,12 @@ create table if not exists public.certificados_digitais (
 
 alter table public.certificados_digitais enable row level security;
 revoke all on public.certificados_digitais from anon;
-grant select, insert, update on public.certificados_digitais to authenticated;
+grant select, insert, update, delete on public.certificados_digitais to authenticated;
 
 drop policy if exists certificados_select on public.certificados_digitais;
 drop policy if exists certificados_insert on public.certificados_digitais;
 drop policy if exists certificados_update on public.certificados_digitais;
+drop policy if exists certificados_delete on public.certificados_digitais;
 
 create policy certificados_select on public.certificados_digitais
   for select to authenticated using ((select public.pode_gerenciar_certificados()));
@@ -53,6 +54,8 @@ create policy certificados_update on public.certificados_digitais
   for update to authenticated
   using ((select public.pode_gerenciar_certificados()))
   with check ((select public.pode_gerenciar_certificados()));
+create policy certificados_delete on public.certificados_digitais
+  for delete to authenticated using ((select public.pode_gerenciar_certificados()));
 
 insert into storage.buckets (id, name, public, file_size_limit)
 values ('certificados-digitais', 'certificados-digitais', false, 10485760)

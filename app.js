@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireAuth, bindLogout } from "./auth-guard.js";
 
 const SUPABASE_URL = "https://xtelzwclrzzlsqjecscl.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_37VAv7_GhtRLum-WVwMv0w_EiD0HqZ3";
@@ -7,12 +8,14 @@ const DOCUMENT_BUCKET = "documentos-clientes";
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: { persistSession: true, autoRefreshToken: true },
 });
+await requireAuth(supabase);
+bindLogout(supabase);
 
 const $ = (selector) => document.querySelector(selector);
 const state = { clients: [], editing: null, loading: false };
 const fields = [
   "tipo_pessoa", "nome_completo", "nome_fantasia", "cpf", "cnpj",
-  "data_nascimento", "rg", "inscricao_estadual", "estado_civil", "email",
+  "data_nascimento", "rg", "cnh", "nacionalidade", "profissao", "inscricao_estadual", "estado_civil", "email",
   "cep", "endereco", "numero", "complemento", "bairro", "cidade", "uf",
   "nome_pai", "nome_mae",
   ...Array.from({ length: 4 }, (_, index) => [
@@ -271,7 +274,7 @@ async function openDocument(column) {
   }
 }
 
-function init() {
+async function init() {
   $("#contacts-grid").innerHTML = Array.from({ length: 4 }, (_, index) => {
     const number = index + 1;
     return `<label><span>Contato ${number} · número</span><input name="contato_${number}_numero" inputmode="tel" placeholder="DDD + telefone" /></label><label><span>Contato ${number} · responsável</span><input name="contato_${number}_responsavel" placeholder="Nome completo" /></label>`;
@@ -285,19 +288,21 @@ function init() {
   $("#close-dialog").addEventListener("click", () => $("#client-dialog").close());
   $("#cancel-button").addEventListener("click", () => $("#client-dialog").close());
   document.querySelectorAll("[data-open]").forEach((button) => button.addEventListener("click", () => openDocument(button.dataset.open)));
-  loadClients();
+  await loadClients();
   const draftText = sessionStorage.getItem('alquiler-assistente-rascunho-cliente');
   if (draftText) {
     sessionStorage.removeItem('alquiler-assistente-rascunho-cliente');
     try {
-      const draft = JSON.parse(draftText);
-      openClient();
+      const saved = JSON.parse(draftText);
+      const draft = saved.draft || saved;
+      const existing = saved.clientId ? state.clients.find(client => client.id === saved.clientId) : null;
+      openClient(existing);
       const form = $('#client-form');
       for (const field of fields) {
         const control = form.elements.namedItem(field);
-        if (control && typeof draft[field] === 'string') control.value = draft[field];
+        if (control && typeof draft[field] === 'string' && draft[field]) control.value = draft[field];
       }
-      notify('Rascunho preenchido pela IA. Confira os dados e clique em Salvar cliente.');
+      notify(existing ? 'Dados encontrados pela IA aplicados ao cliente existente. Confira antes de salvar.' : 'Rascunho preenchido pela IA. Confira os dados e clique em Salvar cliente.');
     } catch { notify('Não foi possível abrir o rascunho do assistente.', true); }
   }
 }

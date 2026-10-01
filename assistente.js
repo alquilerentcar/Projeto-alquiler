@@ -1,7 +1,7 @@
-import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
-const db=createClient('https://xtelzwclrzzlsqjecscl.supabase.co','sb_publishable_37VAv7_GhtRLum-WVwMv0w_EiD0HqZ3');
+import {getAuthenticatedClient} from './auth-guard.js';
+const db=await getAuthenticatedClient();
 const page = document.body.dataset.page || location.pathname.replace(/\W/g, '');
-const key = 'alquiler-assistente-historico';
+const key = 'alquiler-assistente-historico:'+window.alquilerContext.company.id;
 let history = [];
 try { history = JSON.parse(sessionStorage.getItem(key) || '[]'); if (!Array.isArray(history)) history = []; } catch { history = []; }
 
@@ -114,7 +114,7 @@ fileInput.addEventListener('change', async () => {
       addMessage('bot',lines.join('\n'),false);
     }else addMessage('bot',`Não encontrei esse cliente no banco. A CNH forneceu ${populated} campos para um novo cadastro.`,false);
     const action = document.createElement('button'); action.type = 'button'; action.className = 'ai-review'; action.textContent = 'Revisar no cadastro de clientes';
-    action.addEventListener('click', () => { sessionStorage.setItem('alquiler-assistente-rascunho-cliente', JSON.stringify({draft:result.draft,clientId:existing?.id||null})); location.href = 'clientes.html?rascunho=ia'; });
+    action.addEventListener('click', () => { sessionStorage.setItem('alquiler-assistente-rascunho-cliente:' + window.alquilerContext.company.id, JSON.stringify({draft:result.draft,clientId:existing?.id||null})); location.href = 'clientes.html?rascunho=ia'; });
     messages.append(action); messages.scrollTop = messages.scrollHeight;
   } catch (error) { pending.remove(); addMessage('bot', error.message, false); }
   finally { fileInput.disabled = false; fileInput.value = ''; }

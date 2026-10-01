@@ -27,3 +27,7 @@ importar_40_carros.sql
 *.pid
 coverage/
 .vercel/
+
+# Backups locais de desenvolvimento
+backup-*/
+_backups/

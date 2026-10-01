@@ -5,5 +5,107 @@
     "api/[...path].js": {
       "maxDuration": 60
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/login",
+      "destination": "/login.html"
+    },
+    {
+      "source": "/modulos",
+      "destination": "/modulos.html"
+    },
+    {
+      "source": "/conta/perfil",
+      "destination": "/perfil.html"
+    },
+    {
+      "source": "/conta/esqueci-senha",
+      "destination": "/esqueci-senha.html"
+    },
+    {
+      "source": "/conta/redefinir-senha",
+      "destination": "/redefinir-senha.html"
+    },
+    {
+      "source": "/controle",
+      "destination": "/controle.html"
+    },
+    {
+      "source": "/administracao/acessos",
+      "destination": "/acessos.html"
+    },
+    {
+      "source": "/administracao/empresa",
+      "destination": "/empresa.html"
+    },
+    {
+      "source": "/locacao/dashboard",
+      "destination": "/dashboard.html"
+    },
+    {
+      "source": "/cadastros/clientes",
+      "destination": "/clientes.html"
+    },
+    {
+      "source": "/cadastros/carros",
+      "destination": "/carros.html"
+    },
+    {
+      "source": "/cadastros/fornecedores",
+      "destination": "/fornecedores.html"
+    },
+    {
+      "source": "/cadastros/modelos-contrato",
+      "destination": "/modelos-contrato.html"
+    },
+    {
+      "source": "/cadastros/certificados",
+      "destination": "/certificados.html"
+    },
+    {
+      "source": "/locacao/locacoes",
+      "destination": "/locacoes.html"
+    },
+    {
+      "source": "/locacao/contratos",
+      "destination": "/contratos.html"
+    },
+    {
+      "source": "/locacao/contrato",
+      "destination": "/contrato.html"
+    },
+    {
+      "source": "/locacao/assinaturas",
+      "destination": "/assinaturas.html"
+    },
+    {
+      "source": "/locacao/registros",
+      "destination": "/registros.html"
+    },
+    {
+      "source": "/locacao/alteracoes",
+      "destination": "/alteracoes.html"
+    },
+    {
+      "source": "/locacao/recibos",
+      "destination": "/recibos.html"
+    },
+    {
+      "source": "/locacao/distratos",
+      "destination": "/distratos.html"
+    },
+    {
+      "source": "/locacao/documentos-modelo",
+      "destination": "/documentos-modelo.html"
+    },
+    {
+      "source": "/financeiro",
+      "destination": "/financeiro.html"
+    },
+    {
+      "source": "/notificacoes",
+      "destination": "/notificacoes.html"
+    }
+  ]
 }

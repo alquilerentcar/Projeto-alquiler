@@ -1,0 +1,6 @@
+import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
+const db=createClient('https://xtelzwclrzzlsqjecscl.supabase.co','sb_publishable_37VAv7_GhtRLum-WVwMv0w_EiD0HqZ3');
+const form=document.querySelector('#reset-form'),button=document.querySelector('#reset-save'),message=document.querySelector('#reset-message');let recovery=false;
+db.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY'){recovery=true;button.disabled=false;message.textContent='Escolha uma senha de 12 a 128 caracteres.';}});
+setTimeout(()=>{if(!recovery)message.textContent='Link inválido ou expirado. Solicite um novo em “Esqueci minha senha” no login.';},7000);
+form.onsubmit=async event=>{event.preventDefault();if(!recovery||button.disabled)return;const password=form.elements.password.value;if(password.length<12||password.length>128||password!==form.elements.confirmation.value){message.textContent='Use de 12 a 128 caracteres e confirme a mesma senha.';return;}button.disabled=true;try{const {error}=await db.auth.updateUser({password});if(error)throw error;recovery=false;form.reset();await db.auth.signOut();message.textContent='Senha atualizada. Volte ao login para entrar com a nova senha.';}catch(error){message.textContent=error.message;button.disabled=false;}};

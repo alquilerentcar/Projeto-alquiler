@@ -1,28 +1,24 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-const db = createClient('https://xtelzwclrzzlsqjecscl.supabase.co', 'sb_publishable_37VAv7_GhtRLum-WVwMv0w_EiD0HqZ3');
-const AUTHORIZED_EMAIL = 'alquilerentcar@gmail.com';
-const COMPANY_CNPJ = '54135275000161';
-const COMPANY_USER = 'saugusto';
-const form = document.querySelector('#system-login-form');
-const message = document.querySelector('#login-message');
-const button = document.querySelector('#system-login-button');
-const requested = new URLSearchParams(location.search).get('next') || 'modulos.html';
-const allowed = ['modulos.html','dashboard.html','notificacoes.html','empresa.html','clientes.html','fornecedores.html','carros.html','modelos-contrato.html','certificados.html','locacoes.html','contratos.html','alteracoes.html','recibos.html','distratos.html','financeiro.html'];
-const next = allowed.includes(requested) ? requested : 'modulos.html';
-const rememberedCompany = localStorage.getItem('bgsys:empresa-cnpj');
-if (rememberedCompany) form.elements.cnpj.value = rememberedCompany;
-const { data } = await db.auth.getSession();
-if (data?.session?.user?.email?.toLowerCase() === AUTHORIZED_EMAIL) location.replace(next);
-form.addEventListener('submit', async event => {
-  event.preventDefault();
-  const cnpj = form.elements.cnpj.value.replace(/\D/g, '');
-  const usuario = form.elements.usuario.value.trim().toLowerCase();
-  if (cnpj !== COMPANY_CNPJ || usuario !== COMPANY_USER) { message.textContent = 'Empresa ou usuário não encontrado.'; return; }
-  button.disabled = true; button.textContent = 'Entrando…'; message.textContent = '';
-  const { error } = await db.auth.signInWithPassword({ email: AUTHORIZED_EMAIL, password: form.elements.password.value });
-  form.elements.password.value = '';
-  if (error) { message.textContent = 'E-mail ou senha incorretos.'; button.disabled = false; button.textContent = 'Entrar'; return; }
-  if (document.querySelector('#remember-company').checked) localStorage.setItem('bgsys:empresa-cnpj', cnpj);
-  else localStorage.removeItem('bgsys:empresa-cnpj');
-  location.replace(next);
+import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
+import {entryDestination} from './access-policy.js';
+const db=createClient('https://xtelzwclrzzlsqjecscl.supabase.co','sb_publishable_37VAv7_GhtRLum-WVwMv0w_EiD0HqZ3');
+const form=document.querySelector('#system-login-form'),message=document.querySelector('#login-message'),button=document.querySelector('#system-login-button');
+form.addEventListener('submit',async event=>{
+ event.preventDefault();if(button.disabled)return;button.disabled=true;message.textContent='Entrando…';
+ try {
+  const usuario=form.elements.usuario.value.trim().toLowerCase();
+  let error;
+  if(usuario.includes('@'))({error}=await db.auth.signInWithPassword({email:usuario,password:form.elements.password.value}));
+  else {const response=await fetch('/api/login/usuario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({usuario,password:form.elements.password.value})});const result=await response.json();if(!response.ok)throw new Error(result.error||'Usuário ou senha incorretos.');({error}=await db.auth.setSession(result));}
+  if(error)throw new Error('E-mail/usuário ou senha incorretos.');
+  sessionStorage.removeItem('bgsys:empresa-id');
+  const {data:context,error:contextError}=await db.rpc('acessos_contexto',{p_empresa:null});
+  if(contextError||context?.schemaVersion!==2)throw new Error('Atualização pendente: aplique etapa1_acessos.sql no Supabase.');
+  if(context.accessDenied)throw new Error('Esta conta não possui vínculo ativo com uma empresa.');
+  if(context.company?.id&&context.companies.length===1)sessionStorage.setItem('bgsys:empresa-id',context.company.id);
+  localStorage.removeItem('bgsys:empresa-cache');localStorage.removeItem('bgsys:usuario-cache');localStorage.removeItem('bgsys:empresa-cnpj');
+  location.replace(entryDestination(context));
+ }catch(error){await db.auth.signOut();message.textContent=error.message||'Não foi possível entrar. Tente novamente.';}
+ finally{form.elements.password.value='';button.disabled=false;}
 });
+
+const forgot=document.createElement('a');forgot.className='btn btn-quiet';forgot.textContent='Esqueci minha senha';forgot.href='esqueci-senha.html';form.append(forgot);

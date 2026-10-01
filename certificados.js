@@ -178,7 +178,7 @@ async function saveCertificate(event) {
   try {
     if (file) {
       const extension = file.name.toLowerCase().endsWith(".p12") ? "p12" : "pfx";
-      newPath = `${crypto.randomUUID()}.${extension}`;
+      newPath = `${window.alquilerContext.company.id}/${crypto.randomUUID()}.${extension}`;
       const upload = await db.storage.from(BUCKET).upload(newPath, file, { contentType: "application/x-pkcs12", upsert: false });
       if (upload.error) throw upload.error;
       payload.arquivo_path = newPath;

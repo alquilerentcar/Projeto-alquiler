@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="pt-BR">
-<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><meta name="theme-color" content="#101a2b" /><title>Clientes · Alquiler Rent Car</title><link rel="stylesheet" href="styles.css" /><link rel="stylesheet" href="assistente.css" /></head>
+<head><base href="/"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><script src="/site-ui.js"></script><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><meta name="theme-color" content="#101a2b" /><title>BG SYSTEMS · Sistema de gestão</title><link rel="stylesheet" href="styles.css" /><link rel="stylesheet" href="assistente.css" /></head>
 <body data-page="clientes">
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <div class="app-shell"><aside class="sidebar">
@@ -21,7 +21,7 @@
         <div class="metrics"><div class="metric"><span>Total de clientes</span><strong id="metric-total">—</strong></div><div class="metric"><span>Ativos</span><strong id="metric-active">—</strong></div><div class="metric"><span>Inativos</span><strong id="metric-inactive">—</strong></div></div>
         <section class="panel">
           <div class="panel-top"><div><h2>Lista de clientes</h2><p id="list-count">Carregando cadastros…</p></div><button id="refresh-button" class="btn btn-quiet" type="button">↻ Atualizar</button></div>
-          <div class="filters"><label class="search"><span>⌕</span><input id="search-input" type="search" placeholder="Buscar por nome, CPF, CNPJ ou e-mail" /></label><select id="status-filter" aria-label="Filtrar situação"><option value="ativos">Ativos</option><option value="todos">Todos</option><option value="inativos">Inativos</option></select></div>
+          <div class="filters"><label class="search"><span>⌕</span><input id="search-input" type="search" placeholder="Buscar por nome, CPF, CNPJ ou e-mail" autocomplete="off" data-lpignore="true" data-1p-ignore="true" autocapitalize="off"></label><select id="status-filter" aria-label="Filtrar situação"><option value="ativos">Ativos</option><option value="todos">Todos</option><option value="inativos">Inativos</option></select></div>
           <div class="table-scroll"><table><thead><tr><th>CLIENTE</th><th>DOCUMENTO</th><th>CONTATO</th><th>TIPO</th><th>SITUAÇÃO</th><th class="actions-head">AÇÕES</th></tr></thead><tbody id="clients-body"></tbody></table></div>
           <div id="empty-state" class="empty hidden"><div class="empty-icon">⌕</div><strong>Nenhum cliente encontrado</strong><p>Tente outro termo ou ajuste o filtro.</p></div>
         </section>

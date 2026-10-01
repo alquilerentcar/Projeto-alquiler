@@ -1,3 +1,5 @@
+> Atualização: consulte ETAPAS.md para a estrutura atual. A etapa 1 permite ao administrador da empresa gerenciar seus usuários; Controle é exclusivo da BG SYSTEMS e Financeiro integra Locação. As instruções históricas abaixo não devem ser reaplicadas após etapa1_acessos.sql.
+
 # Arquitetura do Alquiler Rent Car
 
 ## Plataforma multiempresa

@@ -1,0 +1,10 @@
+import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
+import {requireAuth,bindLogout} from './auth-guard.js';
+const db=createClient('https://xtelzwclrzzlsqjecscl.supabase.co','sb_publishable_37VAv7_GhtRLum-WVwMv0w_EiD0HqZ3');
+await requireAuth(db);bindLogout(db);
+const c=window.alquilerContext,select=document.querySelector('#company-switch'),params=new URLSearchParams(location.search);
+select.add(new Option('Selecione uma empresa',''));for(const company of c.companies)select.add(new Option(company.nome_fantasia,company.id,false,company.id===c.company.id));
+select.value=c.company.id||'';
+select.addEventListener('change',()=>{if(select.value)sessionStorage.setItem('bgsys:empresa-id',select.value);else sessionStorage.removeItem('bgsys:empresa-id');location.replace('modulos.html?entrar=1');});
+if(params.has('entrar')&&!c.developer&&c.company.id&&c.modules.length===1&&c.modules[0]==='locacao')location.replace('dashboard.html');
+document.querySelector('#module-message').textContent=!c.company.id?'Selecione uma empresa para consultar seus módulos.':!c.modules.length?'Nenhum módulo disponível: confira a licença da empresa e as permissões do usuário.':params.has('acesso')?'Você não possui permissão para essa área.':'';

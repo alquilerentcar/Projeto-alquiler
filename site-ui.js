@@ -1,0 +1,10 @@
+// Shared browser identity and canonical URLs. Existing bookmarks remain valid.
+(function(){
+ const pages={login:'/login',modulos:'/modulos',perfil:'/conta/perfil','esqueci-senha':'/conta/esqueci-senha','redefinir-senha':'/conta/redefinir-senha',controle:'/controle',acessos:'/administracao/acessos',empresa:'/administracao/empresa',dashboard:'/locacao/dashboard',clientes:'/cadastros/clientes',carros:'/cadastros/carros',fornecedores:'/cadastros/fornecedores','modelos-contrato':'/cadastros/modelos-contrato',certificados:'/cadastros/certificados',locacoes:'/locacao/locacoes',contratos:'/locacao/contratos',contrato:'/locacao/contrato',assinaturas:'/locacao/assinaturas',registros:'/locacao/registros',alteracoes:'/locacao/alteracoes',recibos:'/locacao/recibos',distratos:'/locacao/distratos','documentos-modelo':'/locacao/documentos-modelo',financeiro:'/financeiro',notificacoes:'/notificacoes'};
+ const name=location.pathname.split('/').pop().replace(/\.html$/,'');
+ if(pages[name]&&location.pathname!==pages[name])history.replaceState(null,'',pages[name]+location.search+location.hash);
+ function identity(context){const company=name==='controle'?'BG SYSTEMS':context?.company?.nome_fantasia;document.title=(company||'BG SYSTEMS')+' · Sistema de gestão';}
+ try{const selected=sessionStorage.getItem('bgsys:empresa-id');identity({company:JSON.parse(sessionStorage.getItem('bgsys:brand:'+selected)||'null')});}catch{identity();}
+ window.addEventListener('app-context-ready',event=>identity(event.detail));
+ document.addEventListener('DOMContentLoaded',()=>{if(window.alquilerContext)identity(window.alquilerContext);else try{const selected=sessionStorage.getItem('bgsys:empresa-id');identity({company:JSON.parse(sessionStorage.getItem('bgsys:brand:'+selected)||'null')});}catch{identity();}document.querySelectorAll('input[type="search"]').forEach(input=>{input.autocomplete='off';input.setAttribute('data-lpignore','true');input.setAttribute('data-1p-ignore','true');input.setAttribute('autocapitalize','off');});});
+})();

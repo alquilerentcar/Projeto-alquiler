@@ -1,4 +1,8 @@
 const http = require('node:http');
+const envPath = require('node:path').join(__dirname, '.env');
+if (require('node:fs').existsSync(envPath)) process.loadEnvFile(envPath);
+const accessApi = require('./access-api.js');
+const usernameLogin = require('./username-login.js');
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
@@ -13,6 +17,12 @@ const files = Object.fromEntries([
   ['index.html','text/html'],['login.html','text/html'],['modulos.html','text/html'],['sidebar.html','text/html'],['dashboard.html','text/html'],['notificacoes.html','text/html'],['alteracoes.html','text/html'],['recibos.html','text/html'],['distratos.html','text/html'],['financeiro.html','text/html'],['empresa.html','text/html'],['clientes.html','text/html'],['fornecedores.html','text/html'],['carros.html','text/html'],['contratos.html','text/html'],['contrato.html','text/html'],['registros.html','text/html'],['modelos-contrato.html','text/html'],['locacoes.html','text/html'],['certificados.html','text/html'],
   ['styles.css','text/css'],['assistente.css','text/css'],['sidebar.js','text/javascript'],['section-page.js','text/javascript'],['financeiro.js','text/javascript'],['app.js','text/javascript'],['pages.js','text/javascript'],['fleet.js','text/javascript'],['empresa.js','text/javascript'],['locacoes.js','text/javascript'],['contratos.js','text/javascript'],['contrato.js','text/javascript'],['registros.js','text/javascript'],['modelos-contrato.js','text/javascript'],['certificados.js','text/javascript'],['assistente.js','text/javascript'],['auth-guard.js','text/javascript'],['app-context.js','text/javascript'],['login.js','text/javascript'],['modelo_contrato.docx','application/vnd.openxmlformats-officedocument.wordprocessingml.document'],['modelo_contrato_texto.txt','text/plain'],['papel_timbrado_preview.png','image/png'],['papel_timbrado_alquiler.pdf','application/pdf'],['fluxo-login-locacao.bpmn','application/xml'],
 ].map(([name,type]) => [`/${name}`, [name, `${type}; charset=utf-8`]]));
+for (const [name,type] of [['perfil.html','text/html'],['perfil.js','text/javascript'],['conta.css','text/css'],['esqueci-senha.html','text/html'],['esqueci-senha.js','text/javascript'],['assinaturas.html','text/html'],['assinaturas.js','text/javascript'],['redefinir-senha.html','text/html'],['redefinir-senha.js','text/javascript'],['pdf-preview.js','text/javascript'],['pdfjs/pdf.mjs','text/javascript'],['pdfjs/pdf.worker.mjs','text/javascript'],['rich-document.js','text/javascript'],['documentos-modelo.html','text/html'],['documentos-modelo.js','text/javascript'],['document-model-core.js','text/javascript'],['document-model-pdf.js','text/javascript'],['document-model-records.js','text/javascript'],['empresa-branding.js','text/javascript'],['controle.html','text/html'],['acessos.html','text/html'],['acessos.js','text/javascript'],['acessos.css','text/css'],['access-policy.js','text/javascript'],['modulos.js','text/javascript']]) files['/'+name]=[name,type+'; charset=utf-8'];
+for(const name of ['site-ui.js','favicon.svg']) files['/'+name]=[name,name.endsWith('.svg')?'image/svg+xml':'text/javascript; charset=utf-8'];
+const cleanRoutes={login:'/login',modulos:'/modulos',perfil:'/conta/perfil','esqueci-senha':'/conta/esqueci-senha','redefinir-senha':'/conta/redefinir-senha',controle:'/controle',acessos:'/administracao/acessos',empresa:'/administracao/empresa',dashboard:'/locacao/dashboard',clientes:'/cadastros/clientes',carros:'/cadastros/carros',fornecedores:'/cadastros/fornecedores','modelos-contrato':'/cadastros/modelos-contrato',certificados:'/cadastros/certificados',locacoes:'/locacao/locacoes',contratos:'/locacao/contratos',contrato:'/locacao/contrato',assinaturas:'/locacao/assinaturas',registros:'/locacao/registros',alteracoes:'/locacao/alteracoes',recibos:'/locacao/recibos',distratos:'/locacao/distratos','documentos-modelo':'/locacao/documentos-modelo',financeiro:'/financeiro',notificacoes:'/notificacoes'};
+for(const [name,route] of Object.entries(cleanRoutes))files[route]=files['/'+name+'.html'];
+files['/usuarios.html'] = ['usuarios.html','text/html; charset=utf-8'];
+files['/usuarios.js'] = ['usuarios.js','text/javascript; charset=utf-8'];
 files['/'] = files['/index.html'];
 const draftFields = ['nome_completo','cpf','data_nascimento','rg','cnh','nacionalidade','profissao','estado_civil','email','cep','uf','endereco','numero','complemento','bairro','cidade','nome_pai','nome_mae',...Array.from({length:4},(_,i)=>`contato_${i+1}_numero`),...Array.from({length:4},(_,i)=>`contato_${i+1}_responsavel`)];
 const schema = properties => ({type:'OBJECT',properties,required:Object.keys(properties)});
@@ -35,9 +45,14 @@ async function requireSupabaseUser(request) {
   return user;
 }
 async function sendToAutentique(data) {
+  const configuredTimeout=Number(process.env.AUTENTIQUE_UPLOAD_TIMEOUT_MS||180000);
+  const uploadTimeout=Number.isFinite(configuredTimeout)?Math.min(300000,Math.max(60000,configuredTimeout)):180000;
   if(!autentiqueToken) throw Object.assign(new Error('A integração Autentique ainda não foi configurada no servidor.'),{status:503});
   const pdf=Buffer.from(String(data.pdfBase64||''),'base64');
   if(!pdf.length||pdf.length>50*1024*1024||pdf.subarray(0,4).toString()!=='%PDF') throw Object.assign(new Error('PDF inválido ou maior que 50 MB.'),{status:400});
+  const configuredMax=Number(process.env.AUTENTIQUE_MAX_PDF_MB||5);
+  const maxMb=Number.isFinite(configuredMax)&&configuredMax>0?Math.min(configuredMax,20):5;
+  if(pdf.length>maxMb*1000000)throw Object.assign(new Error('O PDF tem '+(pdf.length/1000000).toFixed(1)+' MB e excede o limite configurado de '+maxMb+' MB da Autentique. Gere uma nova versão menor antes de enviar. O PDF anterior permanece nos registros.'),{status:413});
   const clientEmail=String(data.clientEmail||'').trim().toLowerCase(), clientName=String(data.clientName||'').trim().slice(0,150);
   if(!/^\S+@\S+\.\S+$/.test(clientEmail)||!clientName) throw Object.assign(new Error('Informe nome e e-mail válidos do locatário.'),{status:400});
   const query=`mutation CreateDocumentMutation($document: DocumentInput!, $signers: [SignerInput!]!, $file: Upload!) { createDocument(sandbox: ${autentiqueSandbox?'true':'false'}, document: $document, signers: $signers, file: $file) { id name created_at signatures { public_id name email action { name } link { short_link } } } }`;
@@ -50,9 +65,18 @@ async function sendToAutentique(data) {
   form.append('operations',JSON.stringify(operations));
   form.append('map',JSON.stringify({file:['variables.file']}));
   form.append('file',new Blob([pdf],{type:'application/pdf'}),'contrato.pdf');
-  const response=await fetch('https://api.autentique.com.br/v2/graphql',{method:'POST',headers:{Authorization:`Bearer ${autentiqueToken}`},body:form,signal:AbortSignal.timeout(60000)});
-  const result=await response.json();
-  if(!response.ok||result.errors?.length) throw Object.assign(new Error(result.errors?.[0]?.message||'A Autentique recusou o envio.'),{status:502});
+  let response,result;
+  try {response=await fetch('https://api.autentique.com.br/v2/graphql',{method:'POST',headers:{Authorization:`Bearer ${autentiqueToken}`},body:form,signal:AbortSignal.timeout(uploadTimeout)});result=await response.json();}
+  catch(error){throw Object.assign(new Error(['TimeoutError','AbortError'].includes(error.name)?`A Autentique não confirmou o envio em ${Math.round(uploadTimeout/1000)} segundos. O documento pode ter sido recebido. Confira os documentos de teste no painel da Autentique antes de reenviar.`:'A conexão com a Autentique foi interrompida sem confirmação. Confira o painel da Autentique antes de reenviar.'),{status:504});}
+  if(!response.ok||result.errors?.length){
+    const details=[];
+    for(const error of result.errors||[]){
+      const validation=error.extensions?.validation||error.validation;
+      if(validation&&typeof validation==='object')for(const [field,messages] of Object.entries(validation))for(const text of Array.isArray(messages)?messages:[messages])if(typeof text==='string')details.push(field+': '+text);
+      if(error.message&&error.message!=='validation')details.push(error.message);
+    }
+    throw Object.assign(new Error(details.length?'Autentique: '+details.join(' | ').slice(0,1800):'A Autentique recusou a validação do documento. Confira o tamanho do PDF e os dados dos signatários.'),{status:result.errors?.some(e=>e.message==='validation')?422:502});
+  }
   return {...result.data.createDocument,sandbox:autentiqueSandbox};
 }
 async function gemini(prompt,{schema=null,inlineData=null}={}) {
@@ -65,17 +89,18 @@ async function gemini(prompt,{schema=null,inlineData=null}={}) {
   if(!response.ok) throw Object.assign(new Error(result.error?.message||'Falha ao consultar o Gemini.'),{status:502});
   return result.candidates?.[0]?.content?.parts?.map(part=>part.text||'').join('\n')||'';
 }
-async function findClients(term) {
+async function findClients(term,request) {
   const search=String(term||'').trim().slice(0,80); if(search.length<2) return [];
   const digits=search.replace(/\D/g,''); const url=new URL(`${supabaseUrl}/rest/v1/clientes`);
   url.searchParams.set('select','nome_completo,cpf,email,contato_1_numero,situacao');
   url.searchParams.set(digits.length>=5?'cpf':'nome_completo',digits.length>=5?`eq.${digits}`:`ilike.*${search.replace(/[*,()]/g,'')}*`);
   url.searchParams.set('limit','5');
-  const response=await fetch(url,{headers:{apikey:supabaseKey,Authorization:`Bearer ${supabaseKey}`},signal:AbortSignal.timeout(10000)});
+  url.searchParams.set('empresa_id','eq.'+request.headers['x-empresa-id']);
+  const response=await fetch(url,{headers:{apikey:supabaseKey,Authorization:request.headers.authorization},signal:AbortSignal.timeout(10000)});
   if(!response.ok) throw new Error('Não foi possível consultar os clientes no Supabase.');
   return response.json();
 }
-async function chat(data) {
+async function chat(data,request) {
   const message=String(data.message||'').trim().slice(0,2000); if(!message) throw Object.assign(new Error('Digite uma mensagem.'),{status:400});
   const history=Array.isArray(data.history)?data.history.slice(-8).filter(item=>['user','assistant'].includes(item.role)&&typeof item.content==='string').map(item=>({role:item.role,content:item.content.slice(0,2000)})):[];
   const page=String(data.page||'').slice(0,40);
@@ -83,7 +108,7 @@ async function chat(data) {
   const conversation=history.map(item=>`${item.role==='user'?'Usuário':'Assistente'}: ${item.content}`).join('\n');
   const first=await gemini(`${instructions}\nHistórico:\n${conversation}\nPágina atual: ${page}. Mensagem: ${message}\nResponda conforme o esquema JSON.`,{schema:intentSchema});
   const intent=JSON.parse(first); if(!intent.busca_cliente) return {reply:intent.resposta};
-  const clients=await findClients(intent.busca_cliente);
+  const clients=await findClients(intent.busca_cliente,request);
   const second=await gemini(`${instructions}\nResponda à pergunta usando somente o resultado da consulta abaixo. Se vazio, diga que não encontrou.\nResultado: ${JSON.stringify(clients)}\nPergunta: ${message}`);
   return {reply:second,matches:clients.length};
 }
@@ -109,8 +134,16 @@ async function readPfx(data) {
   if(code!==0) throw Object.assign(new Error(/password|senha|network password|mac/i.test(errors)?'Senha incorreta ou certificado inválido.':'O Windows não conseguiu abrir este certificado.'),{status:400});
   try { return JSON.parse(output.trim()); } catch { throw Object.assign(new Error('O certificado foi aberto, mas seus dados não puderam ser interpretados.'),{status:422}); }
 }
+async function contractCompanyData(request,data){
+ const context=await rpcUser(request,'acessos_contexto',{p_empresa:request.headers['x-empresa-id']});
+ const company=context.company;
+ if(!company?.id||company.id!==request.headers['x-empresa-id'])throw Object.assign(new Error('Empresa não autorizada.'),{status:403});
+ const model=await rpcUser(request,'modelo_contrato_vigente',{p_empresa:company.id});
+ return {...data,modelo_blocos:model?(model.formatacao?.length?model.formatacao:model.conteudo.split('\n').map(text=>({align:'justify',runs:[{text}]}))):null,modelo_versao:model?.versao||null,empresa_razao_social:company.razao_social,empresa_cnpj:company.cnpj,empresa_endereco:company.endereco||'',empresa_email:company.email||'',empresa_telefone:company.telefone||''};
+}
 async function generateContract(data,preview=false) {
-  const python='C:\\Users\\PC\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe';
+  const bundledPython=path.join(require('node:os').homedir(),'.cache','codex-runtimes','codex-primary-runtime','dependencies','python','python.exe');
+  const python=process.env.PYTHON_PATH||(fs.existsSync(bundledPython)?bundledPython:'python');
   const script=path.join(__dirname,'gerar_contrato_web.py');
   const child=spawn(python,[script,...(preview?['--preview']:[])],{windowsHide:true,stdio:['pipe','pipe','pipe']});
   const chunks=[]; let errors='';
@@ -120,25 +153,49 @@ async function generateContract(data,preview=false) {
   if(code!==0) throw Object.assign(new Error(errors.trim()||'Falha ao preencher o modelo Word.'),{status:500});
   return Buffer.concat(chunks);
 }
+async function rpcUser(request,name,body) {
+  const authorization=request.headers.authorization||'';
+  if(!authorization.startsWith('Bearer '))throw Object.assign(new Error('Entre no sistema novamente.'),{status:401});
+  const response=await fetch(supabaseUrl+'/rest/v1/rpc/'+name,{method:'POST',headers:{apikey:supabaseKey,Authorization:authorization,'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(15000)});
+  if(!response.ok)throw Object.assign(new Error('Não foi possível validar a permissão. Confira a sessão e a configuração de acessos.'),{status:response.status===401?401:503});
+  return response.json();
+}
+async function requireModule(request,module) {
+  const empresa=request.headers['x-empresa-id'];
+  if(!empresa||!await rpcUser(request,'acesso_modulo',{p_empresa:empresa,p_modulo:module}))throw Object.assign(new Error('Empresa, licença ou módulo sem acesso.'),{status:403});
+}
 async function handler(request,response) {
   const route=new URL(request.url,`http://${host}:${port}`).pathname;
+  if(route==='/api/login/usuario'){try{return json(response,200,await usernameLogin(request,request.method==='POST'?await readJson(request,2048):null));}catch(error){return json(response,error.status||503,{error:error.status?error.message:'Não foi possível entrar agora.'});}}
+  if(route==='/favicon.ico'){response.writeHead(204);return response.end();}
+  if(route==='/usuarios.html'||route==='/usuarios') { response.writeHead(302,{Location:'/acessos.html'});return response.end(); }
+  if(route==='/api/usuarios') return json(response,410,{error:'Use o painel Acessos.'});
+  if(route==='/api/acessos'||route==='/api/controle') {
+    try { return json(response,request.method==='POST'?201:200,await accessApi(request,request.method==='POST'?await readJson(request,8192):null)); }
+    catch(error) { return json(response,error.status||500,{error:error.status?error.message:'Não foi possível acessar o serviço de usuários.'}); }
+  }
+  if(route.startsWith('/api/')) {
+    try { await requireModule(request, 'locacao');
+      if(route==='/api/assistente/configurar') {const allowed=await rpcUser(request,'acesso_desenvolvedor',{});if(!allowed)throw Object.assign(new Error('Somente o desenvolvedor pode configurar a integração.'),{status:403});}
+    } catch(error){return json(response,error.status||503,{error:error.message});}
+  }
   if(route==='/api/assinaturas/status'&&request.method==='GET') return json(response,200,{active:Boolean(autentiqueToken),provider:'autentique',sandbox:autentiqueSandbox});
   if(route==='/api/assinaturas/enviar') {
     if(request.method!=='POST') return json(response,405,{error:'Método não permitido.'});
-    try { await requireSupabaseUser(request); return json(response,200,await sendToAutentique(await readJson(request,70*1024*1024))); }
+    try { return json(response,200,await sendToAutentique(await readJson(request,70*1024*1024))); }
     catch(error) { return json(response,error.status||500,{error:error.message||'Falha ao enviar para assinatura.'}); }
   }
   if(route==='/api/contratos/preview') {
     if(request.method!=='POST') return json(response,405,{error:'Método não permitido.'});
     try {
-      const data=await readJson(request,250000); const preview=await generateContract(data,true);
+      const data=await contractCompanyData(request,await readJson(request,250000)); const preview=await generateContract(data,true);
       return json(response,200,JSON.parse(preview.toString('utf8')));
     } catch(error) { return json(response,error.status||500,{error:error.message||'Falha ao preparar a prévia.'}); }
   }
   if(route==='/api/contratos/gerar') {
     if(request.method!=='POST') return json(response,405,{error:'Método não permitido.'});
     try {
-      const data=await readJson(request,250000); const document=await generateContract(data);
+      const data=await contractCompanyData(request,await readJson(request,250000)); const document=await generateContract(data);
       response.writeHead(200,{'Content-Type':'application/vnd.openxmlformats-officedocument.wordprocessingml.document','Content-Disposition':'attachment; filename="contrato.docx"','Content-Length':document.length,'Cache-Control':'no-store'});
       return response.end(document);
     } catch(error) { return json(response,error.status||500,{error:error.message||'Falha ao gerar contrato.'}); }
@@ -167,7 +224,7 @@ async function handler(request,response) {
         activeGeminiKey=candidate;
         return json(response,200,{active:true});
       }
-      return json(response,200,route.endsWith('/extrair')?await extract(data):await chat(data));
+      return json(response,200,route.endsWith('/extrair')?await extract(data):await chat(data,request));
     }
     catch(error) { return json(response,error.status||500,{error:error.message||'Falha no assistente.'}); }
   }

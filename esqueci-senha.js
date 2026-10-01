@@ -1,0 +1,4 @@
+import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
+const db=createClient('https://xtelzwclrzzlsqjecscl.supabase.co','sb_publishable_37VAv7_GhtRLum-WVwMv0w_EiD0HqZ3');
+const form=document.querySelector('#forgot-form'),message=document.querySelector('#forgot-message'),button=form.querySelector('button');
+form.onsubmit=async event=>{event.preventDefault();if(button.disabled)return;button.disabled=true;message.textContent='Solicitando recuperação…';try{const {error}=await db.auth.resetPasswordForEmail(form.elements.email.value.trim().toLowerCase(),{redirectTo:new URL('/redefinir-senha.html',location.origin).href});if(error)throw error;message.textContent='Se houver uma conta para este e-mail, você receberá o link. Confira também o spam.';}catch{message.textContent='Não foi possível solicitar o link agora. Aguarde alguns minutos e tente novamente.';}finally{button.disabled=false;}};

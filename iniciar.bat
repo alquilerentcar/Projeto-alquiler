@@ -1,4 +1,8 @@
 @echo off
 cd /d "%~dp0"
-start "" "http://localhost:3000"
-node server.js
+if exist "C:\Program Files\nodejs\node.exe" (
+  "C:\Program Files\nodejs\node.exe" server.js
+) else (
+  node server.js
+)
+pause

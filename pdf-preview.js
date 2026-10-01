@@ -1,0 +1,9 @@
+import {getDocument,GlobalWorkerOptions} from './pdfjs/pdf.mjs';
+GlobalWorkerOptions.workerSrc=new URL('./pdfjs/pdf.worker.mjs',import.meta.url).href;
+const previews=new WeakMap();
+export function clearPdfPreview(host){const previous=previews.get(host);if(previous){previous.observer?.disconnect();previous.task.destroy().catch(()=>{});previews.delete(host)}host.replaceChildren()}
+export async function renderPdfPreview(host,bytes){clearPdfPreview(host);const task=getDocument({data:new Uint8Array(bytes).slice(),useSystemFonts:true}),state={task};previews.set(host,state);const pdf=await task.promise;if(previews.get(host)!==state)return;host.hidden=false;const width=Math.max(280,Math.min(host.clientWidth||800,900)),ratio=Math.min(devicePixelRatio||1,1.5);
+ async function draw(box){if(box.dataset.rendered)return;box.dataset.rendered='true';const page=await pdf.getPage(Number(box.dataset.page));if(previews.get(host)!==state)return;const original=page.getViewport({scale:1}),viewport=page.getViewport({scale:width/original.width*ratio}),canvas=document.createElement('canvas');canvas.width=viewport.width;canvas.height=viewport.height;canvas.style.cssText='display:block;width:100%;height:auto;background:white';canvas.setAttribute('aria-label','Página '+box.dataset.page);box.replaceChildren(canvas);await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;}
+ state.observer=new IntersectionObserver(entries=>{for(const e of entries)if(e.isIntersecting){state.observer.unobserve(e.target);draw(e.target).catch(error=>{if(previews.get(host)===state)e.target.textContent='Não foi possível desenhar esta página: '+error.message})}},{rootMargin:'500px'});
+ for(let i=1;i<=pdf.numPages;i++){const box=document.createElement('div');box.dataset.page=i;box.style.cssText='min-height:350px;margin:0 0 18px;border:1px solid #dce2ea;background:white';box.textContent='Página '+i;host.append(box);if(i===1)await draw(box);else state.observer.observe(box)}
+}

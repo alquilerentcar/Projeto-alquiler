@@ -289,9 +289,9 @@ async function init() {
   $("#cancel-button").addEventListener("click", () => $("#client-dialog").close());
   document.querySelectorAll("[data-open]").forEach((button) => button.addEventListener("click", () => openDocument(button.dataset.open)));
   await loadClients();
-  const draftText = sessionStorage.getItem('alquiler-assistente-rascunho-cliente');
+  const draftText = sessionStorage.getItem('alquiler-assistente-rascunho-cliente:' + window.alquilerContext.company.id);
   if (draftText) {
-    sessionStorage.removeItem('alquiler-assistente-rascunho-cliente');
+    sessionStorage.removeItem('alquiler-assistente-rascunho-cliente:' + window.alquilerContext.company.id);
     try {
       const saved = JSON.parse(draftText);
       const draft = saved.draft || saved;

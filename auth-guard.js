@@ -1,36 +1,44 @@
-import { loadAppContext, renderAppContext } from './app-context.js';
-const LEGACY_EMAIL = 'alquilerentcar@gmail.com';
-function clearSearchAutofill() {
-  document.querySelectorAll('input[type="search"]').forEach((input) => {
-    input.setAttribute('autocomplete', 'new-password');
-    input.setAttribute('data-lpignore', 'true');
-    input.setAttribute('data-form-type', 'other');
-    input.name = `filtro_${input.id || 'busca'}`;
-    if (input.value.trim().toLowerCase() === LEGACY_EMAIL) {
-      input.value = '';
-    }
-  });
-}
+import {loadAppContext,renderAppContext} from './app-context.js';
+import {canOpen,scopeClient} from './access-policy.js';
+let resolveAuthenticatedClient;
+const authenticatedClientReady=new Promise(resolve=>{resolveAuthenticatedClient=resolve;});
+export function getAuthenticatedClient(){return authenticatedClientReady;}
 export async function requireAuth(client) {
-  clearSearchAutofill();
-  [400, 1200, 2500, 5000].forEach(delay => setTimeout(clearSearchAutofill, delay));
-  setInterval(clearSearchAutofill, 750);
-  const { data, error } = await client.auth.getSession();
-  const session = data?.session;
-  const {error:userError}=session ? await client.auth.getUser() : {error:null};
-  if (error || userError || !session) {
-    if (session) await client.auth.signOut();
-    const next = encodeURIComponent(location.pathname.split('/').pop() || 'clientes.html');
-    location.replace(`login.html?next=${next}`);
-    await new Promise(() => {});
+  const {data,error}=await client.auth.getSession();
+  if(error||!data?.session) {location.replace('login.html');await new Promise(()=>{});}
+  let context;
+  try {context=await loadAppContext(client);} catch(error) {
+    const main=document.querySelector('main')||document.body;
+    main.replaceChildren();const title=document.createElement('h1'),message=document.createElement('p'),link=document.createElement('a');
+    title.textContent='Configuração de acessos pendente';message.textContent=error.message;link.href='login.html';link.textContent='Voltar ao login';main.append(title,message,link);
+    await new Promise(()=>{});
   }
-  const context = await loadAppContext(client, session);
+  if(context.accessDenied) {await client.auth.signOut();location.replace('login.html');await new Promise(()=>{});}
+  window.alquilerContext=context;
+  if(!canOpen(context,location.pathname)) {location.replace('modulos.html?acesso=negado');await new Promise(()=>{});}
+  scopeClient(client,context.company.id);
   renderAppContext(context);
-  window.alquilerContext = context;
-  return session;
+  window.dispatchEvent(new CustomEvent('app-context-ready',{detail:context}));
+  if(!window.bgAuthenticatedFetch) {
+    window.bgAuthenticatedFetch=true;const original=window.fetch.bind(window);
+    window.fetch=async(input,init={})=>{
+      const url=new URL(typeof input==='string'?input:input.url,location.href);
+      if(url.origin===location.origin && url.pathname.startsWith('/api/')) {
+        const {data}=await client.auth.getSession();const headers=new Headers(input instanceof Request?input.headers:init.headers);
+        if(init.headers) new Headers(init.headers).forEach((v,k)=>headers.set(k,v));
+        headers.set('Authorization',`Bearer ${data.session?.access_token||''}`);
+        headers.set('X-Empresa-Id',window.alquilerContext.company.id||'');
+        return original(input,{...init,headers});
+      }
+      return original(input,init);
+    };
+  }
+  resolveAuthenticatedClient(client);
+  return data.session;
 }
 export function bindLogout(client) {
-  document.querySelectorAll('.global-logout').forEach(button => button.addEventListener('click', async () => {
-    button.disabled = true; await client.auth.signOut(); location.replace('login.html');
+  document.querySelectorAll('.global-logout').forEach(button=>button.addEventListener('click',async()=>{
+    button.disabled=true;try{Object.keys(sessionStorage).filter(k=>k.startsWith('bgsys:brand:')).forEach(k=>sessionStorage.removeItem(k));}catch{}await client.auth.signOut();sessionStorage.removeItem('bgsys:empresa-id');
+    localStorage.removeItem('bgsys:empresa-cache');localStorage.removeItem('bgsys:usuario-cache');location.replace('login.html');
   }));
 }

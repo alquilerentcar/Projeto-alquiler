@@ -15,9 +15,9 @@ try { history = JSON.parse(sessionStorage.getItem(key) || '[]'); if (!Array.isAr
 
 const root = document.createElement('div');
 root.className = 'ai-root';
-root.innerHTML = `<button class="ai-launch" type="button" aria-label="Abrir assistente" aria-controls="ai-floating-panel" aria-expanded="false">✦ <span>Assistente IA</span></button>
-  <section id="ai-floating-panel" class="ai-panel" aria-label="Assistente IA" hidden>
-    <header class="ai-header"><div><strong>Assistente IA</strong><small class="ai-company">Empresa</small></div><button class="ai-close" type="button" aria-label="Fechar">×</button></header>
+root.innerHTML = `<button class="ai-launch" type="button" aria-label="Abrir assistente" aria-controls="ai-floating-panel" aria-expanded="false">✦ <span>RECRUTA</span></button>
+  <section id="ai-floating-panel" class="ai-panel" aria-label="RECRUTA" hidden>
+    <header class="ai-header"><div><strong>RECRUTA</strong><small class="ai-company">Empresa</small></div><button class="ai-close" type="button" aria-label="Fechar">×</button></header>
     <div class="ai-messages" role="log" aria-live="polite"></div>
     <div class="ai-setup" hidden><strong>Assistente indisponível</strong><span>A integração precisa ser configurada pelo administrador do sistema.</span></div>
     <div class="ai-actions"><label class="ai-file-button">📎 Anexar documentos<input class="ai-file" type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" hidden></label></div>
@@ -66,7 +66,7 @@ async function refreshStatus() {
     const response = await fetch('/api/assistente/status');
     const status = await response.json();
     aiProvider=status.provider||'gemini';
-    const assistantName=String(status.name||'Assistente IA').trim().slice(0,60)||'Assistente IA';
+    const assistantName=String(status.name||'RECRUTA').trim().slice(0,60)||'RECRUTA';
     launch.querySelector('span').textContent=assistantName;
     launch.setAttribute('aria-label','Abrir '+assistantName);
     panel.setAttribute('aria-label',assistantName);

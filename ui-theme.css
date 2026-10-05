@@ -134,3 +134,9 @@ body.interface-v2{font-family:Inter,"Segoe UI",Arial,sans-serif;font-size:14px;l
 .rich-editor p,.model-document-preview p{margin-top:0;margin-bottom:12pt}
 
 .password-visibility{display:inline-block;align-self:flex-start;border:0;background:transparent;color:var(--company-primary,#2563eb);font:inherit;font-size:12px;cursor:pointer;padding:6px 0;min-height:32px}.password-visibility:focus-visible{outline:2px solid currentColor;outline-offset:3px}
+
+/* Keep formatting controls visible while the document scrolls. */
+.interface-v2 .rich-editor-wrap{max-height:72dvh;overflow:auto;overscroll-behavior:contain;border:1px solid var(--ui-border,#cdd7e5);border-radius:8px}
+.interface-v2 .rich-editor-wrap .format-toolbar{position:sticky;top:0;z-index:20;background:var(--company-surface,#fff);box-shadow:0 2px 6px #00000015}
+.interface-v2 .rich-editor-wrap .rich-editor{border:0;min-height:500px}
+@media(max-width:850px){.interface-v2 .rich-editor-wrap{max-height:68dvh}.interface-v2 .rich-editor-wrap .format-toolbar{position:sticky;flex-wrap:nowrap;overflow-x:auto}.interface-v2 .format-toolbar button{flex-shrink:0;min-height:40px}}

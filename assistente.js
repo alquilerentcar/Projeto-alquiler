@@ -2,7 +2,7 @@ import {intakeLabels,attachmentKinds,mergeIntake,saveIntake} from './assistente-
 import {getAuthenticatedClient} from './auth-guard.js';
 const db=await getAuthenticatedClient();
 const page = document.body.dataset.page || location.pathname.replace(/\W/g, '');
-const key = 'alquiler-assistente-historico:'+window.alquilerContext.company.id;
+const key = 'alquiler-assistente-historico:'+(window.alquilerContext.company?.id||'plataforma');
 let history = [];
 try { history = JSON.parse(sessionStorage.getItem(key) || '[]'); if (!Array.isArray(history)) history = []; } catch { history = []; }
 
@@ -18,7 +18,7 @@ root.innerHTML = `<button class="ai-launch" type="button" aria-label="Abrir assi
     <small class="ai-footnote">Documentos e consultas são enviados ao Gemini quando você solicita.</small>
   </section>`;
 document.body.append(root);
-root.querySelector('.ai-company').textContent=window.alquilerContext.company.nome_fantasia;
+root.querySelector('.ai-company').textContent=window.alquilerContext.company?.nome_fantasia||'BG SYSTEMS · Selecione uma empresa';
 const panel = root.querySelector('.ai-panel');
 const launch = root.querySelector('.ai-launch');
 const messages = root.querySelector('.ai-messages');
@@ -84,6 +84,7 @@ refreshStatus();
 
 root.querySelector('.ai-form').addEventListener('submit', async event => {
   event.preventDefault();
+  if(!window.alquilerContext.company?.id){addMessage('bot','Selecione uma empresa na aba Módulos antes de consultar ou cadastrar dados.',false);return;}
   const message = input.value.trim(); if (!message&&!queuedFiles.length) return;
   if(queuedFiles.length){if(intakeBusy)return;addMessage('user',(message||'Ler os documentos anexados')+'\nAnexos: '+queuedFiles.map(file=>file.name).join(', '));input.value='';await readQueuedFiles(message);return;}
   const command=message.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -101,7 +102,7 @@ root.querySelector('.ai-form').addEventListener('submit', async event => {
 let intakeRecords=[],intakeReview=null,intakeSaved={},intakeBusy=false,queuedFiles=[];
 const queuedHost=document.createElement('div');queuedHost.className='ai-pending-attachments';root.querySelector('.ai-actions').append(queuedHost);
 function renderQueuedFiles(){queuedHost.replaceChildren();for(const file of queuedFiles){const row=document.createElement('div'),name=document.createElement('span'),remove=document.createElement('button');name.textContent=file.name;remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Remover anexo '+file.name);remove.disabled=intakeBusy;remove.onclick=()=>{queuedFiles=queuedFiles.filter(item=>item!==file);renderQueuedFiles();};row.append(name,remove);queuedHost.append(row);}if(queuedFiles.length){const note=document.createElement('small');note.textContent='Prontos para enviar. Escreva sua orientação e clique em Enviar.';queuedHost.append(note);}}
-const intakeCompany=window.alquilerContext.company.id;
+const intakeCompany=window.alquilerContext.company?.id||'plataforma';
 function intakeReadReview(){const draft={};for(const field of Object.keys(intakeLabels)){const control=intakeReview?.querySelector(`[name="${field}"]`);if(control)draft[field]=control.value;}return draft;}
 function showIntakeReview(){
  const edited=intakeReview?intakeReadReview():{};intakeReview?.remove();

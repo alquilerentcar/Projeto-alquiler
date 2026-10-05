@@ -5,7 +5,7 @@ try {const selected=sessionStorage.getItem('bgsys:empresa-id'),cached=JSON.parse
 function applyBrand(company){
  document.querySelectorAll('.global-company').forEach(n=>n.textContent=company.nome_fantasia||'BG SYSTEMS');
  document.querySelectorAll('.brand-mark').forEach(n=>{const logo=String(company.logo_url||'');n.textContent=logo?'':(company.nome_fantasia||'BG').charAt(0).toUpperCase();n.classList.toggle('has-company-logo',Boolean(logo));n.style.backgroundImage=logo?'url('+JSON.stringify(logo)+')':'';});
- for(const [field,variable,fallback] of [['cor_sidebar','--company-sidebar','#111e32'],['cor_fundo','--company-background','#f5f7fb']]){const value=/^#[0-9a-f]{6}$/i.test(company[field]||'')?company[field]:fallback;document.documentElement.style.setProperty(variable,value);const c=value.slice(1).match(/../g).map(x=>parseInt(x,16)/255).map(x=>x<=.04045?x/12.92:((x+.055)/1.055)**2.4);const lum=c.reduce((sum,x,i)=>sum+x*[.2126,.7152,.0722][i],0);document.documentElement.style.setProperty(field==='cor_sidebar'?'--company-on-sidebar':'--company-on-background',lum>.179?'#000000':'#ffffff');}
+ for(const [field,variable,fallback] of [['cor_sidebar','--company-sidebar','#111e32'],['cor_fundo','--company-background','#f5f7fb'],['cor_paineis','--company-surface','#ffffff']]){const value=/^#[0-9a-f]{6}$/i.test(company[field]||'')?company[field]:fallback;document.documentElement.style.setProperty(variable,value);const c=value.slice(1).match(/../g).map(x=>parseInt(x,16)/255).map(x=>x<=.04045?x/12.92:((x+.055)/1.055)**2.4);const lum=c.reduce((sum,x,i)=>sum+x*[.2126,.7152,.0722][i],0);document.documentElement.style.setProperty(field==='cor_sidebar'?'--company-on-sidebar':field==='cor_paineis'?'--company-on-surface':'--company-on-background',lum>.179?'#000000':'#ffffff');}
  if(/^#[0-9a-f]{6}$/i.test(company.cor_primaria||''))document.documentElement.style.setProperty('--company-primary',company.cor_primaria);
  if(['#000000','#ffffff'].includes(company.on_primary))document.documentElement.style.setProperty('--company-on-primary',company.on_primary);
 }
@@ -24,9 +24,12 @@ const menu=`
     <details${groupOpen(['clientes.html','carros.html','modelos-contrato.html','certificados.html'])}><summary>${icon('▦')}<span>Cadastros</span></summary><div class="menu-children">
       <a class="menu-link${active('clientes.html')}" href="clientes.html">Clientes</a><a class="menu-link${active('carros.html')}" href="carros.html">Veículos</a><a class="menu-link${active('modelos-contrato.html')}" href="modelos-contrato.html">Modelos de documentos</a><a class="menu-link${active('certificados.html')}" href="certificados.html">Certificados digitais</a>
     </div></details>
-    <details${groupOpen(['assinaturas.html','locacoes.html','contratos.html','alteracoes.html','recibos.html','distratos.html'])}><summary>${icon('▤')}<span>Locação</span></summary><div class="menu-children">
-      <a class="menu-link${active('locacoes.html')}" href="locacoes.html">Locações</a><a class="menu-link${active('contratos.html')}" href="contratos.html">Contratos</a><a class="menu-link${active('assinaturas.html')}" href="assinaturas.html">Assinaturas</a><a class="menu-link${active('alteracoes.html')}" href="alteracoes.html">Alterações de veículo</a><a class="menu-link${active('recibos.html')}" href="recibos.html">Recibos</a><a class="menu-link${active('distratos.html')}" href="distratos.html">Distratos</a>
+    <a class="menu-link${active('frota.html')}" href="frota.html">${icon('▣')}<span>Frota e diárias</span></a>
+    <a class="menu-link${active('locacoes.html')}" href="locacoes.html">${icon('▤')}<span>Locações</span></a>
+    <details${groupOpen(['contratos.html','alteracoes.html','recibos.html','distratos.html'])}><summary>${icon('▧')}<span>Documentos</span></summary><div class="menu-children">
+      <a class="menu-link${active('contratos.html')}" href="contratos.html">Contratos / Termos de locação</a><a class="menu-link${active('alteracoes.html')}" href="alteracoes.html">Alterações de veículo</a><a class="menu-link${active('recibos.html')}" href="recibos.html">Recibos</a><a class="menu-link${active('distratos.html')}" href="distratos.html">Distratos</a>
     </div></details>
+    <a class="menu-link${active('assinaturas.html')}" href="assinaturas.html">${icon('✎')}<span>Assinaturas</span></a>
     <details${groupOpen(['financeiro.html'])}><summary>${icon('R$')}<span>Financeiro</span></summary><div class="menu-children finance-menu">
       <a class="menu-link${page==='financeiro.html'&&!section?' active':''}" href="financeiro.html">Visão geral</a>
       <a class="menu-link${financeActive('contas-pagar')}" href="financeiro.html?secao=contas-pagar">Contas a pagar</a>
@@ -52,8 +55,22 @@ const menu=`
   <div class="sidebar-bottom"><span class="online-dot"></span><div class="sidebar-user"><strong class="global-user">${safe(cachedUser.nome)}</strong><small>Conectado</small></div><button class="logout global-logout" type="button">Sair</button></div>`;
 document.querySelectorAll('.sidebar').forEach(sidebar=>{sidebar.innerHTML=menu});applyBrand(cachedCompany);
 
+let documentKindClassifier=null;
+import('./document-kind.mjs').then(module=>{documentKindClassifier=module.documentKind;if(window.alquilerContext)applyAccess(window.alquilerContext);}).catch(()=>{});
 const applyAccess=context=>{
-document.querySelectorAll('[data-document-model]').forEach(n=>n.remove());const host=document.querySelector('.professional-menu a[href="locacoes.html"]')?.parentElement;
-if(host&&page!=='controle.html')for(const model of context.documentModels||[]){if(model.tipo==='contrato_locacao')continue;const link=document.createElement('a');link.dataset.documentModel=model.id;link.className='menu-link';link.textContent=model.nome;link.href='documentos-modelo.html?modelo='+encodeURIComponent(model.id);if(page==='documentos-modelo.html'&&new URLSearchParams(location.search).get('modelo')===model.id){link.classList.add('active');host.parentElement.open=true}host.append(link);}
+document.querySelectorAll('[data-document-model]').forEach(n=>n.remove());const host=document.querySelector('.professional-menu a[href="contratos.html"]')?.parentElement;
+if(host&&page!=='controle.html'&&documentKindClassifier)for(const model of context.documentModels||[]){if(model.tipo==='contrato_locacao'||(documentKindClassifier&&['recibos','alteracoes','distratos'].includes(documentKindClassifier(model))))continue;const link=document.createElement('a');link.dataset.documentModel=model.id;link.className='menu-link';link.textContent=model.nome;link.href='documentos-modelo.html?modelo='+encodeURIComponent(model.id);if(page==='documentos-modelo.html'&&new URLSearchParams(location.search).get('modelo')===model.id){link.classList.add('active');host.parentElement.open=true}host.append(link);}
 applyBrand(page==='controle.html'?{nome_fantasia:'BG SYSTEMS',cor_primaria:'#2864da',on_primary:'#ffffff'}:context.company);document.querySelectorAll('.global-user').forEach(n=>n.textContent=context.user.nome);document.querySelectorAll('.professional-menu a[href]').forEach(a=>{const href=a.getAttribute('href');if(href==='controle.html'){a.hidden=!context.developer;return;}if(['empresa.html','acessos.html'].includes(href)){a.hidden=page==='controle.html'||!context.canManageCompany;return;}if(['modulos.html','perfil.html'].includes(href))return;const module='locacao';a.hidden=page==='controle.html'||!context.modules.includes(module);});document.querySelectorAll('.professional-menu details').forEach(d=>{d.hidden=![...d.querySelectorAll('a')].some(a=>!a.hidden);});};
 window.addEventListener('app-context-ready',event=>applyAccess(event.detail));if(window.alquilerContext)applyAccess(window.alquilerContext);
+
+// Navegação compacta: o menu abre como painel no celular.
+const mobileToggle=document.createElement('button');
+mobileToggle.type='button';mobileToggle.className='mobile-menu-toggle';mobileToggle.setAttribute('aria-label','☰ Menu');
+mobileToggle.innerHTML='<span aria-hidden="true">☰</span><span class="brand-mark mobile-brand-mark" aria-hidden="true">BG</span><span class="mobile-menu-identity"><strong class="global-company">BG SYSTEMS</strong><small class="global-user">Usuário</small></span>';
+mobileToggle.setAttribute('aria-expanded','false');mobileToggle.setAttribute('aria-controls','app-sidebar');
+const mobileSidebar=document.querySelector('.sidebar');if(mobileSidebar){mobileSidebar.id='app-sidebar';
+const veil=document.createElement('button');veil.type='button';veil.className='mobile-menu-veil';veil.setAttribute('aria-label','Fechar menu');
+function closeMobile(){document.body.classList.remove('mobile-menu-open');mobileToggle.setAttribute('aria-expanded','false');}
+mobileToggle.onclick=()=>{const open=document.body.classList.toggle('mobile-menu-open');mobileToggle.setAttribute('aria-expanded',String(open));};
+veil.onclick=closeMobile;document.addEventListener('keydown',event=>{if(event.key==='Escape')closeMobile();});
+document.body.prepend(mobileToggle,veil);applyBrand(page==='controle.html'?{nome_fantasia:'BG SYSTEMS'}:window.alquilerContext?.company||cachedCompany);if(window.alquilerContext?.user)document.querySelectorAll('.global-user').forEach(n=>n.textContent=window.alquilerContext.user.nome);mobileSidebar.querySelectorAll('a').forEach(link=>link.addEventListener('click',closeMobile));}

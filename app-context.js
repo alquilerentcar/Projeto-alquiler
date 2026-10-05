@@ -12,7 +12,7 @@ export function renderAppContext(context) {
   try {
     if(context.company?.id){
       sessionStorage.setItem('bgsys:empresa-id',context.company.id);
-      if(!location.pathname.replace(/\.html$/,'').endsWith('/controle'))sessionStorage.setItem('bgsys:brand:'+context.company.id,JSON.stringify({id:company.id,nome_fantasia:company.nome_fantasia,logo_url:company.logo_url||'',cor_primaria:company.cor_primaria||'#2864da',cor_sidebar:company.cor_sidebar||'#111e32',cor_fundo:company.cor_fundo||'#f5f7fb',on_primary:document.documentElement.style.getPropertyValue('--company-on-primary')}));
+      if(!location.pathname.replace(/\.html$/,'').endsWith('/controle'))sessionStorage.setItem('bgsys:brand:'+context.company.id,JSON.stringify({id:company.id,nome_fantasia:company.nome_fantasia,logo_url:company.logo_url||'',cor_primaria:company.cor_primaria||'#2864da',cor_sidebar:company.cor_sidebar||'#111e32',cor_fundo:company.cor_fundo||'#f5f7fb',cor_paineis:company.cor_paineis||'#ffffff',on_primary:document.documentElement.style.getPropertyValue('--company-on-primary')}));
     }
   }catch{};
   document.querySelectorAll('[data-company-admin]').forEach(node=>{node.hidden=!context.canManageCompany;});

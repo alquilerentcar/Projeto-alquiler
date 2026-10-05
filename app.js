@@ -24,8 +24,8 @@ const fields = [
 ];
 
 const documentInputs = [
-  { column: "foto_rg_path", input: "#file-rg", folder: "rg", types: ["image/jpeg", "image/png", "image/webp"] },
-  { column: "foto_cnh_path", input: "#file-cnh", folder: "cnh", types: ["image/jpeg", "image/png", "image/webp"] },
+  { column: "foto_rg_path", input: "#file-rg", folder: "rg", types: ["image/jpeg", "image/png", "image/webp", "application/pdf"] },
+  { column: "foto_cnh_path", input: "#file-cnh", folder: "cnh", types: ["image/jpeg", "image/png", "image/webp", "application/pdf"] },
   { column: "comprovante_residencia_path", input: "#file-comprovante", folder: "comprovante", types: ["image/jpeg", "image/png", "image/webp", "application/pdf"] },
 ];
 
@@ -56,12 +56,12 @@ function errorText(error) {
   return error.message || "Ocorreu um erro inesperado.";
 }
 
-async function loadClients() {
+async function loadClients(force = true) {
   if (state.loading) return;
   state.loading = true;
   $("#list-count").textContent = "Carregando cadastros…";
   try {
-    const { data, error } = await supabase.from("clientes").select("*").order("nome_completo", { ascending: true }).range(0, 999);
+    const { data, error } = await window.bgLoadList("clientes", () => supabase.from("clientes").select("*").order("nome_completo", { ascending: true }).range(0, 999), force);
     if (error) throw error;
     state.clients = data || [];
     render();
@@ -288,7 +288,7 @@ async function init() {
   $("#close-dialog").addEventListener("click", () => $("#client-dialog").close());
   $("#cancel-button").addEventListener("click", () => $("#client-dialog").close());
   document.querySelectorAll("[data-open]").forEach((button) => button.addEventListener("click", () => openDocument(button.dataset.open)));
-  await loadClients();
+  await loadClients(false);
   const draftText = sessionStorage.getItem('alquiler-assistente-rascunho-cliente:' + window.alquilerContext.company.id);
   if (draftText) {
     sessionStorage.removeItem('alquiler-assistente-rascunho-cliente:' + window.alquilerContext.company.id);
@@ -308,3 +308,5 @@ async function init() {
 }
 
 init();
+
+window.addEventListener('clientes-updated',()=>loadClients());

@@ -25,3 +25,20 @@
 .ai-review { align-self: flex-start; border: 0; border-radius: 9px; background: #2368d4; color: #fff; padding: 10px 12px; cursor: pointer; }
 .ai-footnote { padding: 0 14px 12px; color: #65758c; font-size: 11px; }
 @media(max-width: 550px) { .ai-root { right: 14px; bottom: 14px; } .ai-panel { bottom: 58px; } }
+
+.ai-intake{display:grid;gap:10px;flex:none;padding:12px;background:#fff;border:1px solid #dbe4f0;border-radius:12px;min-width:0}
+.ai-intake p,.ai-intake small{font-size:11px;overflow-wrap:anywhere;margin:0;color:#4e6079}
+.ai-intake label{display:grid;gap:4px;font-size:12px}.ai-intake input,.ai-intake select{width:100%;min-width:0;padding:8px;border:1px solid #cbd7e5;border-radius:7px;font:inherit;background:#fff;color:#17243a}
+.ai-intake input[data-conflict]{border-color:#b87617}.ai-intake-file{display:grid;gap:6px;padding:8px;background:#f3f6fb;border-radius:8px;font-size:12px;overflow-wrap:anywhere}
+.ai-intake button{min-height:36px;border-radius:7px;border:1px solid #dbe4f0;padding:8px;cursor:pointer}.ai-intake button:disabled{opacity:.5;cursor:wait}
+
+.ai-pending-attachments{display:grid;gap:5px;margin-top:7px;max-height:100px;overflow:auto}.ai-pending-attachments>div{display:flex;align-items:center;gap:8px;background:#eef3fb;border-radius:6px;padding:5px 8px;font-size:11px}.ai-pending-attachments span{flex:1;min-width:0;overflow-wrap:anywhere}.ai-pending-attachments button{border:0;background:transparent;color:#40516b;font-size:18px;padding:0 4px;cursor:pointer}.ai-pending-attachments small{font-size:10px;color:#586a83}
+
+/* Floating assistant respects the device safe area and company branding. */
+.ai-root{right:max(14px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom))}
+.ai-launch{min-height:48px;background:var(--company-primary,#2368d4);color:var(--company-on-primary,#fff)}
+.ai-launch:hover{background:var(--company-primary,#2368d4);filter:brightness(.95)}
+.ai-launch:focus-visible,.ai-close:focus-visible{outline:3px solid #81b4ff;outline-offset:3px}
+.ai-panel{height:min(550px,calc(100dvh - 105px));max-height:calc(100dvh - 105px)}
+.ai-messages{min-height:0}
+@media print{.ai-root{display:none!important}}

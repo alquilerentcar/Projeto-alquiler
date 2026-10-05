@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="pt-BR">
-<head><base href="/"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><script src="/site-ui.js"></script><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><meta name="theme-color" content="#101a2b" /><title>BG SYSTEMS · Sistema de gestão</title><link rel="stylesheet" href="styles.css" /><link rel="stylesheet" href="assistente.css" /></head>
-<body data-page="certificados">
+<head><base href="/"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><script src="/site-ui.js?v=20261005-loading"></script><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><meta name="theme-color" content="#101a2b" /><title>BG SYSTEMS · Sistema de gestão</title><link rel="stylesheet" href="styles.css" /><link rel="stylesheet" href="assistente.css?v=20261005-floating" /><link rel="stylesheet" href="/ui-theme.css?v=20261005-spacing"></head>
+<body data-page="certificados" class="interface-v2">
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <div id="certificate-app" class="app-shell"><aside class="sidebar">
     <div class="sidebar-brand"><div class="brand-mark">A</div><div><strong class="global-company">Alquiler Rent a Car</strong><small>Módulo Locação</small></div></div>
@@ -17,7 +17,7 @@
     <div class="topbar"><div><div class="eyebrow">CADASTROS</div><h1>Certificados digitais</h1><p>Controle os titulares, os arquivos A1 e as datas de validade.</p></div><button id="new-certificate" class="btn btn-primary" type="button">＋ Novo certificado</button></div>
     <div class="metrics"><div class="metric"><span>Total</span><strong id="certificate-total">—</strong></div><div class="metric"><span>Vencem em 30 dias</span><strong id="certificate-soon">—</strong></div><div class="metric"><span>Vencidos</span><strong id="certificate-expired">—</strong></div></div>
     <section class="panel"><div class="panel-top"><div><h2>Lista de certificados</h2><p id="certificate-count">Carregando…</p></div><button id="refresh-certificates" class="btn btn-quiet" type="button">↻ Atualizar</button></div>
-      <div class="filters"><label class="search"><span>⌕</span><input id="certificate-search" type="search" placeholder="Buscar por titular, identificação ou emissor" autocomplete="off" data-lpignore="true" data-1p-ignore="true" autocapitalize="off"></label><select id="certificate-filter" aria-label="Filtrar validade"><option value="todos">Todas as validades</option><option value="validos">Válidos</option><option value="proximos">Próximos do vencimento</option><option value="vencidos">Vencidos</option></select></div>
+      <div class="filters"><label class="search"><span>⌕</span><input id="certificate-search" type="search" placeholder="Buscar por titular, identificação ou emissor" autocomplete="off" data-lpignore="true" data-1p-ignore="true" autocapitalize="off" readonly></label><select id="certificate-filter" aria-label="Filtrar validade"><option value="todos">Todas as validades</option><option value="validos">Válidos</option><option value="proximos">Próximos do vencimento</option><option value="vencidos">Vencidos</option></select></div>
       <div class="table-scroll"><table><thead><tr><th>TITULAR</th><th>TIPO</th><th>IDENTIFICAÇÃO</th><th>VALIDADE</th><th>ARQUIVO</th><th class="actions-head">AÇÕES</th></tr></thead><tbody id="certificates-body"></tbody></table></div>
       <div id="certificates-empty" class="empty hidden"><div class="empty-icon">⌕</div><strong>Nenhum certificado encontrado</strong></div>
     </section>
@@ -37,6 +37,6 @@
     </div></div><div id="certificate-file-section" class="form-section"><h3>Arquivo A1</h3><p class="section-note">Selecione o .pfx ou .p12 e informe a senha para preencher os dados automaticamente. A leitura ocorre neste navegador e a senha não é armazenada.</p><div class="form-grid certificate-reader"><label class="wide"><span>Arquivo do certificado *</span><input id="certificate-file" type="file" accept=".pfx,.p12,application/x-pkcs12" /></label><label><span>Senha para leitura</span><input id="certificate-read-password" type="password" autocomplete="new-password" /></label><div class="certificate-read-action"><button id="read-certificate" class="btn btn-quiet" type="button">Ler informações</button><small id="certificate-read-status" aria-live="polite"></small></div></div><button id="download-certificate" class="file-link hidden" type="button">Baixar arquivo atual</button></div></div>
     <div class="dialog-footer"><button id="delete-certificate" class="btn btn-danger hidden" type="button">Excluir certificado</button><span class="dialog-footer-spacer"></span><button id="cancel-certificate" class="btn btn-quiet" type="button">Cancelar</button><button id="save-certificate" class="btn btn-primary" type="submit">Salvar certificado</button></div>
   </form></dialog>
-  <script type="module" src="certificados.js"></script>
-  <script type="module" src="assistente.js"></script>
+  <script type="module" src="certificados.js?v=20261003-2"></script>
+  <script type="module" src="assistente.js?v=20261005-floating"></script>
 <script src="sidebar.js"></script></body></html>

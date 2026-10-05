@@ -8,104 +8,88 @@
   },
   "rewrites": [
     {
-      "source": "/login",
-      "destination": "/login.html"
-    },
-    {
-      "source": "/modulos",
-      "destination": "/modulos.html"
-    },
-    {
       "source": "/conta/perfil",
-      "destination": "/perfil.html"
+      "destination": "/perfil"
     },
     {
       "source": "/conta/esqueci-senha",
-      "destination": "/esqueci-senha.html"
+      "destination": "/esqueci-senha"
     },
     {
       "source": "/conta/redefinir-senha",
-      "destination": "/redefinir-senha.html"
-    },
-    {
-      "source": "/controle",
-      "destination": "/controle.html"
+      "destination": "/redefinir-senha"
     },
     {
       "source": "/administracao/acessos",
-      "destination": "/acessos.html"
+      "destination": "/acessos"
     },
     {
       "source": "/administracao/empresa",
-      "destination": "/empresa.html"
+      "destination": "/empresa"
     },
     {
       "source": "/locacao/dashboard",
-      "destination": "/dashboard.html"
+      "destination": "/dashboard"
     },
     {
       "source": "/cadastros/clientes",
-      "destination": "/clientes.html"
+      "destination": "/clientes"
     },
     {
       "source": "/cadastros/carros",
-      "destination": "/carros.html"
+      "destination": "/carros"
     },
     {
       "source": "/cadastros/fornecedores",
-      "destination": "/fornecedores.html"
+      "destination": "/fornecedores"
     },
     {
       "source": "/cadastros/modelos-contrato",
-      "destination": "/modelos-contrato.html"
+      "destination": "/modelos-contrato"
     },
     {
       "source": "/cadastros/certificados",
-      "destination": "/certificados.html"
+      "destination": "/certificados"
     },
     {
       "source": "/locacao/locacoes",
-      "destination": "/locacoes.html"
+      "destination": "/locacoes"
     },
     {
       "source": "/locacao/contratos",
-      "destination": "/contratos.html"
+      "destination": "/contratos"
     },
     {
       "source": "/locacao/contrato",
-      "destination": "/contrato.html"
+      "destination": "/contrato"
     },
     {
       "source": "/locacao/assinaturas",
-      "destination": "/assinaturas.html"
+      "destination": "/assinaturas"
     },
     {
       "source": "/locacao/registros",
-      "destination": "/registros.html"
+      "destination": "/registros"
     },
     {
       "source": "/locacao/alteracoes",
-      "destination": "/alteracoes.html"
+      "destination": "/alteracoes"
     },
     {
       "source": "/locacao/recibos",
-      "destination": "/recibos.html"
+      "destination": "/recibos"
     },
     {
       "source": "/locacao/distratos",
-      "destination": "/distratos.html"
+      "destination": "/distratos"
     },
     {
       "source": "/locacao/documentos-modelo",
-      "destination": "/documentos-modelo.html"
+      "destination": "/documentos-modelo"
     },
     {
-      "source": "/financeiro",
-      "destination": "/financeiro.html"
-    },
-    {
-      "source": "/notificacoes",
-      "destination": "/notificacoes.html"
+      "source": "/locacao/frota",
+      "destination": "/frota"
     }
   ]
 }

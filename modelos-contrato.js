@@ -3,7 +3,7 @@ import {plainBlocks,blockText,renderBlocks,readBlocks,bindToolbar,fillBlocks} fr
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
 import {requireAuth,bindLogout} from './auth-guard.js';
 import {AUTOMATIC_FIELDS,STARTERS,fieldsIn,substitute,previewValues} from './document-model-core.js';
-import {modelPdf} from './document-model-pdf.js';
+import {modelPdf} from './document-model-pdf.js?v=20261005-spacing';
 const db=createClient('https://xtelzwclrzzlsqjecscl.supabase.co','sb_publishable_37VAv7_GhtRLum-WVwMv0w_EiD0HqZ3');await requireAuth(db);bindLogout(db);
 const $=s=>document.querySelector(s),context=window.alquilerContext,admin=context.canManageCompany,company=context.company;
 let current=null,models=[],dirty=false,busy=false,pdfUrl='',previewRun=0,previewTimer;

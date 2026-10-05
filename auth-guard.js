@@ -15,6 +15,7 @@ export async function requireAuth(client) {
   }
   if(context.accessDenied) {await client.auth.signOut();location.replace('login.html');await new Promise(()=>{});}
   window.alquilerContext=context;
+  window.bgCacheIdentity=data.session.user.id;
   if(!canOpen(context,location.pathname)) {location.replace('modulos.html?acesso=negado');await new Promise(()=>{});}
   scopeClient(client,context.company.id);
   renderAppContext(context);
@@ -38,7 +39,7 @@ export async function requireAuth(client) {
 }
 export function bindLogout(client) {
   document.querySelectorAll('.global-logout').forEach(button=>button.addEventListener('click',async()=>{
-    button.disabled=true;try{Object.keys(sessionStorage).filter(k=>k.startsWith('bgsys:brand:')).forEach(k=>sessionStorage.removeItem(k));}catch{}await client.auth.signOut();sessionStorage.removeItem('bgsys:empresa-id');
+    button.disabled=true;window.bgClearListCache?.();try{Object.keys(sessionStorage).filter(k=>k.startsWith('bgsys:brand:')).forEach(k=>sessionStorage.removeItem(k));}catch{}await client.auth.signOut();sessionStorage.removeItem('bgsys:empresa-id');
     localStorage.removeItem('bgsys:empresa-cache');localStorage.removeItem('bgsys:usuario-cache');location.replace('login.html');
   }));
 }

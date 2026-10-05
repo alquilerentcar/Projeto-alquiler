@@ -1,3 +1,4 @@
+import {intakeLabels,attachmentKinds,mergeIntake,saveIntake} from './assistente-intake.mjs';
 import {getAuthenticatedClient} from './auth-guard.js';
 const db=await getAuthenticatedClient();
 const page = document.body.dataset.page || location.pathname.replace(/\W/g, '');
@@ -7,16 +8,17 @@ try { history = JSON.parse(sessionStorage.getItem(key) || '[]'); if (!Array.isAr
 
 const root = document.createElement('div');
 root.className = 'ai-root';
-root.innerHTML = `<button class="ai-launch" type="button" aria-label="Abrir assistente" aria-expanded="false">✦ <span>Assistente IA</span></button>
-  <section class="ai-panel" aria-label="Assistente IA" hidden>
-    <header class="ai-header"><div><strong>Assistente IA</strong><small>Alquiler Rent Car</small></div><button class="ai-close" type="button" aria-label="Fechar">×</button></header>
+root.innerHTML = `<button class="ai-launch" type="button" aria-label="Abrir assistente" aria-controls="ai-floating-panel" aria-expanded="false">✦ <span>Assistente IA</span></button>
+  <section id="ai-floating-panel" class="ai-panel" aria-label="Assistente IA" hidden>
+    <header class="ai-header"><div><strong>Assistente IA</strong><small class="ai-company">Empresa</small></div><button class="ai-close" type="button" aria-label="Fechar">×</button></header>
     <div class="ai-messages" role="log" aria-live="polite"></div>
     <div class="ai-setup" hidden><strong>Ativar Gemini</strong><span>Cole sua chave da API. Ela ficará somente na memória deste servidor local.</span><div><input class="ai-key" type="password" autocomplete="off" placeholder="Chave do Gemini"><button class="ai-key-save" type="button">Ativar</button></div></div>
-    <div class="ai-actions"><label class="ai-file-button">📎 Enviar documento<input class="ai-file" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" hidden></label></div>
+    <div class="ai-actions"><label class="ai-file-button">📎 Anexar documentos<input class="ai-file" type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" hidden></label></div>
     <form class="ai-form"><input class="ai-input" type="text" maxlength="2000" placeholder="Pergunte sobre os cadastros…" aria-label="Mensagem ao assistente"><button type="submit" aria-label="Enviar mensagem">➤</button></form>
     <small class="ai-footnote">Documentos e consultas são enviados ao Gemini quando você solicita.</small>
   </section>`;
 document.body.append(root);
+root.querySelector('.ai-company').textContent=window.alquilerContext.company.nome_fantasia;
 const panel = root.querySelector('.ai-panel');
 const launch = root.querySelector('.ai-launch');
 const messages = root.querySelector('.ai-messages');
@@ -38,11 +40,12 @@ function addMessage(role, content, persist = true) {
   return node;
 }
 if (history.length) history.forEach(item => addMessage(item.role === 'user' ? 'user' : 'bot', item.content, false));
-else addMessage('bot', 'Olá! Posso ajudar com os cadastros, buscar um cliente ou ler um documento para preparar um novo cadastro.');
+else addMessage('bot', 'Olá! Posso buscar clientes e cadastrar com os documentos anexados. Envie CNH e comprovante juntos, confira os dados e peça para cadastrar.');
 
 function toggle(open) { panel.hidden = !open; launch.setAttribute('aria-expanded', String(open)); sessionStorage.setItem('alquiler-assistente-aberto', String(open)); if (open) input.focus(); }
 launch.addEventListener('click', () => toggle(panel.hidden));
-root.querySelector('.ai-close').addEventListener('click', () => toggle(false));
+root.querySelector('.ai-close').addEventListener('click', () => {toggle(false);launch.focus();});
+root.addEventListener('keydown',event=>{if(event.key==='Escape'&&!panel.hidden){toggle(false);launch.focus();}});
 if (sessionStorage.getItem('alquiler-assistente-aberto') === 'true') toggle(true);
 
 async function post(url, data) {
@@ -52,11 +55,17 @@ async function post(url, data) {
   return result;
 }
 
+let aiProvider='gemini';
 async function refreshStatus() {
   try {
     const response = await fetch('/api/assistente/status');
     const status = await response.json();
+    aiProvider=status.provider||'gemini';
     setup.hidden = Boolean(status.active);
+    keyInput.hidden=keyButton.hidden=aiProvider==='groq';
+    setup.querySelector('strong').textContent=aiProvider==='groq'?'Ativar Groq':'Ativar Gemini';
+    setup.querySelector('span').textContent=aiProvider==='groq'?'Configure GROQ_API_KEY no servidor e reinicie o sistema.':'Cole sua chave da API. Ela ficará somente na memória deste servidor local.';
+    root.querySelector('.ai-footnote').textContent='Documentos são enviados à '+(aiProvider==='groq'?'Groq':'Gemini')+' quando você solicita.';
     input.disabled = sendButton.disabled = !status.active;
   } catch { setup.hidden = false; }
 }
@@ -75,7 +84,12 @@ refreshStatus();
 
 root.querySelector('.ai-form').addEventListener('submit', async event => {
   event.preventDefault();
-  const message = input.value.trim(); if (!message) return;
+  const message = input.value.trim(); if (!message&&!queuedFiles.length) return;
+  if(queuedFiles.length){if(intakeBusy)return;addMessage('user',(message||'Ler os documentos anexados')+'\nAnexos: '+queuedFiles.map(file=>file.name).join(', '));input.value='';await readQueuedFiles(message);return;}
+  const command=message.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  if(!/contrato|loca[cç][aã]o|ve[ií]culo|carro/i.test(message)&&/^(?:(?:pode|quero|vamos|por favor)\s+)?(?:cadastrar|cadastre|salvar|salve|criar|crie)\b/.test(command)){
+    addMessage('user',message);input.value='';await commitIntake();return;
+  }
   const prior = history.slice(-8);
   addMessage('user', message); input.value = ''; input.disabled = sendButton.disabled = true;
   const pending = addMessage('bot', 'Pensando…', false);
@@ -84,38 +98,64 @@ root.querySelector('.ai-form').addEventListener('submit', async event => {
   finally { input.disabled = sendButton.disabled = false; input.focus(); }
 });
 
-function fileAsDataUrl(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error('Falha ao ler o arquivo.')); reader.readAsDataURL(file); }); }
-fileInput.addEventListener('change', async () => {
-  const file = fileInput.files[0]; if (!file) return;
-  if (file.size > 8 * 1024 * 1024) { addMessage('bot', 'Escolha um arquivo de até 8 MB.', false); fileInput.value = ''; return; }
-  addMessage('user', `Ler documento: ${file.name}`);
-  const pending = addMessage('bot', 'Lendo o documento…', false);
-  fileInput.disabled = true;
-  try {
-    const dataUrl = await fileAsDataUrl(file);
-    const result = await post('/api/assistente/extrair', {filename: file.name, mime: file.type, dataUrl});
-    pending.remove();
-    if (!result.draft?.nome_completo) { addMessage('bot', 'Não encontrei o nome completo. Tente outro documento ou cadastre manualmente.', false); return; }
-    const populated = Object.entries(result.draft).filter(([, value]) => value).length;
-    const cpf=String(result.draft.cpf||'').replace(/\D/g,'');
-    let query=db.from('clientes').select('*').limit(1);
-    query=cpf?query.eq('cpf',cpf):query.ilike('nome_completo',result.draft.nome_completo);
-    const {data:matches,error:matchError}=await query;
-    if(matchError) throw matchError;
-    const existing=matches?.[0]||null;
-    const labels={cpf:'CPF',data_nascimento:'data de nascimento',rg:'RG',cnh:'CNH',nacionalidade:'nacionalidade',profissao:'profissão',estado_civil:'estado civil',email:'e-mail',cep:'CEP',endereco:'endereço',numero:'número do endereço',bairro:'bairro',cidade:'cidade',uf:'UF',nome_pai:'nome do pai',nome_mae:'nome da mãe',contato_1_numero:'telefone principal',contato_1_responsavel:'responsável pelo telefone principal',contato_2_numero:'telefone de emergência 1',contato_2_responsavel:'responsável de emergência 1',contato_3_numero:'telefone de emergência 2',contato_3_responsavel:'responsável de emergência 2',contato_4_numero:'telefone de emergência 3',contato_4_responsavel:'responsável de emergência 3',foto_rg_path:'foto do RG',foto_cnh_path:'foto da CNH',comprovante_residencia_path:'comprovante de residência'};
-    const fields=Object.keys(labels);
-    if(existing){
-      const canComplete=fields.filter(field=>!existing[field]&&result.draft[field]);
-      const stillMissing=fields.filter(field=>!existing[field]&&!result.draft[field]);
-      const lines=[`Cadastro localizado: ${existing.nome_completo}.`,`A CNH forneceu ${populated} campos.`];
-      lines.push(canComplete.length?`Pode completar agora: ${canComplete.map(field=>labels[field]).join(', ')}.`:'A CNH não trouxe novos campos para completar.');
-      lines.push(stillMissing.length?`Ainda faltam: ${stillMissing.map(field=>labels[field]).join(', ')}.`:'O cadastro obrigatório está completo.');
-      addMessage('bot',lines.join('\n'),false);
-    }else addMessage('bot',`Não encontrei esse cliente no banco. A CNH forneceu ${populated} campos para um novo cadastro.`,false);
-    const action = document.createElement('button'); action.type = 'button'; action.className = 'ai-review'; action.textContent = 'Revisar no cadastro de clientes';
-    action.addEventListener('click', () => { sessionStorage.setItem('alquiler-assistente-rascunho-cliente:' + window.alquilerContext.company.id, JSON.stringify({draft:result.draft,clientId:existing?.id||null})); location.href = 'clientes.html?rascunho=ia'; });
-    messages.append(action); messages.scrollTop = messages.scrollHeight;
-  } catch (error) { pending.remove(); addMessage('bot', error.message, false); }
-  finally { fileInput.disabled = false; fileInput.value = ''; }
+let intakeRecords=[],intakeReview=null,intakeSaved={},intakeBusy=false,queuedFiles=[];
+const queuedHost=document.createElement('div');queuedHost.className='ai-pending-attachments';root.querySelector('.ai-actions').append(queuedHost);
+function renderQueuedFiles(){queuedHost.replaceChildren();for(const file of queuedFiles){const row=document.createElement('div'),name=document.createElement('span'),remove=document.createElement('button');name.textContent=file.name;remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Remover anexo '+file.name);remove.disabled=intakeBusy;remove.onclick=()=>{queuedFiles=queuedFiles.filter(item=>item!==file);renderQueuedFiles();};row.append(name,remove);queuedHost.append(row);}if(queuedFiles.length){const note=document.createElement('small');note.textContent='Prontos para enviar. Escreva sua orientação e clique em Enviar.';queuedHost.append(note);}}
+const intakeCompany=window.alquilerContext.company.id;
+function intakeReadReview(){const draft={};for(const field of Object.keys(intakeLabels)){const control=intakeReview?.querySelector(`[name="${field}"]`);if(control)draft[field]=control.value;}return draft;}
+function showIntakeReview(){
+ const edited=intakeReview?intakeReadReview():{};intakeReview?.remove();
+ const fields=mergeIntake(intakeRecords),form=document.createElement('form');form.className='ai-intake';form.noValidate=true;
+ const title=document.createElement('strong');title.textContent='Confira os dados e os anexos';form.append(title);
+ const info=document.createElement('p');info.textContent='Empresa: '+window.alquilerContext.company.nome_fantasia+'. Originais ficam em armazenamento privado. Campos ausentes podem ser preenchidos abaixo.';form.append(info);
+ for(const record of intakeRecords){const box=document.createElement('div');box.className='ai-intake-file';const name=document.createElement('strong');name.textContent=record.file.name;const select=document.createElement('select');select.setAttribute('aria-label','Tipo do arquivo '+record.file.name);select.add(new Option('Escolha o tipo de documento',''));for(const [kind,value] of Object.entries(attachmentKinds))select.add(new Option(value.label,kind));select.value=record.kind||'';select.onchange=()=>{record.kind=select.value;};box.append(name,select);const summary=document.createElement('small');summary.textContent=Object.entries(record.draft||{}).filter(([,v])=>v).map(([key,value])=>(intakeLabels[key]||key)+': '+value).join(' · ')||'Leitura indisponível: preencha os campos manualmente.';box.append(summary);const remove=document.createElement('button');remove.type='button';remove.textContent='Remover arquivo';remove.onclick=()=>{intakeRecords=intakeRecords.filter(item=>item!==record);showIntakeReview();};box.append(remove);form.append(box);}
+ for(const field of new Set(['nome_completo','cpf','cnh','data_nascimento','email','contato_1_numero','cep','endereco','numero','bairro','cidade','uf',...Object.keys(fields)])){
+  const label=document.createElement('label'),caption=document.createElement('span');caption.textContent=intakeLabels[field];const control=document.createElement('input');control.name=field;control.maxLength=200;control.autocomplete='off';control.value=fields[field]?.length>1?'':(edited[field]||fields[field]?.[0]?.value||'');label.append(caption,control);
+  if(fields[field]?.length>1){const warning=document.createElement('small');warning.textContent='Valores diferentes nos documentos. Escolha ou corrija:';const select=document.createElement('select');select.add(new Option('Escolher dado',''));for(const item of fields[field])select.add(new Option(item.value+' — '+item.source,item.value));select.onchange=()=>{control.value=select.value;};label.append(warning,select);control.dataset.conflict='true';}
+  form.append(label);
+ }
+ const submit=document.createElement('button');submit.type='submit';submit.className='ai-review';submit.textContent=intakeSaved.clientId?'Concluir anexos pendentes':'Cadastrar e anexar documentos';form.append(submit);
+ const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Descartar documentos desta leitura';cancel.onclick=()=>{intakeRecords=[];intakeSaved={};form.remove();intakeReview=null;};form.append(cancel);
+ form.addEventListener('submit',event=>{event.preventDefault();commitIntake();});intakeReview=form;messages.append(form);messages.scrollTop=messages.scrollHeight;
+}
+async function commitIntake(){
+ if(queuedFiles.length)return addMessage('bot','Você tem arquivos ainda não enviados. Envie a mensagem com os anexos antes de concluir o cadastro.',false);
+ if(intakeBusy)return addMessage('bot','Aguarde a leitura ou gravação em andamento.',false);
+ if(!intakeRecords.length)return addMessage('bot','Envie a CNH e o comprovante pelo botão Anexar documentos. Vou mostrar os dados para conferência e cadastrar com os anexos.',false);
+ const draft=intakeReadReview();
+ for(const control of intakeReview.querySelectorAll('input[data-conflict]'))if(!control.value.trim())return addMessage('bot','Confira os valores diferentes antes de cadastrar: '+intakeLabels[control.name]+'.',false);
+ intakeBusy=true;fileInput.disabled=true;intakeReview.querySelectorAll('input,select,button').forEach(control=>control.disabled=true);
+ const progress=addMessage('bot','Salvando o cadastro e os documentos originais…',false);
+ try{
+  const result=await saveIntake(db,intakeCompany,draft,intakeRecords,intakeSaved);progress.remove();
+  addMessage('bot',(result.created?'Cliente cadastrado':'Cadastro existente localizado e campos vazios completados')+': '+result.client.nome_completo+'. Documentos vinculados ao cadastro.'+(result.skipped.length?' Anexos anteriores preservados: '+result.skipped.join(', ')+'. Os arquivos novos desses tipos não foram substituídos.':''),false);
+  const link=document.createElement('a');link.href='/cadastros/clientes';link.textContent='Ver cadastro em Clientes';link.className='ai-review';messages.append(link);
+  intakeRecords=[];intakeSaved={};intakeReview.remove();intakeReview=null;
+ }catch(error){progress.remove();addMessage('bot',(intakeSaved.clientId?'O cadastro já foi salvo. Parte dos anexos pode estar vinculada. Corrija o problema e clique em Concluir anexos pendentes; não será criado outro cliente. ':'Não foi possível cadastrar. ')+(error.message||'Falha na gravação.'),false);if(intakeReview){intakeReview.querySelectorAll('input,select,button').forEach(control=>control.disabled=false);if(intakeSaved.clientId)intakeReview.querySelector('button[type=submit]').textContent='Concluir anexos pendentes';}}
+ finally{intakeBusy=false;fileInput.disabled=false;}
+}
+function fileAsDataUrl(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('Falha ao ler o arquivo.'));reader.readAsDataURL(file);});}
+async function intakeExtraction(file,instruction=''){
+ const dataUrl=await fileAsDataUrl(file);let images;
+ if(aiProvider==='groq'&&file.type==='application/pdf'){
+  const {getDocument,GlobalWorkerOptions}=await import('./pdfjs/pdf.mjs');GlobalWorkerOptions.workerSrc=new URL('./pdfjs/pdf.worker.mjs',import.meta.url).href;
+  const task=getDocument({data:new Uint8Array(await file.arrayBuffer()),useSystemFonts:true});
+  try{const pdf=await task.promise;if(pdf.numPages>3)throw Error('Envie um PDF de até três páginas para leitura. O original pode ser anexado com preenchimento manual.');images=[];
+   for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i),base=page.getViewport({scale:1}),viewport=page.getViewport({scale:Math.min(2,1600/Math.max(base.width,base.height))}),canvas=document.createElement('canvas');canvas.width=viewport.width;canvas.height=viewport.height;await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;images.push(canvas.toDataURL('image/jpeg',.85));canvas.width=canvas.height=0;}
+  }finally{await task.destroy();}
+ }
+ return post('/api/assistente/extrair',{instruction,filename:file.name,mime:images?'image/jpeg':file.type,dataUrl:images?images[0]:dataUrl,...(images?{images}:{})});
+}
+fileInput.addEventListener('change',()=>{
+ const files=Array.from(fileInput.files);fileInput.value='';if(!files.length||intakeBusy)return;
+ if(intakeRecords.length+queuedFiles.length+files.length>3)return addMessage('bot','Envie até três arquivos por cadastro: CNH, RG e comprovante.',false);
+ if(files.some(file=>!['application/pdf','image/jpeg','image/png','image/webp'].includes(file.type)||file.size>8*1024*1024))return addMessage('bot','Use PDF, JPG, PNG ou WebP de até 8 MB por arquivo.',false);
+ queuedFiles.push(...files);renderQueuedFiles();input.focus();
 });
+async function readQueuedFiles(instruction){
+ const files=queuedFiles;queuedFiles=[];intakeBusy=true;fileInput.disabled=true;input.disabled=sendButton.disabled=true;renderQueuedFiles();
+ if(intakeReview)intakeReview.querySelectorAll('input,select,button').forEach(control=>control.disabled=true);
+ const progress=addMessage('bot','Lendo '+files.length+' documento(s)…',false);
+ try{for(const file of files){const record={file,draft:{},kind:''};intakeRecords.push(record);try{const result=await intakeExtraction(file,instruction);record.draft=result.draft||{};record.kind=attachmentKinds[result.documentType]?result.documentType:'';}catch(error){addMessage('bot',file.name+': '+error.message,false);}}progress.remove();showIntakeReview();addMessage('bot','Confira os dados acima. Você pode clicar em Cadastrar e anexar documentos ou escrever “pode cadastrar”. Os arquivos só serão salvos ao concluir.',false);}
+ finally{intakeBusy=false;fileInput.disabled=false;input.disabled=sendButton.disabled=false;input.focus();}
+}

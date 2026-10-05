@@ -41,9 +41,9 @@ function rowButton(row, callback) {
   cell.append(button);
   return cell;
 }
-async function loadCars() {
+async function loadCars(force = true) {
   $("#cars-count").textContent = "Carregando…";
-  const { data, error } = await db.from("carros").select("*").order("placa").range(0, 999);
+  const { data, error } = await window.bgLoadList("carros", () => db.from("carros").select("*").order("placa").range(0, 999), force);
   if (error) { $("#cars-count").textContent = "Falha ao carregar"; return toast(errorText(error), true); }
   state.cars = data || [];
   renderCars();
@@ -69,7 +69,7 @@ function openCar(row = null) {
   state.editing = row?.id || null;
   const form = $("#car-form"); form.reset();
   $("#car-dialog-title").textContent = row ? "Editar carro" : "Novo carro";
-  if (row) for (const field of ["placa", "situacao", "marca", "modelo", "ano", "cor", "renavam", "chassi", "valor_diaria", "caucao", "observacoes"]) form.elements.namedItem(field).value = row[field] ?? "";
+  if (row) for (const field of ["proprietario_nome", "proprietario_documento", "localizacao", "placa", "situacao", "marca", "modelo", "ano", "cor", "renavam", "chassi", "valor_diaria", "caucao", "observacoes"]) form.elements.namedItem(field).value = row[field] ?? "";
   $("#car-dialog").showModal();
 }
 async function saveCar(event) {
@@ -77,7 +77,7 @@ async function saveCar(event) {
   const form = event.currentTarget;
   const placa = value(form, "placa").toUpperCase().replace(/[^A-Z0-9]/g, "");
   if (!/^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/.test(placa)) return toast("Informe uma placa válida com 7 caracteres.", true);
-  const payload = { placa, situacao: value(form, "situacao"), marca: nullable(form, "marca"), modelo: nullable(form, "modelo"), ano: nullable(form, "ano") ? Number(value(form, "ano")) : null, cor: nullable(form, "cor"), renavam: nullable(form, "renavam"), chassi: nullable(form, "chassi"), valor_diaria: nullable(form, "valor_diaria") ? Number(value(form, "valor_diaria")) : null, caucao: nullable(form, "caucao") ? Number(value(form, "caucao")) : null, observacoes: nullable(form, "observacoes") };
+  const payload = { proprietario_nome: nullable(form, "proprietario_nome"), proprietario_documento: nullable(form, "proprietario_documento"), localizacao: nullable(form, "localizacao"), placa, situacao: value(form, "situacao"), marca: nullable(form, "marca"), modelo: nullable(form, "modelo"), ano: nullable(form, "ano") ? Number(value(form, "ano")) : null, cor: nullable(form, "cor"), renavam: nullable(form, "renavam"), chassi: nullable(form, "chassi"), valor_diaria: nullable(form, "valor_diaria") ? Number(value(form, "valor_diaria")) : null, caucao: nullable(form, "caucao") ? Number(value(form, "caucao")) : null, observacoes: nullable(form, "observacoes") };
   const button = $("#save-car"); button.disabled = true;
   const query = state.editing ? db.from("carros").update(payload).eq("id", state.editing) : db.from("carros").insert(payload);
   const { error } = await query;
@@ -95,6 +95,6 @@ async function saveCar(event) {
     $("#cars-status").addEventListener("change", renderCars);
     $("#car-form").addEventListener("submit", saveCar);
     for (const id of ["#close-car-dialog", "#cancel-car"]) $(id).addEventListener("click", () => $("#car-dialog").close());
-    loadCars();
+    loadCars(false);
   }
 }

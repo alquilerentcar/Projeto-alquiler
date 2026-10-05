@@ -8,6 +8,9 @@ export function themeColors(value){
 }
 export function applyCompanyTheme(company){
  const {primary,foreground}=themeColors(company?.cor_primaria);
+ const surface=themeColors(company?.cor_paineis||'#ffffff');
+ document.documentElement.style.setProperty('--company-surface',surface.primary);
+ document.documentElement.style.setProperty('--company-on-surface',surface.foreground);
  const sidebar=themeColors(company?.cor_sidebar||'#111e32'),background=themeColors(company?.cor_fundo||'#f5f7fb');
  for(const [name,value] of Object.entries({'--company-sidebar':sidebar.primary,'--company-on-sidebar':sidebar.foreground,'--company-background':background.primary,'--company-on-background':background.foreground}))document.documentElement.style.setProperty(name,value);
  document.documentElement.style.setProperty('--company-primary',primary);

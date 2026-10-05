@@ -1,5 +1,5 @@
 import {renderPdfPreview,clearPdfPreview} from './pdf-preview.js';
-import {modelPdf} from './document-model-pdf.js';
+import {modelPdf} from './document-model-pdf.js?v=20261005-spacing';
 import {renderBlocks} from './rich-document.js';
 import {companyStationery} from './empresa-branding.js';
 import {createClient} from "https://esm.sh/@supabase/supabase-js@2";

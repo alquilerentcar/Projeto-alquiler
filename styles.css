@@ -88,3 +88,29 @@ td.table-actions button:hover:not(:disabled){background:#f1f5f9}
 td.table-actions button:focus-visible{outline:2px solid var(--company-primary,#2864da);outline-offset:2px}
 td.table-actions button:disabled{opacity:.55;cursor:wait}
 #contracts-body td{vertical-align:middle}
+
+/* Frota operacional e personalização de superfícies. Documentos preservam suas cores. */
+.panel,.metric,.client-dialog,.dialog-header,.dialog-footer,.company-identity,.fleet-card{background:var(--company-surface,#fff);color:var(--company-on-surface,#162337)}
+.panel h2,.panel h3,.metric strong,.client-form label span,.dialog-header h2{color:inherit}
+.client-form input,.client-form select,.client-form textarea,.filters input,.filters select{background:var(--company-surface,#fff);color:var(--company-on-surface,#162337)}
+.panel table,.panel tbody,.panel td{color:var(--company-on-surface,#162337)}
+.fleet-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px;padding:20px}
+.fleet-card{border:1px solid #94a3b855;border-radius:14px;padding:18px;min-width:0}
+.fleet-card-head{display:flex;justify-content:space-between;align-items:center;gap:8px}.fleet-card h3{margin:0;font-size:19px}.fleet-card p{font-size:13px;overflow-wrap:anywhere}
+.fleet-status{padding:5px 8px;border:1px solid currentColor;border-radius:20px;font-size:11px}
+.fleet-person{display:flex;gap:10px;align-items:center;margin:15px 0}.fleet-avatar{width:42px;height:42px;display:grid;place-items:center;flex-shrink:0;border-radius:50%;background:var(--company-primary);color:var(--company-on-primary)}
+.fleet-card-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:15px}.fleet-event{border-left:3px solid var(--company-primary);padding:10px 16px;margin-bottom:16px}
+#fleet-error,#fleet-form-error{color:#b42318;white-space:pre-wrap}#fleet-legacy-note{padding:16px;font-size:13px}.mobile-menu-toggle,.mobile-menu-veil{display:none}
+@media(max-width:850px){
+ .mobile-menu-toggle{display:block;position:sticky;top:0;z-index:40;width:100%;padding:12px 18px;text-align:left;border:0;background:var(--company-sidebar);color:var(--company-on-sidebar);min-height:46px}
+ .app-shell{display:block}.app-shell>.sidebar{position:fixed!important;top:46px;bottom:0;left:0;width:min(300px,85vw);height:calc(100dvh - 46px);z-index:60;overflow-y:auto;transform:translateX(-105%);transition:transform .2s;display:flex!important;flex-direction:column}
+ .mobile-menu-open .app-shell>.sidebar{transform:translateX(0)}.mobile-menu-open .mobile-menu-veil{display:block;position:fixed;inset:46px 0 0;z-index:50;background:#0007;border:0;width:100%;height:calc(100dvh - 46px)}
+ .app-shell>.main{margin-left:0!important;padding:18px 12px!important;min-width:0}.topbar{flex-wrap:wrap;gap:14px}.topbar h1{font-size:25px}.topbar-actions{width:100%;flex-wrap:wrap}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px}.metric{padding:14px;min-width:0}.metric strong{font-size:23px}.form-grid{grid-template-columns:1fr!important}
+ .client-dialog{width:calc(100vw - 20px);max-width:calc(100vw - 20px);max-height:calc(100dvh - 24px)}.dialog-body{padding:16px}.dialog-footer{flex-wrap:wrap}.filters{flex-wrap:wrap}.filters .search{width:100%;min-width:0}.table-scroll{max-width:100%;overflow-x:auto}.fleet-cards{grid-template-columns:1fr;padding:12px}.fleet-card-actions .btn{flex:1;min-height:44px}.professional-menu{max-height:none}.contract-paper,.contract-page{max-width:100%;padding-left:18px;padding-right:18px}
+}
+
+.panel p,.metric span,.panel small,.client-form p{color:inherit;opacity:.85}.panel thead{background:var(--company-background,#f5f7fb);color:var(--company-on-background,#162337)}.btn-quiet{background:var(--company-surface,#fff);color:var(--company-on-surface,#162337)}
+
+@media(max-width:850px){body:has(.mobile-menu-toggle){padding-top:46px}.mobile-menu-toggle{position:fixed;top:0;left:0}.panel-top{flex-wrap:wrap;gap:12px}.panel-top>div{min-width:0;width:100%}.panel-top input[type=date]{max-width:100%;padding:8px}.fleet-avatar{text-transform:uppercase}}
+
+.document-filters{display:flex;gap:12px;flex-wrap:wrap;padding:16px 0}.document-filters input,.document-filters select{padding:10px;border:1px solid #d8e1ef;border-radius:8px;min-width:140px}.document-filters input[type=search]{flex:1;min-width:220px}.rental-timeline{padding:20px}.rental-timeline article{border-left:3px solid var(--company-primary,#2563eb);padding:8px 16px;margin:12px 0}.rental-timeline p{margin:6px 0}

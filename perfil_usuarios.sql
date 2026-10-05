@@ -18,7 +18,6 @@ grant execute on function public.perfil_email_alvo(uuid,uuid) to authenticated;
 -- Executa na mesma transação da alteração no Auth; evita e-mails divergentes.
 create or replace function public.perfil_sincronizar_email()
 returns trigger language plpgsql security definer set search_path='' as $$
-reset role;
 begin
  update public.usuarios_empresa set email=new.email where auth_user_id=new.id;
  return new;

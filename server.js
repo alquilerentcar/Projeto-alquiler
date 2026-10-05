@@ -24,6 +24,7 @@ files['/frota.html']=['frota.html','text/html; charset=utf-8'];
 files['/frota.js']=['frota.js','text/javascript; charset=utf-8'];
 files['/document-kind.mjs']=['document-kind.mjs','text/javascript; charset=utf-8'];
 files['/frota-core.mjs']=['frota-core.mjs','text/javascript; charset=utf-8'];
+for(const [name,type] of [['manifest.webmanifest','application/manifest+json'],['sw.js','text/javascript'],['pwa.js','text/javascript'],['offline.html','text/html'],['app-192.png','image/png'],['app-512.png','image/png']])files['/'+name]=[name,type];
 const cleanRoutes={frota:'/locacao/frota',login:'/login',modulos:'/modulos',perfil:'/conta/perfil','esqueci-senha':'/conta/esqueci-senha','redefinir-senha':'/conta/redefinir-senha',controle:'/controle',acessos:'/administracao/acessos',empresa:'/administracao/empresa',dashboard:'/locacao/dashboard',clientes:'/cadastros/clientes',carros:'/cadastros/carros',fornecedores:'/cadastros/fornecedores','modelos-contrato':'/cadastros/modelos-contrato',certificados:'/cadastros/certificados',locacoes:'/locacao/locacoes',contratos:'/locacao/contratos',contrato:'/locacao/contrato',assinaturas:'/locacao/assinaturas',registros:'/locacao/registros',alteracoes:'/locacao/alteracoes',recibos:'/locacao/recibos',distratos:'/locacao/distratos','documentos-modelo':'/locacao/documentos-modelo',financeiro:'/financeiro',notificacoes:'/notificacoes'};
 for(const [name,route] of Object.entries(cleanRoutes))files[route]=files['/'+name+'.html'];
 files['/usuarios.html'] = ['usuarios.html','text/html; charset=utf-8'];

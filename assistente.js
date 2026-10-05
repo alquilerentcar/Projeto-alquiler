@@ -2,7 +2,14 @@ import {intakeLabels,attachmentKinds,mergeIntake,saveIntake} from './assistente-
 import {getAuthenticatedClient} from './auth-guard.js';
 const db=await getAuthenticatedClient();
 const page = document.body.dataset.page || location.pathname.replace(/\W/g, '');
-const key = 'alquiler-assistente-historico:'+(window.alquilerContext.company?.id||'plataforma');
+const {data:identity,error:identityError}=await db.auth.getSession();
+if(identityError||!identity?.session?.user?.id)throw new Error('Entre novamente para usar o assistente.');
+const conversationScope=identity.session.user.id+':'+(window.alquilerContext.company?.id||'plataforma');
+const key='alquiler-assistente-historico:v2:'+conversationScope;
+const openKey='alquiler-assistente-aberto:v2:'+conversationScope;
+// Old histories had no account owner and cannot be safely assigned to this user.
+try{Object.keys(sessionStorage).filter(k=>k.startsWith('alquiler-assistente-historico:')&&!k.startsWith('alquiler-assistente-historico:v2:')).forEach(k=>sessionStorage.removeItem(k));sessionStorage.removeItem('alquiler-assistente-aberto');}catch{}
+db.auth.onAuthStateChange((event,session)=>{if(!session||session.user.id!==identity.session.user.id){document.querySelector('.ai-root')?.remove();try{sessionStorage.removeItem(key);sessionStorage.removeItem(openKey);}catch{}}});
 let history = [];
 try { history = JSON.parse(sessionStorage.getItem(key) || '[]'); if (!Array.isArray(history)) history = []; } catch { history = []; }
 
@@ -40,11 +47,11 @@ function addMessage(role, content, persist = true) {
 if (history.length) history.forEach(item => addMessage(item.role === 'user' ? 'user' : 'bot', item.content, false));
 else addMessage('bot', 'Olá! Posso buscar clientes e cadastrar com os documentos anexados. Envie CNH e comprovante juntos, confira os dados e peça para cadastrar.');
 
-function toggle(open) { panel.hidden = !open; launch.setAttribute('aria-expanded', String(open)); sessionStorage.setItem('alquiler-assistente-aberto', String(open)); if (open) input.focus(); }
+function toggle(open) { panel.hidden = !open; launch.setAttribute('aria-expanded', String(open)); sessionStorage.setItem(openKey, String(open)); if (open) input.focus(); }
 launch.addEventListener('click', () => toggle(panel.hidden));
 root.querySelector('.ai-close').addEventListener('click', () => {toggle(false);launch.focus();});
 root.addEventListener('keydown',event=>{if(event.key==='Escape'&&!panel.hidden){toggle(false);launch.focus();}});
-if (sessionStorage.getItem('alquiler-assistente-aberto') === 'true') toggle(true);
+if (sessionStorage.getItem(openKey) === 'true') toggle(true);
 
 async function post(url, data) {
   const response = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)});
@@ -59,6 +66,11 @@ async function refreshStatus() {
     const response = await fetch('/api/assistente/status');
     const status = await response.json();
     aiProvider=status.provider||'gemini';
+    const assistantName=String(status.name||'Assistente IA').trim().slice(0,60)||'Assistente IA';
+    launch.querySelector('span').textContent=assistantName;
+    launch.setAttribute('aria-label','Abrir '+assistantName);
+    panel.setAttribute('aria-label',assistantName);
+    root.querySelector('.ai-header strong').textContent=assistantName;
     setup.hidden = Boolean(status.active);
     setup.querySelector('strong').textContent='Assistente indisponível';
     setup.querySelector('span').textContent='A integração central precisa ser configurada pela BG SYSTEMS. Você não precisa informar uma chave.';

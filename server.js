@@ -224,7 +224,7 @@ async function handler(request,response) {
     try { return json(response,200,await readPfx(await readJson(request,15*1024*1024))); }
     catch(error) { return json(response,error.status||500,{error:error.message||'Falha ao ler o certificado.'}); }
   }
-  if(route==='/api/assistente/status'&&request.method==='GET') return json(response,200,{active:Boolean((process.env.AI_PROVIDER==='groq'||(!process.env.AI_PROVIDER&&process.env.GROQ_API_KEY))?process.env.GROQ_API_KEY:activeGeminiKey),provider:(process.env.AI_PROVIDER==='groq'||(!process.env.AI_PROVIDER&&process.env.GROQ_API_KEY))?'groq':'gemini'});
+  if(route==='/api/assistente/status'&&request.method==='GET') return json(response,200,{name:String(process.env.AI_ASSISTANT_NAME||'Assistente IA').trim().slice(0,60)||'Assistente IA',active:Boolean((process.env.AI_PROVIDER==='groq'||(!process.env.AI_PROVIDER&&process.env.GROQ_API_KEY))?process.env.GROQ_API_KEY:activeGeminiKey),provider:(process.env.AI_PROVIDER==='groq'||(!process.env.AI_PROVIDER&&process.env.GROQ_API_KEY))?'groq':'gemini'});
   if(route.startsWith('/api/assistente/')) {
     if(request.method!=='POST') return json(response,405,{error:'Método não permitido.'});
     if(request.headers.origin) {

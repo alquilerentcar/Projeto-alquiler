@@ -6,6 +6,7 @@ async function call(path, authorization, body, key=PUBLIC_KEY, method='POST') {
   const data=await response.json().catch(()=>null);
   if(!response.ok) {
     if(data?.code==='PGRST202'&&path.includes('perfil_email_alvo'))throw fail(503,'Aplique perfil_usuarios.sql no SQL Editor do Supabase para ativar a alteração de e-mail.');
+    if(data?.code==='PGRST202'&&path.includes('acessos_excluir_conta'))throw fail(503,'Aplique usuarios_exclusao_conta.sql no SQL Editor do Supabase para ativar a exclusão completa de contas.');
     if(data?.code==='PGRST202'||data?.code==='42P01') throw fail(503,path.includes('acessos_excluir_usuario')?'Aplique usuarios_manutencao.sql no SQL Editor do Supabase para ativar a exclusão de acessos.':'Aplique etapa1_acessos.sql no SQL Editor do Supabase para atualizar os acessos.');
     if(data?.code==='42501'||response.status===403) throw fail(403,'Você não tem permissão para gerenciar esses acessos.');
     if(response.status===401) throw fail(401,'Sessão inválida. Entre novamente.');
@@ -46,6 +47,7 @@ module.exports=async function accessApi(req,body={}) {
     await call('/auth/v1/admin/users/'+encodeURIComponent(target),'Bearer '+key,{email,email_confirm:true},key,'PUT');
     return {ok:true};
   }
+  if(body.action==='usuario_excluir_conta'){if(!control)throw fail(403,'A exclusão completa de contas é feita no Controle da BG SYSTEMS.');return call('/rest/v1/rpc/acessos_excluir_conta',token,{p_empresa:body.usuario?.empresa_id,p_usuario:body.usuario?.id});}
   if(body.action==='usuario_excluir') return call('/rest/v1/rpc/acessos_excluir_usuario',token,{p_empresa:body.usuario?.empresa_id,p_usuario:body.usuario?.id});
   if(body.action==='usuario_editar') return call('/rest/v1/rpc/acessos_salvar_usuario',token,{p_dados:body.usuario,p_modulos:body.modulos});
   if(body.action!=='usuario_criar') throw fail(400,'Operação desconhecida.');

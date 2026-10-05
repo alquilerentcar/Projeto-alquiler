@@ -9,6 +9,7 @@ async function call(path, authorization, body, key=PUBLIC_KEY, method='POST') {
     if(data?.code==='PGRST202'||data?.code==='42P01') throw fail(503,path.includes('acessos_excluir_usuario')?'Aplique usuarios_manutencao.sql no SQL Editor do Supabase para ativar a exclusão de acessos.':'Aplique etapa1_acessos.sql no SQL Editor do Supabase para atualizar os acessos.');
     if(data?.code==='42501'||response.status===403) throw fail(403,'Você não tem permissão para gerenciar esses acessos.');
     if(response.status===401) throw fail(401,'Sessão inválida. Entre novamente.');
+    if(path==='/auth/v1/admin/users'&&(data?.error_code==='email_exists'||data?.code==='email_exists'||response.status===422&&/already.*registered|already.*exists/i.test(data?.msg||data?.message||'')))throw fail(409,'Este e-mail já possui uma conta de login. Excluir o acesso à empresa não exclui a conta do Supabase. Solicite à BG SYSTEMS a recuperação ou vinculação dessa conta; não é necessário criar outro e-mail.');
     if(data?.code==='23505'||data?.error_code==='email_exists') throw fail(409,'Já existe uma empresa, usuário ou e-mail com esses dados.');
     if(data?.code==='P0001') throw fail(400,data.message);
     throw fail(502,'Não foi possível concluir a operação no Supabase. Confira a configuração e tente novamente.');

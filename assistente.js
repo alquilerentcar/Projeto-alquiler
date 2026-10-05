@@ -1,3 +1,4 @@
+import {showAction} from './assistente-actions.mjs';
 import {intakeLabels,attachmentKinds,mergeIntake,saveIntake} from './assistente-intake.mjs';
 import {getAuthenticatedClient} from './auth-guard.js';
 const db=await getAuthenticatedClient();
@@ -86,13 +87,13 @@ root.querySelector('.ai-form').addEventListener('submit', async event => {
   const message = input.value.trim(); if (!message&&!queuedFiles.length) return;
   if(queuedFiles.length){if(intakeBusy)return;addMessage('user',(message||'Ler os documentos anexados')+'\nAnexos: '+queuedFiles.map(file=>file.name).join(', '));input.value='';await readQueuedFiles(message);return;}
   const command=message.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-  if(!/contrato|loca[cç][aã]o|ve[ií]culo|carro/i.test(message)&&/^(?:(?:pode|quero|vamos|por favor)\s+)?(?:cadastrar|cadastre|salvar|salve|criar|crie)\b/.test(command)){
+  if(!/contrato|loca[cç][aã]o|ve[ií]culo|carro|modelo|documento|recibo|distrato|termo/i.test(message)&&/^(?:(?:pode|quero|vamos|por favor)\s+)?(?:cadastrar|cadastre|salvar|salve|criar|crie)\b/.test(command)){
     addMessage('user',message);input.value='';await commitIntake();return;
   }
   const prior = history.slice(-8);
   addMessage('user', message); input.value = ''; input.disabled = sendButton.disabled = true;
   const pending = addMessage('bot', 'Pensando…', false);
-  try { const result = await post('/api/assistente/conversar', {message, history: prior, page}); pending.remove(); addMessage('bot', result.reply || 'Não consegui formular uma resposta.'); }
+  try { const result = await post('/api/assistente/conversar', {message, history: prior, page}); pending.remove(); addMessage('bot', result.reply || 'Não consegui formular uma resposta.'); if(result.action)await showAction({action:result.action,db,context:window.alquilerContext,host:messages,notify:text=>addMessage('bot',text),userId:identity.session.user.id}); }
   catch (error) { pending.remove(); addMessage('bot', error.message, false); }
   finally { input.disabled = sendButton.disabled = false; input.focus(); }
 });

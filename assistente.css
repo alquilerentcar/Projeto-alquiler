@@ -42,3 +42,4 @@
 .ai-panel{height:min(550px,calc(100dvh - 105px));max-height:calc(100dvh - 105px)}
 .ai-messages{min-height:0}
 @media print{.ai-root{display:none!important}}
+.ai-operation textarea,.ai-operation select{width:100%;max-width:100%;box-sizing:border-box;border:1px solid #dbe4f0;border-radius:6px;padding:8px;font:inherit}.ai-operation textarea{resize:vertical;min-height:80px}.ai-operation p{font-size:11px;line-height:1.5}

@@ -12,7 +12,7 @@ root.innerHTML = `<button class="ai-launch" type="button" aria-label="Abrir assi
   <section id="ai-floating-panel" class="ai-panel" aria-label="Assistente IA" hidden>
     <header class="ai-header"><div><strong>Assistente IA</strong><small class="ai-company">Empresa</small></div><button class="ai-close" type="button" aria-label="Fechar">×</button></header>
     <div class="ai-messages" role="log" aria-live="polite"></div>
-    <div class="ai-setup" hidden><strong>Ativar Gemini</strong><span>Cole sua chave da API. Ela ficará somente na memória deste servidor local.</span><div><input class="ai-key" type="password" autocomplete="off" placeholder="Chave do Gemini"><button class="ai-key-save" type="button">Ativar</button></div></div>
+    <div class="ai-setup" hidden><strong>Assistente indisponível</strong><span>A integração precisa ser configurada pelo administrador do sistema.</span></div>
     <div class="ai-actions"><label class="ai-file-button">📎 Anexar documentos<input class="ai-file" type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" hidden></label></div>
     <form class="ai-form"><input class="ai-input" type="text" maxlength="2000" placeholder="Pergunte sobre os cadastros…" aria-label="Mensagem ao assistente"><button type="submit" aria-label="Enviar mensagem">➤</button></form>
     <small class="ai-footnote">Documentos e consultas são enviados ao Gemini quando você solicita.</small>
@@ -26,8 +26,6 @@ const input = root.querySelector('.ai-input');
 const fileInput = root.querySelector('.ai-file');
 const sendButton = root.querySelector('.ai-form button');
 const setup = root.querySelector('.ai-setup');
-const keyInput = root.querySelector('.ai-key');
-const keyButton = root.querySelector('.ai-key-save');
 
 function saveHistory() { sessionStorage.setItem(key, JSON.stringify(history.slice(-12))); }
 function addMessage(role, content, persist = true) {
@@ -62,24 +60,12 @@ async function refreshStatus() {
     const status = await response.json();
     aiProvider=status.provider||'gemini';
     setup.hidden = Boolean(status.active);
-    keyInput.hidden=keyButton.hidden=aiProvider==='groq';
-    setup.querySelector('strong').textContent=aiProvider==='groq'?'Ativar Groq':'Ativar Gemini';
-    setup.querySelector('span').textContent=aiProvider==='groq'?'Configure GROQ_API_KEY no servidor e reinicie o sistema.':'Cole sua chave da API. Ela ficará somente na memória deste servidor local.';
+    setup.querySelector('strong').textContent='Assistente indisponível';
+    setup.querySelector('span').textContent='A integração central precisa ser configurada pela BG SYSTEMS. Você não precisa informar uma chave.';
     root.querySelector('.ai-footnote').textContent='Documentos são enviados à '+(aiProvider==='groq'?'Groq':'Gemini')+' quando você solicita.';
     input.disabled = sendButton.disabled = !status.active;
   } catch { setup.hidden = false; }
 }
-keyButton.addEventListener('click', async () => {
-  const value = keyInput.value.trim();
-  if (!value) return addMessage('bot', 'Cole a chave do Gemini.', false);
-  keyButton.disabled = true; keyButton.textContent = 'Ativando…';
-  try {
-    await post('/api/assistente/configurar', {key: value});
-    keyInput.value = ''; setup.hidden = true; input.disabled = sendButton.disabled = false;
-    addMessage('bot', 'Gemini ativado. Já posso responder e ler documentos.', false); input.focus();
-  } catch (error) { addMessage('bot', error.message, false); }
-  finally { keyButton.disabled = false; keyButton.textContent = 'Ativar'; }
-});
 refreshStatus();
 
 root.querySelector('.ai-form').addEventListener('submit', async event => {

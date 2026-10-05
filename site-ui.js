@@ -62,3 +62,19 @@
   try{return await original(input,init);}finally{pending--;paint();}
  };
 })();
+
+// Reveal only the password currently typed in this field.
+(function(){
+ const processed=new WeakSet();
+ function decorate(root=document){
+  for(const input of root.querySelectorAll('input[type="password"]')){
+   if(processed.has(input))continue;processed.add(input);
+   const button=document.createElement('button');button.type='button';button.className='password-visibility';button.textContent='Mostrar senha';button.setAttribute('aria-pressed','false');
+   if(!input.id)input.id='password-field-'+crypto.randomUUID();button.setAttribute('aria-controls',input.id);
+   button.addEventListener('click',event=>{event.preventDefault();const reveal=input.type==='password';input.type=reveal?'text':'password';button.textContent=reveal?'Ocultar senha':'Mostrar senha';button.setAttribute('aria-pressed',String(reveal));});
+   input.insertAdjacentElement('afterend',button);
+   input.form?.addEventListener('reset',()=>{input.type='password';button.textContent='Mostrar senha';button.setAttribute('aria-pressed','false');});
+  }
+ }
+ document.addEventListener('DOMContentLoaded',()=>{decorate();new MutationObserver(()=>decorate()).observe(document.body,{childList:true,subtree:true});});
+})();

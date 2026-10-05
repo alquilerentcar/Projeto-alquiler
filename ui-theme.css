@@ -131,6 +131,6 @@ body.interface-v2{font-family:Inter,"Segoe UI",Arial,sans-serif;font-size:14px;l
 
 /* Compact document spacing; preserve font sizes and company stationery. */
 .rich-editor,.model-document-preview{line-height:1.2}
-.rich-editor p,.model-document-preview p{margin-top:0;margin-bottom:4px}
+.rich-editor p,.model-document-preview p{margin-top:0;margin-bottom:12pt}
 
 .password-visibility{display:inline-block;align-self:flex-start;border:0;background:transparent;color:var(--company-primary,#2563eb);font:inherit;font-size:12px;cursor:pointer;padding:6px 0;min-height:32px}.password-visibility:focus-visible{outline:2px solid currentColor;outline-offset:3px}

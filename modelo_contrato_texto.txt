@@ -8,37 +8,37 @@ LOCATÁRIO: {{ nome_locatario }}, {{ nacionalidade }}, {{ estado_civil }}, {{ pr
 
 1.1. A LOCADORA loca ao LOCATÁRIO o veículo {{ veiculo_marca }}/{{ veiculo_modelo }}, placa {{ veiculo_placa }}, Renavam {{ veiculo_renavam }}, ano {{ veiculo_ano }}, cor {{ veiculo_cor }}, chassi {{ veiculo_chassi }}, objeto da locação, assim como seus acessórios e equipamentos, em perfeitas condições de funcionamento, conservação e segurança, contratados pelo LOCATÁRIO, conforme atestado no relatório denominado “VISTORIA DO VEÍCULO”, que, firmado pelas partes e/ou seus representantes, passa a integrar o presente CONTRATO DE LOCAÇÃO.
 
-1.2. A utilização do VEÍCULO é restrita exclusivamente à região de Manaus ou à sua área metropolitana, em vias de rodagem com condições adequadas à sua respectiva utilização e aplicação, salvo nos casos em que a LOCADORA fornecer liberação por escrito para trânsito em outro município ou país.
+1.2 A utilização do VEÍCULO é restrita exclusivamente à região de Manaus ou à sua área metropolitana, em vias de rodagem com condições adequadas à sua respectiva utilização e aplicação, salvo nos casos em que a LOCADORA fornecer liberação por escrito para trânsito em outro município ou país.
 
 1.3. O VEÍCULO não poderá ser utilizado para outra finalidade, a não ser aquela indicada no respectivo manual do fabricante e certificado de registro, obedecendo à sua utilização e aplicação específica. Se a LOCADORA constatar que o LOCATÁRIO, seus representantes e/ou seus condutores adicionais estão utilizando o VEÍCULO em condições que caracterizem negligência, imprudência, imperícia ou mau uso, poderá, a qualquer tempo, rescindir o CONTRATO DE LOCAÇÃO, independentemente de qualquer notificação judicial ou extrajudicial e sem maiores formalidades, proceder à retomada e ao recolhimento do VEÍCULO, ficando o LOCATÁRIO solidariamente responsável com seus representantes e/ou condutores adicionais, conforme o caso, pelo pagamento de todas as diárias utilizadas, acrescidas das taxas correspondentes, assim como de quaisquer outras cobranças adicionais que possam ser geradas em virtude do uso indevido, incluindo, mas não se limitando a colisões e danos.
 
 2. DA CAUÇÃO E SUA FORMA DE PAGAMENTO
 
-2.1. O LOCATÁRIO, neste ato, pagará à LOCADORA o valor total de R$ {{ valor_caucao }} (), a título de caução de garantia, destinada exclusivamente à cobertura de eventuais danos, avarias, multas, despesas ou quaisquer obrigações contratuais decorrentes da presente locação.
+2.1 O LOCATÁRIO, neste ato, pagará à LOCADORA o valor total de R$ {{ valor_caucao }} (), a título de caução de garantia, destinada exclusivamente à cobertura de eventuais danos, avarias, multas, despesas ou quaisquer obrigações contratuais decorrentes da presente locação.
 
-2.2. A caução poderá ser paga integralmente à vista ou, mediante conveniência do LOCATÁRIO e anuência da LOCADORA, de forma fracionada, sendo parte à vista, no ato da contratação, e o valor residual parcelado diretamente com a LOCADORA, conforme as condições da cláusula seguinte.
+2.2 A caução poderá ser paga integralmente à vista ou, mediante conveniência do LOCATÁRIO e anuência da LOCADORA, de forma fracionada, sendo parte à vista, no ato da contratação, e o valor residual parcelado diretamente com a LOCADORA, conforme as condições da cláusula seguinte.
 
-2.3. O valor residual da caução de R$ {{ saldo_caucao }} será quitado em {{ numero_parcelas }} parcelas diárias no valor de R$ {{ valor_parcela_caucao }} (), a serem pagas diariamente por meio da chave PIX indicada pela LOCADORA.
+2.3 O valor residual da caução de R$ {{ saldo_caucao }} será quitado em {{ numero_parcelas }} parcelas diárias no valor de R$ {{ valor_parcela_caucao }} (), a serem pagas diariamente por meio da chave PIX indicada pela LOCADORA.
 
-2.4. Em caso de devolução regular do VEÍCULO e inexistência de débitos pendentes, o valor principal da caução permanecerá retido pela LOCADORA pelo prazo preventivo de 30 (trinta) dias corridos, visando exclusivamente garantir o pagamento de eventuais multas de trânsito processadas pelos órgãos competentes após o encerramento da locação. Inexistindo multas nesse período, o valor será restituído integralmente ao LOCATÁRIO.
+2.4 Em caso de devolução regular do VEÍCULO e inexistência de débitos pendentes, o valor principal da caução permanecerá retido pela LOCADORA pelo prazo preventivo de 30 (trinta) dias corridos, visando exclusivamente garantir o pagamento de eventuais multas de trânsito processadas pelos órgãos competentes após o encerramento da locação. Inexistindo multas nesse período, o valor será restituído integralmente ao LOCATÁRIO.
 
-2.5. Na hipótese de utilização da caução para cobertura de valores devidos pelo LOCATÁRIO, considerar-se-á exclusivamente o valor principal da caução, desconsiderando-se qualquer acréscimo remuneratório oriundo do parcelamento direto.
+2.5 Na hipótese de utilização da caução para cobertura de valores devidos pelo LOCATÁRIO, considerar-se-á exclusivamente o valor principal da caução, desconsiderando-se qualquer acréscimo remuneratório oriundo do parcelamento direto.
 
-3. DO ACRÉSCIMO DECORRENTE DO PARCELAMENTO DIRETO
+3. DO ACRÉSCIMO DE CORRENTE DO PARCELAMENTO DIRETO
 
-3.1. O LOCATÁRIO declara estar plenamente ciente de que a opção pelo parcelamento direto com a LOCADORA do valor residual da caução, em substituição ao pagamento integral à vista, importa na incidência de acréscimo financeiro no montante total a ser pago.
+3.1 O LOCATÁRIO declara estar plenamente ciente de que a opção pelo parcelamento direto com a LOCADORA do valor residual da caução, em substituição ao pagamento integral à vista, importa na incidência de acréscimo financeiro no montante total a ser pago.
 
-3.2. Tal acréscimo possui natureza remuneratória, correspondendo à vantagem legítima concedida pela LOCADORA em razão da dilação do prazo de pagamento, não integrando o valor principal da caução nem sendo considerado para qualquer efeito de restituição, compensação ou abatimento.
+3.2 Tal acréscimo possui natureza remuneratória, correspondendo à vantagem legítima concedida pela LOCADORA em razão da dilação do prazo de pagamento, não integrando o valor principal da caução nem sendo considerado para qualquer efeito de restituição, compensação ou abatimento.
 
-3.3. O valor do acréscimo será discriminado no demonstrativo de parcelamento fornecido ao LOCATÁRIO, juntamente com as respectivas datas e valores das parcelas diárias.
+3.3 O valor do acréscimo será discriminado no demonstrativo de parcelamento fornecido ao LOCATÁRIO, juntamente com as respectivas datas e valores das parcelas diárias.
 
-3.4. O LOCATÁRIO declara, ainda, que compreende e aceita que o valor correspondente ao acréscimo financeiro permanece definitivamente em favor da LOCADORA, não sendo passível de restituição, ainda que não seja necessária a utilização da caução ao final do contrato.
+3.4 O LOCATÁRIO declara, ainda, que compreende e aceita que o valor correspondente ao acréscimo financeiro permanece definitivamente em favor da LOCADORA, não sendo passível de restituição, ainda que não seja necessária a utilização da caução ao final do contrato.
 
 4. DO VALOR DA LOCAÇÃO
 
-4.1. O valor a ser pago pelo LOCATÁRIO será de R$ {{ valor_diaria }} () por diária e deverá ser pago em horário comercial, até as 18h. Não sendo realizado o pagamento dentro do período estipulado, incidirá sobre o valor da diária vencida multa moratória de 11% (onze por cento), além de juros de mora de 1% (um por cento) ao mês, calculados pro rata die.
+4.1 O valor a ser pago pelo LOCATÁRIO será de R$ {{ valor_diaria }} () por diária e deverá ser pago em horário comercial, até as 18h. Não sendo realizado o pagamento dentro do período estipulado, incidirá sobre o valor da diária vencida multa moratória de 11% (onze por cento), além de juros de mora de 1% (um por cento) ao mês, calculados pro rata die.
 
-4.2. O prazo de locação será de {{ prazo_dias }} diárias, com início em {{ data_inicio }}, sendo renovado automaticamente a contar da retirada do VEÍCULO, mediante a aplicação da tarifa, com quilometragem livre. O período mínimo de locação e cobrança é de 1 diária, acrescida das devidas taxas equivalentes ao período, não havendo a possibilidade de cobrança de valor inferior, ainda que o VEÍCULO locado seja retirado e devolvido pelo LOCATÁRIO no mesmo dia.
+4.2 O prazo de locação será de {{ prazo_dias }} diárias, com início em {{ data_inicio }}, sendo renovado automaticamente a contar da retirada do VEÍCULO, mediante a aplicação da tarifa, com quilometragem livre. O período mínimo de locação e cobrança é de 1 diária, acrescida das devidas taxas equivalentes ao período, não havendo a possibilidade de cobrança de valor inferior, ainda que o VEÍCULO locado seja retirado e devolvido pelo LOCATÁRIO no mesmo dia.
 
 4.2.1. O presente instrumento formaliza a renovação da locação anteriormente firmada entre as partes, mantendo-se a continuidade da posse direta e utilização do VEÍCULO pelo LOCATÁRIO, com atualização das condições comerciais, financeiras e operacionais aplicáveis à locação, especialmente quanto ao valor da diária previsto na Cláusula 4.1.
 
@@ -48,11 +48,11 @@ LOCATÁRIO: {{ nome_locatario }}, {{ nacionalidade }}, {{ estado_civil }}, {{ pr
 
 4.2.4. O LOCATÁRIO declara, para todos os fins de direito, que recebeu ciência prévia, clara e suficiente acerca do valor da diária, dos fundamentos do ajuste e das condições aplicáveis à renovação contratual, tendo tido oportunidade de solicitar esclarecimentos, avaliar as condições propostas e decidir livremente pela continuidade da locação. Declara, ainda, que sua assinatura neste instrumento ocorre de forma livre, consciente e inequívoca, sem vício de consentimento, coação, erro ou imposição, representando concordância expressa com a renovação do CONTRATO DE LOCAÇÃO, com a diária atualizada indicada na Cláusula 4.1 e com a exigibilidade dos valores ajustados a partir da data de assinatura deste instrumento, conferindo à LOCADORA base contratual para cobrança da diária reajustada e dos encargos dela decorrentes.
 
-4.3. No caso da locação em que se verificar alguma violação do veículo na parte elétrica ou estrutural, substituição de peças, alteração de pneus ou danos no veículo por mau uso de modo geral, o LOCATÁRIO deverá pagar o valor estipulado pela LOCADORA.
+4.3 No caso da locação em que se verificar alguma violação do veículo na parte elétrica ou estrutural, substituição de peças, alteração de pneus ou danos no veículo por mau uso de modo geral, o LOCATÁRIO deverá pagar o valor estipulado pela LOCADORA.
 
-4.4. O LOCATÁRIO declara ter pleno conhecimento das tarifas aplicadas, assim como das taxas adicionais, tais como taxas administrativas, horas extras, combustível, taxa de retorno, quando aplicável, acessórios e proteções contratadas, entre outras (especificadas nos respectivos campos do CONTRATO DE LOCAÇÃO).
+4.4 O LOCATÁRIO declara ter pleno conhecimento das tarifas aplicadas, assim como das taxas adicionais, tais como taxas administrativas, horas extras, combustível, taxa de retorno, quando aplicável, acessórios e proteções contratadas, entre outras (especificadas nos respectivos campos do CONTRATO DE LOCAÇÃO).
 
-4.5. A prorrogação de locações deverá ser comunicada pelo LOCATÁRIO à LOCADORA com, no mínimo, 24 (vinte e quatro) horas de antecedência ao término do CONTRATO DE LOCAÇÃO, especificado no respectivo campo do CONTRATO DE LOCAÇÃO. Uma vez aprovada a prorrogação pela LOCADORA, o LOCATÁRIO deverá comparecer à mesma loja de retirada do VEÍCULO até a data original prevista para devolução do VEÍCULO.
+4.5 A prorrogação de locações deverá ser comunicada pelo LOCATÁRIO à LOCADORA com, no mínimo, 24 (vinte e quatro) horas de antecedência ao término do CONTRATO DE LOCAÇÃO, especificado no respectivo campo do CONTRATO DE LOCAÇÃO. Uma vez aprovada a prorrogação pela LOCADORA, o LOCATÁRIO deverá comparecer à mesma loja de retirada do VEÍCULO até a data original prevista para devolução do VEÍCULO.
 
 4.6. O atraso no pagamento de qualquer valor devido pelo LOCATÁRIO, incluindo diárias, caução, parcelas, multas, encargos, avarias ou despesas administrativas, constituirá mora automática, independentemente de notificação judicial ou extrajudicial, caracterizando inadimplemento contratual.
 
@@ -64,11 +64,11 @@ LOCATÁRIO: {{ nome_locatario }}, {{ nacionalidade }}, {{ estado_civil }}, {{ pr
 
 4.6.4. As medidas previstas nesta cláusula poderão ser adotadas isolada ou cumulativamente. A multa moratória por atraso não se confunde com multa compensatória, rescisória ou indenizatória decorrente de devolução antecipada, retenção indevida, rescisão por inadimplência, uso indevido ou outro descumprimento contratual, podendo ser cumuladas quando tiverem fatos geradores distintos, sem prejuízo da cobrança de perdas e danos comprovados.
 
-4.7. Independentemente da assinatura da prorrogação do CONTRATO DE LOCAÇÃO, o LOCATÁRIO concorda e reconhece, desde já, que será única, exclusiva e integralmente responsável por todas as multas lavradas por infrações de trânsito cometidas durante o período em que permanecer com o VEÍCULO, ainda que não tenha assinado a prorrogação do CONTRATO DE LOCAÇÃO, bem como pelo pagamento de eventuais agravos decorrentes da não aceitação, pelas autoridades de trânsito, da indicação do LOCATÁRIO como condutor do VEÍCULO pela falta de assinatura em instrumento de prorrogação da locação.
+4.7 Independentemente da assinatura da prorrogação do CONTRATO DE LOCAÇÃO, o LOCATÁRIO concorda e reconhece, desde já, que será única, exclusiva e integralmente responsável por todas as multas lavradas por infrações de trânsito cometidas durante o período em que permanecer com o VEÍCULO, ainda que não tenha assinado a prorrogação do CONTRATO DE LOCAÇÃO, bem como pelo pagamento de eventuais agravos decorrentes da não aceitação, pelas autoridades de trânsito, da indicação do LOCATÁRIO como condutor do VEÍCULO pela falta de assinatura em instrumento de prorrogação da locação.
 
 5. DA DEVOLUÇÃO
 
-5.1. O VEÍCULO deverá ser devolvido juntamente com seus acessórios e equipamentos, no mesmo estado em que foram recebidos pelo LOCATÁRIO, na data, horário e local especificados nos respectivos campos do CONTRATO DE LOCAÇÃO. A devolução em local diverso daquele onde o VEÍCULO foi retirado pelo LOCATÁRIO está sujeita à aprovação prévia da LOCADORA, assim como à cobrança de taxas de retorno do VEÍCULO, que serão informadas ao LOCATÁRIO no ato da abertura do CONTRATO DE LOCAÇÃO e/ou no momento da solicitação, pelo LOCATÁRIO, da devolução do VEÍCULO em local diverso do inicialmente contratado.
+5.1 O VEÍCULO deverá ser devolvido juntamente com seus acessórios e equipamentos, no mesmo estado em que foram recebidos pelo LOCATÁRIO, na data, horário e local especificados nos respectivos campos do CONTRATO DE LOCAÇÃO. A devolução em local diverso daquele onde o VEÍCULO foi retirado pelo LOCATÁRIO está sujeita à aprovação prévia da LOCADORA, assim como à cobrança de taxas de retorno do VEÍCULO, que serão informadas ao LOCATÁRIO no ato da abertura do CONTRATO DE LOCAÇÃO e/ou no momento da solicitação, pelo LOCATÁRIO, da devolução do VEÍCULO em local diverso do inicialmente contratado.
 
 5.1.1. A devolução do VEÍCULO antes do prazo estabelecido no CONTRATO DE LOCAÇÃO, sem autorização ou acordo escrito com a LOCADORA, caracterizará rescisão antecipada por iniciativa do LOCATÁRIO e implicará a cobrança de multa compensatória equivalente a 11% sobre o valor das diárias vincendas até o término originalmente pactuado. A multa tem por finalidade compensar a LOCADORA pela reserva do VEÍCULO ao LOCATÁRIO, pela frustração da receita esperada, pela impossibilidade de disponibilização do bem a terceiros durante o período contratado e pelos custos administrativos e operacionais decorrentes da contratação, encerramento, vistoria, conferência, limpeza, regularização e preparação do VEÍCULO para nova locação.
 
@@ -84,9 +84,9 @@ LOCATÁRIO: {{ nome_locatario }}, {{ nacionalidade }}, {{ estado_civil }}, {{ pr
 
 5.1.1.6. A devolução antecipada realizada de forma irregular, especialmente quando vinculada a uso indevido, inadimplência, violação contratual, dano ao VEÍCULO, ausência de comunicação imediata ou descumprimento das obrigações de guarda e conservação, poderá acarretar a perda das proteções eventualmente contratadas. Nessas hipóteses, o LOCATÁRIO responderá integralmente pelos danos, despesas, prejuízos e indenizações decorrentes.
 
-5.1.2. O LOCATÁRIO desde já concorda e reconhece expressamente que, em locações contratadas originalmente com prazo superior a 30 (trinta) dias, o valor a ser pago pelo LOCATÁRIO, a título de locação do VEÍCULO, poderá ser maior que o valor inicialmente contratado nos casos de devolução antecipada do VEÍCULO.
+5.1.2 O LOCATÁRIO desde já concorda e reconhece expressamente que, em locações contratadas originalmente com prazo superior a 30 (trinta) dias, o valor a ser pago pelo LOCATÁRIO, a título de locação do VEÍCULO, poderá ser maior que o valor inicialmente contratado nos casos de devolução antecipada do VEÍCULO.
 
-5.2. No caso de rescisão, por qualquer motivo, do presente CONTRATO DE LOCAÇÃO, ou se o LOCATÁRIO deixar de devolver o VEÍCULO ou qualquer de seus acessórios e equipamentos na forma e no prazo previstos nas Cláusulas 5.1 e 5.1.1, e/ou deixar de comunicar sua intenção de prorrogar a locação nos termos da Cláusula 4.5, tais fatos poderão caracterizar retenção indevida do VEÍCULO e/ou de seus acessórios e equipamentos, conforme apuração pelas autoridades competentes, sem prejuízo da responsabilidade cível e criminal cabível. Fica a LOCADORA expressamente autorizada a adotar todas as medidas judiciais e extrajudiciais necessárias à imediata retomada da posse do VEÍCULO, inclusive mediante pedido de reintegração de posse, cobrança dos valores vencidos e vincendos, despesas de remoção, transporte, guarda e honorários advocatícios, todos de responsabilidade do LOCATÁRIO quando decorrentes de sua mora, inadimplemento ou descumprimento contratual.
+5.2 No caso de rescisão, por qualquer motivo, do presente CONTRATO DE LOCAÇÃO, ou se o LOCATÁRIO deixar de devolver o VEÍCULO ou qualquer de seus acessórios e equipamentos na forma e no prazo previstos nas Cláusulas 5.1 e 5.1.1, e/ou deixar de comunicar sua intenção de prorrogar a locação nos termos da Cláusula 4.5, tais fatos poderão caracterizar retenção indevida do VEÍCULO e/ou de seus acessórios e equipamentos, conforme apuração pelas autoridades competentes, sem prejuízo da responsabilidade cível e criminal cabível. Fica a LOCADORA expressamente autorizada a adotar todas as medidas judiciais e extrajudiciais necessárias à imediata retomada da posse do VEÍCULO, inclusive mediante pedido de reintegração de posse, cobrança dos valores vencidos e vincendos, despesas de remoção, transporte, guarda e honorários advocatícios, todos de responsabilidade do LOCATÁRIO quando decorrentes de sua mora, inadimplemento ou descumprimento contratual.
 
 6. DAS CONDIÇÕES DO VEÍCULO NO MOMENTO DA DEVOLUÇÃO
 
@@ -94,7 +94,9 @@ LOCATÁRIO: {{ nome_locatario }}, {{ nacionalidade }}, {{ estado_civil }}, {{ pr
 
 6.2. O LOCATÁRIO é responsável pela guarda, conservação e uso adequado do VEÍCULO e de seus acessórios e equipamentos a partir do início do CONTRATO DE LOCAÇÃO até a sua efetiva devolução. Quaisquer danos, avarias, perdas ou despesas causadas ao VEÍCULO e/ou a seus acessórios e equipamentos durante a vigência da locação serão cobrados do LOCATÁRIO na medida de sua responsabilidade contratual e legal, observados, quando aplicáveis, os limites e condições das proteções contratadas, bem como as hipóteses de exclusão previstas neste instrumento, tais como mau uso, negligência, imprudência, imperícia, utilização inadequada, ato ilícito, violação contratual ou culpa de terceiro não identificável para fins de ressarcimento à LOCADORA.
 
-6.3. O VEÍCULO é entregue ao LOCATÁRIO com um quarto de tanque de combustível e deverá ser devolvido da mesma forma. Caso isso não ocorra, o LOCATÁRIO deverá pagar à LOCADORA a tarifa de serviço de combustível informada no respectivo campo do CONTRATO DE LOCAÇÃO, proporcional ao combustível faltante.
+6.3. O VEÍCULO é entregue ao LOCATÁRIO com um quarto de tanque de combustível e deverá ser devolvido da mesma forma. Caso isso não ocorra, o LOCATÁRIO deverá pagar à LOCADORA a tarifa de serviço de combustível informada no respectivo campo do
+
+CONTRATO DE LOCAÇÃO, proporcional ao combustível faltante.
 
 6.4. O LOCATÁRIO concorda que, se o VEÍCULO for devolvido em condições de higiene e limpeza que impossibilitem a identificação de danos ou avarias internas, externas ou nos acessórios no ato de sua devolução, a LOCADORA efetuará nova vistoria e conferência após a lavagem do VEÍCULO. O LOCATÁRIO concorda e reconhece que as cobranças correspondentes a tais avarias serão feitas diretamente ao LOCATÁRIO, mesmo após o encerramento do CONTRATO DE LOCAÇÃO.
 
@@ -116,13 +118,15 @@ LOCATÁRIO: {{ nome_locatario }}, {{ nacionalidade }}, {{ estado_civil }}, {{ pr
 
 7.2.3. Manutenção corretiva e coparticipação (rateio): as despesas com manutenções corretivas em peças de desgaste severo, em virtude da atividade contínua, tais como pastilhas e discos de freio, kit de embreagem e componentes de suspensão, serão rateadas na proporção de 50% (cinquenta por cento) para a LOCADORA e 50% (cinquenta por cento) para o LOCATÁRIO.
 
-7.2.4. Oficinas autorizadas: toda e qualquer manutenção, preventiva ou corretiva, deverá ser realizada exclusivamente em oficinas credenciadas e previamente indicadas pela LOCADORA, mediante aprovação prévia de orçamento. É expressamente vedado ao LOCATÁRIO realizar manutenções por conta própria, em oficinas não autorizadas ou substituir peças sem autorização formal da LOCADORA.
+7.2.4. Oficinas autorizadas: toda e qualquer manutenção, prev entiva ou corretiva, deverá ser realizada exclusivamente em oficinas credenciadas e previamente indicadas pela LOCADORA, mediante aprovação prévia de orçamento. É expressamente vedado ao LOCATÁRIO realizar manutenções por conta própria, em oficinas não autorizadas ou substituir peças sem autorização formal da LOCADORA.
 
 7.2.5. O LOCATÁRIO deverá comunicar imediatamente à LOCADORA qualquer ruído, falha mecânica, elétrica, luz de advertência no painel, vazamento, aquecimento, irregularidade de funcionamento ou sinal de possível dano ao VEÍCULO, abstendo-se de continuar a utilização quando houver risco de agravamento.
 
 7.2.6. A omissão na comunicação de falhas, a continuidade do uso do VEÍCULO em situação de risco ou a realização de reparos não autorizados tornarão o LOCATÁRIO responsável integralmente pelos danos agravados, perda de garantia, despesas de reparação, remoção, reboque, indisponibilidade do VEÍCULO e demais prejuízos suportados pela LOCADORA.
 
-7.3. A LOCADORA deverá prestar assistência 24 horas e, se necessário, substituir o VEÍCULO alugado, caso haja unidade disponível para o LOCATÁRIO, em caso de pane elétrica ou mecânica decorrente de seu uso normal e adequado, quando o conserto não puder ser realizado de forma imediata pelo serviço de assistência. No caso de substituição do VEÍCULO, aplicar-se-ão ao veículo substituto todos os termos e condições do presente CONTRATO DE LOCAÇÃO, bem como novos valores de coparticipação.
+7.3. A LOCADORA deverá prestar assistência 24 horas e, se necessário, substituir o VEÍCULO alugado, caso haja unidade disponível para o LOCATÁRIO, em caso de pane elétrica ou mecânica decorrente de seu uso normal e adequado, quando o conserto não puder ser realizado de forma imediata pelo serviço de assistência. No caso de substituição do VEÍCULO, aplicar-se-ão ao veículo substituto todos os termos e condições do presente
+
+CONTRATO DE LOCAÇÃO, bem como novos valores de coparticipação.
 
 7.3.1. Sem prejuízo do disposto na cláusula 6.3 acima, o LOCATÁRIO concorda e reconhece, desde já, que a LOCADORA não efetuará a substituição do VEÍCULO nos casos de furto, roubo, incêndio, colisão, apropriação indébita, apreensão do VEÍCULO pelas autoridades competentes em razão de ato e/ou fato causado pelo LOCATÁRIO ou de sua responsabilidade, perda, furto ou roubo de chaves e documentos, ou pane decorrente de uso inadequado.
 
@@ -144,9 +148,11 @@ LOCATÁRIO: {{ nome_locatario }}, {{ nacionalidade }}, {{ estado_civil }}, {{ pr
 
 8.5.2. Caso o LOCATÁRIO utilize o VEÍCULO em atividade de aplicativo, transporte remunerado, uso profissional ou outra finalidade específica, declara estar ciente de que deverá observar todas as normas legais, administrativas, municipais, estaduais, federais e/ou das plataformas aplicáveis, assumindo integral responsabilidade por cadastros, autorizações, multas, sanções, bloqueios, danos, sinistros ou prejuízos decorrentes dessa utilização.
 
-8.5.3. O LOCATÁRIO não poderá utilizar o VEÍCULO fora da região autorizada neste CONTRATO DE LOCAÇÃO, nem em estradas, ramais, vias rurais, praias, dunas, alagados, áreas de mata, obras, terrenos irregulares, locais sem pavimentação adequada ou vias incompatíveis com a natureza do VEÍCULO, salvo autorização prévia, expressa e por escrito da LOCADORA.
+8.5.3. O LOCATÁRIO não poderá utilizar o VEÍCULO fora da região autorizada neste
 
-8.5.4. A utilização do VEÍCULO em desacordo com este contrato será considerada uso indevido e tornará o LOCATÁRIO responsável por todos os danos, avarias, desgaste excessivo, perda de garantia, despesas de remoção, reboque, guarda, manutenção, lucros cessantes, desvalorização, multas, encargos e demais prejuízos suportados pela LOCADORA.
+CONTRATO DE LOCAÇÃO, nem em estradas, ramais, vias rurais, praias, dunas, alagados, áreas de mata, obras, terrenos irregulares, locais sem pavimentação adequada ou vias incompatíveis com a natureza do VEÍCULO, salvo autorização prévia, expressa e por escrito da LOCADORA.
+
+8.5.4. A utilização do VEÍCULO em desacordo com este contrato será considerada uso indevido e tornará o LOCATÁRIO responsável por todos os danos, avarias, desgaste excessivo, perda de garantia, despesas de remoção, reboque, guarda, manutenção, lucros cessantes, desvalorização, multas, encargos e demais prejuízos suportados pelas LOCADORA.
 
 8.5.5. É proibido ao LOCATÁRIO remover, desligar, danificar, bloquear, violar, adulterar ou interferir no funcionamento de rastreadores, bloqueadores, GPS, alarmes, sistemas antifurto, equipamentos de monitoramento ou qualquer dispositivo instalado pela LOCADORA no VEÍCULO. O descumprimento desta obrigação poderá gerar rescisão imediata, recolhimento do VEÍCULO, perda das proteções contratadas e responsabilidade integral por perdas e danos.
 
@@ -180,7 +186,9 @@ LOCATÁRIO: {{ nome_locatario }}, {{ nacionalidade }}, {{ estado_civil }}, {{ pr
 
 9.4. LOCATÁRIOS oriundos do Mercosul, sem passaporte, deverão apresentar ficha de entrada no país emitida pela Polícia Federal, Cédula de Identidade e Carteira de Habilitação originais.
 
-9.5. CONDUTORES ADICIONAIS: o LOCATÁRIO poderá autorizar, exclusivamente por ocasião da abertura do CONTRATO DE LOCAÇÃO, até 02 (dois) condutores adicionais para cada VEÍCULO, devendo os referidos condutores atender às mesmas condições de idade, documentação e situação cadastral do LOCATÁRIO principal, exceto quanto à apresentação de cartão de crédito. A LOCADORA aplicará a tarifa correspondente a este serviço no ato de sua contratação, conforme especificado nos respectivos campos do CONTRATO DE LOCAÇÃO. Os condutores adicionais deverão estar obrigatoriamente presentes no ato da retirada do VEÍCULO.
+9.5. CONDUTORES ADICIONAIS: o LOCATÁRIO poderá autorizar, exclusivamente por ocasião da abertura do CONTRATO DE LOCAÇÃO, até 02 (dois) condutores adicionais para cada VEÍCULO, devendo os referidos condutores atender às mesmas condições de idade, documentação e situação cadastral do LOCATÁRIO principal, exceto quanto à apresentação de cartão de crédito. A LOCADORA aplicará a tarifa correspondente a este serviço no ato de sua contratação, conforme especificado nos respectivos campos do
+
+CONTRATO DE LOCAÇÃO. Os condutores adicionais deverão estar obrigatoriamente presentes no ato da retirada do VEÍCULO.
 
 9.6. Sem prejuízo do disposto neste CONTRATO DE LOCAÇÃO, o LOCATÁRIO concorda e reconhece, desde já, que será o único e exclusivo responsável pelos custos de remoção, reboque, diárias de guarda em pátios e oficinas, reparação do VEÍCULO e demais custos operacionais decorrentes da imobilização do VEÍCULO, incluindo diárias de locação pelo prazo em que permanecer indisponível, tornando nulas e inaplicáveis quaisquer proteções contratadas, nos casos em que: (i) o LOCATÁRIO e/ou o condutor adicional autorizado seja responsável pelo sinistro envolvendo o VEÍCULO; (ii) o sinistro e/ou defeito que imobilizar o VEÍCULO decorra de uso inadequado; ou (iii) seja constatada a desnecessidade de uso do serviço de assistência 24 horas, como nos casos de falta de combustível, entre outros.
 
@@ -238,7 +246,9 @@ LOCATÁRIO: {{ nome_locatario }}, {{ nacionalidade }}, {{ estado_civil }}, {{ pr
 
 13.2. O sistema de rastreamento e imobilizador veicular poderá ser acionado a qualquer momento durante o período de locação, caso o LOCATÁRIO deixe de cumprir os regulamentos e obrigações constantes deste contrato, especialmente quanto ao pagamento diário do VEÍCULO, à regularização de pendências de manutenção ou ao pagamento de valores de caução eventualmente devidos em conjunto com a diária do VEÍCULO.
 
-13.3. O LOCATÁRIO, seus representantes e/ou motoristas adicionais concordam e reconhecem que a responsabilidade pelo VEÍCULO e por sua condução, nos termos do CONTRATO DE LOCAÇÃO, independe das informações eventualmente fornecidas pelo aparelho auxiliar de navegação do tipo GPS (Global Positioning System) e pelo sistema de rastreamento e imobilizador veicular. Eventuais sinistros decorrentes do uso incorreto e/ou de erros de informação, georreferenciamento e/ou geoposicionamento fornecidos pelo referido aparelho ou sistema, em desacordo com as normas e a legislação de trânsito, serão considerados negligência do LOCATÁRIO, de seus representantes e/ou motoristas adicionais, para todos os fins de direito e do CONTRATO DE LOCAÇÃO.
+13.3. O LOCATÁRIO, seus representantes e/ou motoristas adicionais concordam e reconhecem que a responsabilidade pelo VEÍCULO e por sua condução, nos termos do
+
+CONTRATO DE LOCAÇÃO, independe das informações eventualmente fornecidas pelo aparelho auxiliar de navegação do tipo GPS (Global Positioning System) e pelo sistema de rastreamento e imobilizador veicular. Eventuais sinistros decorrentes do uso incorreto e/ou de erros de informação, georreferenciamento e/ou geoposicionamento fornecidos pelo referido aparelho ou sistema, em desacordo com as normas e a legislação de trânsito, serão considerados negligência do LOCATÁRIO, de seus representantes e/ou motoristas adicionais, para todos os fins de direito e do CONTRATO DE LOCAÇÃO.
 
 13.4. O LOCATÁRIO, seus representantes e/ou motoristas adicionais concordam e reconhecem que a utilização do aparelho auxiliar de navegação do tipo GPS (Global Positioning System) deverá ser feita estritamente de acordo com a legislação aplicável, sendo expressamente vedado o seu manuseio enquanto o VEÍCULO estiver em movimento. Caso o LOCATÁRIO esteja inadimplente ou descumpra obrigação essencial deste CONTRATO DE LOCAÇÃO, a LOCADORA poderá adotar medidas de localização, restrição de uso, bloqueio ou imobilização remota do VEÍCULO, sempre após prévia notificação por aplicativo de mensagens, telefone ou outro meio idôneo, ressalvada situação de urgência ou risco de perda do bem. O bloqueio ou imobilização deverá ocorrer, sempre que tecnicamente possível, em local seguro e sem colocar em risco o LOCATÁRIO, passageiros, terceiros ou a circulação viária. Persistindo a inadimplência ou o descumprimento contratual, a LOCADORA poderá recolher o VEÍCULO por quebra de contrato, aplicando-se as penalidades pertinentes e a cobrança dos valores devidos.
 
@@ -246,9 +256,11 @@ LOCATÁRIO: {{ nome_locatario }}, {{ nacionalidade }}, {{ estado_civil }}, {{ pr
 
 14.1. No caso de locação contratada por prazo inferior a 30 (trinta) dias, o pagamento do valor total do CONTRATO DE LOCAÇÃO, incluindo diárias, proteções, taxas, combustível e outros serviços adicionais contratados, será feito por ocasião da devolução do VEÍCULO, podendo o LOCATÁRIO optar pela cobrança em seu cartão de crédito ou pelo pagamento à vista.
 
-14.1.1. No caso de locação contratada por prazo superior a 30 (trinta) dias, o pagamento do valor total do CONTRATO DE LOCAÇÃO deverá ser feito no ato da abertura do CONTRATO DE LOCAÇÃO.
+14.1.1. No caso de locação contratada por prazo superior a 30 (trinta) dias, o pagamento do valor total do CONTRATO DE LOCAÇÃO deverá ser feito no ato da abertura do
 
-14.2. Todas as multas de trânsito lavradas durante o período de LOCAÇÃO, bem como as despesas decorrentes da apreensão do VEÍCULO pelas autoridades competentes em razão de ato e/ou fato causado pelo LOCATÁRIO ou de sua responsabilidade, incluindo reboque, depósito do VEÍCULO, honorários advocatícios e/ou de despachante, entre outras, serão de total responsabilidade do LOCATÁRIO, independentemente da época de recebimento após o encerramento do CONTRATO DE LOCAÇÃO. O LOCATÁRIO obriga-se a pagar à LOCADORA tais multas e despesas decorrentes da apreensão do VEÍCULO, acrescidas de 25% (vinte e cinco por cento) a título de taxa de administração, autorizando expressamente a LOCADORA a efetuar essa cobrança mediante desconto direto no valor da caução retida ou, alternativamente, por débito no cartão de crédito do LOCATÁRIO. No caso de locações corporativas, a cobrança poderá ser realizada por faturamento à respectiva empresa, na data de vencimento das multas e/ou despesas decorrentes da apreensão do VEÍCULO.
+CONTRATO DE LOCAÇÃO.
+
+14.2. Todas as multas de trânsito lavradas durante o período de LOCAÇÃO, bem como as despesas decorrentes da apreensão do VEÍCULO pelas autoridades competentes em razão de ato e/ou fato causado pelo LOCATÁRIO ou de sua responsabilidade, incluindo reboque, depósito do VEÍCULO, honorários advocatícios e/ou de despachante, entre outras, serão de total responsabilidade do LOCATÁRIO, independentemente da época de recebimento após o encerramento do CONTRATO DE LOCAÇÃO. O LOCATÁRIO obriga- se a pagar à LOCADORA tais multas e despesas decorrentes da apreensão do VEÍCULO, acrescidas de 25% (vinte e cinco por cento) a título de taxa de administração, autorizando expressamente a LOCADORA a efetuar essa cobrança mediante desconto direto no valor da caução retida ou, alternativamente, por débito no cartão de crédito do LOCATÁRIO. No caso de locações corporativas, a cobrança poderá ser realizada por faturamento à respectiva empresa, na data de vencimento das multas e/ou despesas decorrentes da apreensão do VEÍCULO.
 
 14.2.1. Além da responsabilidade pelas multas de trânsito e despesas decorrentes da apreensão do VEÍCULO, o LOCATÁRIO será o único, exclusivo e integralmente responsável por eventuais agravos decorrentes da não aceitação, pelas autoridades de trânsito, da indicação do LOCATÁRIO como condutor do VEÍCULO, seja pela falta de assinatura em instrumento de prorrogação da locação, seja pelo fato de a assinatura do CONTRATO DE LOCAÇÃO não ser igual à constante em sua Carteira Nacional de Habilitação (CNH).
 
@@ -262,13 +274,15 @@ LOCATÁRIO: {{ nome_locatario }}, {{ nacionalidade }}, {{ estado_civil }}, {{ pr
 
 15. DA COMPOSIÇÃO DOS VALORES DO CONTRATO DE LOCAÇÃO
 
-15.1. O valor total do CONTRATO DE LOCAÇÃO é composto pelos seguintes itens: (i) número de diárias e horas extras utilizadas pelo LOCATÁRIO; (ii) proteções e serviços adicionais contratados pelo LOCATÁRIO; (iii) devolução do VEÍCULO em ponto diferente do local de retirada; (iv) limpeza interna e/ou externa do VEÍCULO motivada por utilização que exija tratamento especial; (v) multas e/ou outras penalidades decorrentes de violação de quaisquer leis de trânsito; (vi) avarias ou danos ao VEÍCULO ou a seus acessórios; (vii) combustível; (viii) tempo de locação do VEÍCULO no momento da contratação; (ix) desistência da locação antes do final do período previsto em contrato; e (x) taxa administrativa aplicada sobre todos os itens apresentados no fechamento do CONTRATO DE LOCAÇÃO.
+15.1. O valor total do CONTRATO DE LOCAÇÃO é composto pelos seguintes itens: (i) número de diárias e horas extras utilizadas pelo LOCATÁRIO; (ii) proteções e serviços adicionais contratados pelo LOCATÁRIO; (iii) devolução do VEÍCULO em ponto diferente do local de retirada; (iv) limpeza interna e/ou externa do VEÍCULO motivada por utilização que exija tratamento especial; (v) multas e/ou outras penalidades decorrentes de violação de quaisquer leis de trânsito; (vi) avarias ou danos ao VEÍCULO ou a seus acessórios; (vii) combustível;(viii) tempo de locação do VEÍCULO no momento da contratação; (ix) desistência da locação antes do final do período previsto em contrato; e (x) taxa administrativa aplicada sobre todos os itens apresentados no fechamento do CONTRATO DE LOCAÇÃO.
 
 15.2. O valor das tarifas diárias será apurado pela contagem de períodos de 24 (vinte e quatro) horas consecutivas, contadas a partir da hora e minuto de início da locação. Após o decurso do último período de 24 (vinte e quatro) horas consecutivas, haverá até 3 (três) horas de cortesia para a devolução do VEÍCULO, desde que este seja devolvido dentro do horário de funcionamento das lojas {{ empresa_razao_social }}. Caso seja excedido o prazo de cortesia, será cobrada, por hora extra, a fração correspondente a 1/5 do valor da diária, conforme especificado no respectivo campo do CONTRATO DE LOCAÇÃO, sendo que, a partir do início da quinta hora extra, ou seja, a partir de 4 (quatro) horas e 1 (um) minuto, será cobrada uma nova diária integral do VEÍCULO. A partir da primeira hora extra, passará a ser cobrada também a fração ideal de 1/5 do valor da diária da(s) proteção(ões) contratada(s) no momento de abertura do CONTRATO DE LOCAÇÃO pelo LOCATÁRIO, seguindo o mesmo procedimento de cálculo aplicado ao VEÍCULO. Diferentemente da diária e da(s) proteção(ões), a partir da primeira hora extra, passará a ser cobrada integralmente uma diária dos acessórios e serviços adicionais eventualmente contratados no momento de abertura do CONTRATO DE LOCAÇÃO pelo LOCATÁRIO, tais como cadeira de bebê, motorista e GPS. Em caso de desistência do contrato de locação, será considerado o período em aberto no momento da entrega do VEÍCULO e serão aplicadas as multas pertinentes previstas neste instrumento, cujos valores poderão ser quitados mediante desconto na caução retida, pagamento em espécie, PIX ou cartão de crédito. Havendo recusa de pagamento ou insuficiência de fundos, a dívida poderá ser judicializada em desfavor do LOCATÁRIO.
 
 16. DISPOSIÇÕES GERAIS
 
-16.1. O LOCATÁRIO concorda e reconhece que sua assinatura no CONTRATO DE LOCAÇÃO implica ciência, consentimento e responsabilidade, por si, seus herdeiros e/ou sucessores a qualquer título, quanto a todas as cláusulas, termos e condições do presente CONTRATO DE LOCAÇÃO, aos quais teve amplo acesso, conhecimento e esclarecimento.
+16.1. O LOCATÁRIO concorda e reconhece que sua assinatura no CONTRATO DE LOCAÇÃO implica ciência, consentimento e responsabilidade, por si, seus herdeiros e/ou sucessores a qualquer título, quanto a todas as cláusulas, termos e condições do presente
+
+CONTRATO DE LOCAÇÃO, aos quais teve amplo acesso, conhecimento e esclarecimento.
 
 16.2. O LOCATÁRIO está ciente e reconhece que o sistema de aluguel de carros que opera sob a marca “{{ empresa_razao_social }}” é constituído por um conjunto de diversas pessoas jurídicas, que atuam com autonomia administrativa, financeira e legal. Assim, compromete-se a dirimir eventuais pendências judiciais ou extrajudiciais somente com a respectiva LOCADORA, devidamente identificada no respectivo campo do CONTRATO DE LOCAÇÃO.
 
@@ -296,7 +310,9 @@ LOCATÁRIO: {{ nome_locatario }}, {{ nacionalidade }}, {{ estado_civil }}, {{ pr
 
 18.3. Integram o presente CONTRATO DE LOCAÇÃO, para todos os fins de direito e como meio de prova, os anexos, checklists de vistoria, fotos, vídeos, laudos, relatórios digitais, ordens de serviço, comprovantes de pagamento, demonstrativos de cobrança, mensagens eletrônicas e demais documentos vinculados à locação, ainda que produzidos por meio digital, eletrônico ou aplicativo de mensagens.
 
-18.4. O LOCATÁRIO reconhece a validade jurídica de mensagens eletrônicas, conversas por aplicativo de mensagens, e-mails, comprovantes digitais, fotografias, vídeos, geolocalização, relatórios de rastreamento, recibos eletrônicos, demonstrativos de cobrança, ordens de serviço e demais registros digitais vinculados à execução do CONTRATO DE LOCAÇÃO, os quais poderão ser utilizados como meio de prova para comprovação de ciência, comunicação, cobrança, estado do VEÍCULO, utilização, inadimplência, avarias, sinistros e demais fatos relevantes.
+18.4. O LOCATÁRIO reconhece a validade jurídica de mensagens eletrônicas, conversas por aplicativo de mensagens, e-mails, comprovantes digitais, fotografias, vídeos, geolocalização, relatórios de rastreamento, recibos eletrônicos, demonstrativos de cobrança, ordens de serviço e demais registros digitais vinculados à execução do
+
+CONTRATO DE LOCAÇÃO, os quais poderão ser utilizados como meio de prova para comprovação de ciência, comunicação, cobrança, estado do VEÍCULO, utilização, inadimplência, avarias, sinistros e demais fatos relevantes.
 
 18.5. A assinatura física, eletrônica ou digital, bem como o aceite manifestado por mensagem, envio de documentos, confirmação eletrônica, retirada do VEÍCULO ou continuidade de sua utilização após ciência das condições contratuais, será considerado manifestação válida de concordância do LOCATÁRIO com os termos deste CONTRATO DE LOCAÇÃO, respeitada a legislação aplicável.
 
@@ -308,13 +324,15 @@ LOCATÁRIO: {{ nome_locatario }}, {{ nacionalidade }}, {{ estado_civil }}, {{ pr
 
 20. FORO
 
-20.1. As partes elegem o foro da Comarca de Manaus/AM para dirimir quaisquer dúvidas ou litígios oriundos e/ou decorrentes deste CONTRATO DE LOCAÇÃO, com exclusão expressa de qualquer outro, por mais privileged que seja.
+20.1. As partes elegem o foro da Comarca de Manaus/AM para dirimir quaisquer dúvidas ou litígios oriundos e/ou decorrentes deste CONTRATO DE LOCAÇÃO, com exclusão expressa de qualquer outro, por mais privilegiado que seja.
 
 {{ cidade_foro }}, {{ data_assinatura }}.
 
-{{ empresa_razao_social }}
+_________________________________________
 
-CNPJ nº {{ empresa_cnpj }}
+{{ empresa_razao_social }} CNPJ n° {{ empresa_cnpj }}
+
+___________________________________________
 
 {{ nome_locatario }}
 

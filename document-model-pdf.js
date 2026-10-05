@@ -12,7 +12,7 @@ export async function modelPdf(db,company,text,documentNumber=null,formatacao=nu
   for(const g of glyphs){if(g.char==='\n'){lines.push(line);line=[];used=0;continue}if(used+g.width>maxWidth&&line.length){let space=line.map(x=>x.char).lastIndexOf(' ');if(space>0){lines.push(line.slice(0,space));line=line.slice(space+1)}else{lines.push(line);line=[]}used=line.reduce((s,x)=>s+x.width,0)}line.push(g);used+=g.width}lines.push(line);
   for(let i=0;i<lines.length;i++){const chars=lines[i];while(chars.at(-1)?.char===' ')chars.pop();const heightLine=Math.max(12,...chars.map(g=>g.size))*1.2;if(y-heightLine<57)await addPage();const w=chars.reduce((s,g)=>s+g.width,0),spaces=chars.filter(g=>g.char===' ').length;let x=85+(b.align==='center'?(maxWidth-w)/2:b.align==='right'?maxWidth-w:0);const extra=b.align==='justify'&&i<lines.length-1&&spaces?(maxWidth-w)/spaces:0;
    for(const g of chars){page.drawText(g.char,{x,y,size:g.size,font:g.font});if(g.underline)page.drawLine({start:{x,y:y-2},end:{x:x+g.width,y:y-2},thickness:.5});x+=g.width+(g.char===' '?extra:0)}y-=heightLine;
-  }y-=3;
+  }y-=12;
  }
  return pdf.save();
 }

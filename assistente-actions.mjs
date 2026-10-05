@@ -16,6 +16,7 @@ export async function showAction({action,db,context,host,notify,userId}){
  const field=(name,label,type='text',value='')=>{const wrap=document.createElement('label'),span=document.createElement('span'),input=document.createElement(type==='textarea'?'textarea':type==='select'?'select':'input');span.textContent=label;input.name=name;if(!['textarea','select'].includes(type))input.type=type;input.value=value??'';wrap.append(span,input);form.append(wrap);return input;};
  if(action.tipo==='modelo'){
   field('nome','Nome do modelo','text',action.nome).required=true;
+  const kind=field('tipo','Tipo do modelo','select');kind.add(new Option('Documento personalizado','outro'));kind.add(new Option('Contrato de locação','contrato_locacao'));kind.value=/contrato.*loca/i.test(action.nome||'')?'contrato_locacao':'outro';
   const text=field('conteudo','Texto do documento (revise antes de salvar)','textarea',action.conteudo);text.required=true;text.rows=12;text.maxLength=40000;
  }else{
   const [clients,cars]=await Promise.all([db.from('clientes').select('id,nome_completo,cpf').eq('empresa_id',company).order('nome_completo'),db.from('carros').select('id,placa,modelo').eq('empresa_id',company).order('placa')]);
@@ -35,7 +36,7 @@ export async function showAction({action,db,context,host,notify,userId}){
   if(action.tipo==='modelo'){
    if(!window.alquilerContext.canManageCompany)throw Error('Sem permissão para criar modelos.');
    const content=values.conteudo.trim(),name=values.nome.trim();if(!name||name.length>120||!content)throw Error('Confira nome e texto.');
-   const result=await db.rpc('modelo_documento_salvar_editor',{p_empresa:company,p_id:null,p_revisao:null,p_nome:name,p_conteudo:content,p_publicar:false,p_arquivado:false,p_formatacao:plainBlocks(content),p_tipo:'outro'});if(result.error)throw result.error;link='/cadastros/modelos-contrato';
+   const result=await db.rpc('modelo_documento_salvar_editor',{p_empresa:company,p_id:null,p_revisao:null,p_nome:name,p_conteudo:content,p_publicar:false,p_arquivado:false,p_formatacao:plainBlocks(content),p_tipo:values.tipo==='contrato_locacao'?'contrato_locacao':'outro'});if(result.error)throw result.error;link='/cadastros/modelos-contrato';
   }else{
    const payload=rentalPayload(values,company);
    const [rentals,periods]=await Promise.all([db.from('locacoes').select('id').eq('empresa_id',company).eq('carro_id',payload.carro_id).in('status',['Ativa','Reservada']),db.from('frota_periodos').select('id').eq('empresa_id',company).eq('carro_id',payload.carro_id).is('fim',null)]);

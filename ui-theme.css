@@ -140,3 +140,29 @@ body.interface-v2{font-family:Inter,"Segoe UI",Arial,sans-serif;font-size:14px;l
 .interface-v2 .rich-editor-wrap .format-toolbar{position:sticky;top:0;z-index:20;background:var(--company-surface,#fff);box-shadow:0 2px 6px #00000015}
 .interface-v2 .rich-editor-wrap .rich-editor{border:0;min-height:500px}
 @media(max-width:850px){.interface-v2 .rich-editor-wrap{max-height:68dvh}.interface-v2 .rich-editor-wrap .format-toolbar{position:sticky;flex-wrap:nowrap;overflow-x:auto}.interface-v2 .format-toolbar button{flex-shrink:0;min-height:40px}}
+
+/* Menu de navegação: hierarquia compacta e identidade da empresa. */
+.interface-v2 .sidebar{padding:22px 14px 16px;gap:12px;overflow:hidden}
+.interface-v2 .sidebar-brand{padding:0 8px 20px;gap:12px;flex-shrink:0}
+.interface-v2 .sidebar-brand .brand-mark{width:44px;height:44px;border-radius:12px;box-shadow:none}
+.interface-v2 .sidebar-brand small{font-size:9px;letter-spacing:.12em;opacity:.6}
+.interface-v2 .professional-menu{display:block;flex:1;min-height:0;margin-top:0;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--company-on-sidebar) 20%,transparent) transparent;padding-right:3px}
+.interface-v2 .menu-section-label{display:block;font-size:9px;font-weight:750;letter-spacing:.14em;opacity:.5;padding:20px 12px 9px;color:var(--company-on-sidebar)}
+.interface-v2 .menu-section-label:first-child{padding-top:4px}
+.interface-v2 .professional-menu>.menu-link,.interface-v2 .professional-menu>details{margin-bottom:4px}
+.interface-v2 .professional-menu :is(.menu-link,summary){min-height:42px;padding:10px 12px;line-height:1.4;border-radius:9px;font-size:12px;font-weight:550;color:var(--company-on-sidebar);gap:12px}
+.interface-v2 .menu-symbol{width:19px;min-width:19px;height:19px;color:inherit;opacity:.75}
+.interface-v2 .menu-symbol svg{display:block;width:19px;height:19px}
+.interface-v2 .professional-menu .menu-link.active{background:var(--company-primary,#2864da);color:var(--company-on-primary,#fff);box-shadow:none;font-weight:700}
+.interface-v2 .professional-menu details[open]>summary{background:color-mix(in srgb,var(--company-on-sidebar) 6%,transparent);font-weight:650}
+.interface-v2 .professional-menu summary::after{color:inherit;opacity:.55;font-size:18px}
+.interface-v2 .menu-children{display:block;margin:5px 0 9px 21px;padding:0 0 0 12px;border-left:1px solid color-mix(in srgb,var(--company-on-sidebar) 16%,transparent)}
+.interface-v2 .menu-children .menu-link{font-size:11.5px;min-height:36px;padding:8px 10px;margin:2px 0}
+.interface-v2 .menu-nested>summary{font-size:11.5px;min-height:36px;padding:8px 10px}
+.interface-v2 .menu-nested .menu-children{margin-left:9px;padding-left:9px}
+.interface-v2 .menu-count{font-size:10px;font-weight:600;background:color-mix(in srgb,var(--company-on-sidebar) 10%,transparent);color:inherit;border-radius:6px}
+.interface-v2 .professional-menu :is(a,summary):focus-visible,.interface-v2 .sidebar .logout:focus-visible{outline:2px solid var(--company-on-sidebar);outline-offset:-2px}
+.interface-v2 .sidebar-bottom{flex-shrink:0;gap:10px;padding:16px 8px 0;flex-wrap:nowrap}
+.interface-v2 .sidebar-bottom .logout{padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--company-on-sidebar) 7%,transparent);font-size:11px;margin:0}
+@media(min-width:1101px){.interface-v2 .app-shell{grid-template-columns:260px minmax(0,1fr)}}
+@media(max-width:850px){.interface-v2 .professional-menu :is(.menu-link,summary){min-height:44px}.interface-v2 .sidebar-bottom{padding-bottom:env(safe-area-inset-bottom)}.mobile-menu-open{overflow:hidden}}

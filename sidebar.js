@@ -15,12 +15,14 @@ const cachedLogoClass=cachedCompany.logo_url?' has-company-logo':'';
 const active=href=>page===href?' active':'';
 const financeActive=name=>page==='financeiro.html'&&section===name?' active':'';
 const groupOpen=pages=>pages.includes(page)?' open':'';
-const icon=(symbol)=>`<span class="menu-symbol" aria-hidden="true">${symbol}</span>`;
+const menuIconPaths={"⌂":"M3 10 12 3l9 7M5 9v12h14V9M9 21v-7h6v7","◉":"M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4","▦":"M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z","▣":"M4 16h16l-2-8H6zM4 16v4M20 16v4M7 12h10M7 8l1-4h8l1 4","▤":"M8 3H5v18h14V3h-3M8 3v4h8V3zM8 12h8M8 16h5","▧":"M14 2H4v20h16V8zM14 2v6h6M8 12h8M8 16h8","✎":"m4 16 12-12 4 4-12 12-5 1zM14 6l4 4","R$":"M3 5h18v14H3zM7 9h.01M17 15h.01M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0","⚙":"M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2","BG":"M12 3 3 7v6c0 4 9 8 9 8s9-4 9-8V7zM8 12l3 3 5-6"};
+const icon=symbol=>'<span class="menu-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="'+(menuIconPaths[symbol]||menuIconPaths['▦'])+'"/></svg></span>';
 const menu=`
-  <div class="sidebar-brand"><div class="brand-mark${cachedLogoClass}"${cachedLogo}>${cachedCompany.logo_url?'':safe(cachedCompany.nome_fantasia).charAt(0).toUpperCase()}</div><div><strong class="global-company">${safe(cachedCompany.nome_fantasia)}</strong><small>BG SYS</small></div></div>
-  <nav class="professional-menu" aria-label="Menu principal">
+  <div class="sidebar-brand"><div class="brand-mark${cachedLogoClass}"${cachedLogo}>${cachedCompany.logo_url?'':safe(cachedCompany.nome_fantasia).charAt(0).toUpperCase()}</div><div><strong class="global-company">${safe(cachedCompany.nome_fantasia)}</strong><small>GESTÃO DA EMPRESA</small></div></div>
+  <nav class="professional-menu" aria-label="Menu principal"><span class="menu-section-label">VISÃO GERAL</span>
     <a class="menu-link${active('dashboard.html')}" href="dashboard.html">${icon('⌂')}<span>Dashboard</span></a>
     <a class="menu-link${active('notificacoes.html')}" href="notificacoes.html">${icon('◉')}<span>Notificações</span><b class="menu-count">0</b></a>
+    <span class="menu-section-label">OPERAÇÃO</span>
     <details${groupOpen(['clientes.html','carros.html','modelos-contrato.html','certificados.html'])}><summary>${icon('▦')}<span>Cadastros</span></summary><div class="menu-children">
       <a class="menu-link${active('clientes.html')}" href="clientes.html">Clientes</a><a class="menu-link${active('carros.html')}" href="carros.html">Veículos</a><a class="menu-link${active('modelos-contrato.html')}" href="modelos-contrato.html">Modelos de documentos</a><a class="menu-link${active('certificados.html')}" href="certificados.html">Certificados digitais</a>
     </div></details>
@@ -39,14 +41,15 @@ const menu=`
       <a class="menu-link${financeActive('fluxo-caixa')}" href="financeiro.html?secao=fluxo-caixa">Fluxo de caixa</a>
       <a class="menu-link${financeActive('conciliacao')}" href="financeiro.html?secao=conciliacao">Conciliação</a>
       <a class="menu-link${financeActive('contas-bancarias')}" href="financeiro.html?secao=contas-bancarias">Contas bancárias</a>
-      <span class="menu-subtitle">PARÂMETROS</span>
+      <details class="menu-nested"${['categorias','meios-pagamento','centros-custo','condicoes-pagamento'].includes(section)?' open':''}><summary>Parâmetros</summary><div class="menu-children">
       <a class="menu-link${financeActive('categorias')}" href="financeiro.html?secao=categorias">Categorias</a>
       <a class="menu-link${financeActive('meios-pagamento')}" href="financeiro.html?secao=meios-pagamento">Meios de pagamento</a>
       <a class="menu-link${financeActive('centros-custo')}" href="financeiro.html?secao=centros-custo">Centros de custos</a>
       <a class="menu-link${financeActive('condicoes-pagamento')}" href="financeiro.html?secao=condicoes-pagamento">Condições de pagamento</a>
-      <span class="menu-subtitle">ANÁLISES</span>
-      <a class="menu-link${financeActive('relatorios')}" href="financeiro.html?secao=relatorios">Relatórios</a>
+      </div></details><details class="menu-nested"${section==='relatorios'?' open':''}><summary>Análises</summary><div class="menu-children">
+      <a class="menu-link${financeActive('relatorios')}" href="financeiro.html?secao=relatorios">Relatórios</a></div></details>
     </div></details>
+    <span class="menu-section-label">CONTA E ADMINISTRAÇÃO</span>
     <details hidden data-company-admin${groupOpen(['empresa.html','acessos.html'])}><summary>${icon('⚙')}<span>Administração</span></summary><div class="menu-children"><a class="menu-link${active('empresa.html')}" href="empresa.html">Empresa</a><a class="menu-link${active('acessos.html')}" href="acessos.html">Acessos / Usuários</a></div></details>
     <a hidden data-admin-only class="menu-link${active('controle.html')}" href="controle.html">${icon('BG')}<span>Controle · BG SYSTEMS</span></a>
     <a class="menu-link${active('perfil.html')}" href="perfil.html">${icon('◉')}<span>Meu perfil</span></a>
@@ -60,7 +63,7 @@ import('./document-kind.mjs').then(module=>{documentKindClassifier=module.docume
 const applyAccess=context=>{
 document.querySelectorAll('[data-document-model]').forEach(n=>n.remove());const host=document.querySelector('.professional-menu a[href="contratos.html"]')?.parentElement;
 if(host&&page!=='controle.html'&&documentKindClassifier)for(const model of context.documentModels||[]){if(model.tipo==='contrato_locacao'||(documentKindClassifier&&['recibos','alteracoes','distratos'].includes(documentKindClassifier(model))))continue;const link=document.createElement('a');link.dataset.documentModel=model.id;link.className='menu-link';link.textContent=model.nome;link.href='documentos-modelo.html?modelo='+encodeURIComponent(model.id);if(page==='documentos-modelo.html'&&new URLSearchParams(location.search).get('modelo')===model.id){link.classList.add('active');host.parentElement.open=true}host.append(link);}
-applyBrand(page==='controle.html'?{nome_fantasia:'BG SYSTEMS',cor_primaria:'#2864da',on_primary:'#ffffff'}:context.company);document.querySelectorAll('.global-user').forEach(n=>n.textContent=context.user.nome);document.querySelectorAll('.professional-menu a[href]').forEach(a=>{const href=a.getAttribute('href');if(href==='controle.html'){a.hidden=!context.developer;return;}if(['empresa.html','acessos.html'].includes(href)){a.hidden=page==='controle.html'||!context.canManageCompany;return;}if(['modulos.html','perfil.html'].includes(href))return;const module='locacao';a.hidden=page==='controle.html'||!context.modules.includes(module);});document.querySelectorAll('.professional-menu details').forEach(d=>{d.hidden=![...d.querySelectorAll('a')].some(a=>!a.hidden);});};
+applyBrand(page==='controle.html'?{nome_fantasia:'BG SYSTEMS',cor_primaria:'#2864da',on_primary:'#ffffff'}:context.company);document.querySelectorAll('.global-user').forEach(n=>n.textContent=context.user.nome);document.querySelectorAll('.professional-menu a[href]').forEach(a=>{const href=a.getAttribute('href');if(href==='controle.html'){a.hidden=!context.developer;return;}if(['empresa.html','acessos.html'].includes(href)){a.hidden=page==='controle.html'||!context.canManageCompany;return;}if(['modulos.html','perfil.html'].includes(href))return;const module='locacao';a.hidden=page==='controle.html'||!context.modules.includes(module);});document.querySelectorAll('.professional-menu .menu-link.active').forEach(a=>a.setAttribute('aria-current','page'));document.querySelectorAll('.professional-menu details').forEach(d=>{d.hidden=![...d.querySelectorAll('a')].some(a=>!a.hidden);});};
 window.addEventListener('app-context-ready',event=>applyAccess(event.detail));if(window.alquilerContext)applyAccess(window.alquilerContext);
 
 // Navegação compacta: o menu abre como painel no celular.

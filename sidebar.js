@@ -1,6 +1,9 @@
 const currentPage=location.pathname.split('/').pop()||'dashboard.html'; const page=currentPage.includes('.')?currentPage:currentPage+'.html';
 const section=new URLSearchParams(location.search).get('secao')||'';
-let cachedCompany={nome_fantasia:'BG SYSTEMS'},cachedUser={nome:'Usuário'};
+let cachedCompany={nome_fantasia:'BG SYSTEMS'},cachedUser={nome:''};
+// Display-only identity, isolated by the signed-in account and selected company.
+try{const session=JSON.parse(localStorage.getItem('sb-xtelzwclrzzlsqjecscl-auth-token')||'null');const account=session?.user?.id,company=sessionStorage.getItem('bgsys:empresa-id');if(account&&company){const user=JSON.parse(sessionStorage.getItem('bgsys:menu-user:'+account+':'+company)||'null');if(typeof user?.nome==='string')cachedUser={nome:user.nome};}}catch{}
+if(window.alquilerContext?.user?.nome)cachedUser={nome:window.alquilerContext.user.nome};
 try {const selected=sessionStorage.getItem('bgsys:empresa-id'),cached=JSON.parse(sessionStorage.getItem('bgsys:brand:'+selected)||'null');if(page!=='controle.html'&&cached?.id===selected)cachedCompany=cached;}catch{}
 function applyBrand(company){
  document.querySelectorAll('.global-company').forEach(n=>n.textContent=company.nome_fantasia||'BG SYSTEMS');
@@ -69,7 +72,7 @@ window.addEventListener('app-context-ready',event=>applyAccess(event.detail));if
 // Navegação compacta: o menu abre como painel no celular.
 const mobileToggle=document.createElement('button');
 mobileToggle.type='button';mobileToggle.className='mobile-menu-toggle';mobileToggle.setAttribute('aria-label','☰ Menu');
-mobileToggle.innerHTML='<span aria-hidden="true">☰</span><span class="brand-mark mobile-brand-mark" aria-hidden="true">BG</span><span class="mobile-menu-identity"><strong class="global-company">BG SYSTEMS</strong><small class="global-user">Usuário</small></span>';
+mobileToggle.innerHTML='<span aria-hidden="true">☰</span><span class="brand-mark mobile-brand-mark" aria-hidden="true">BG</span><span class="mobile-menu-identity"><strong class="global-company">BG SYSTEMS</strong><small class="global-user">'+safe(cachedUser.nome)+'</small></span>';
 mobileToggle.setAttribute('aria-expanded','false');mobileToggle.setAttribute('aria-controls','app-sidebar');
 const mobileSidebar=document.querySelector('.sidebar');if(mobileSidebar){mobileSidebar.id='app-sidebar';
 const veil=document.createElement('button');veil.type='button';veil.className='mobile-menu-veil';veil.setAttribute('aria-label','Fechar menu');

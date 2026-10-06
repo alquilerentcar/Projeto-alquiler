@@ -2,6 +2,7 @@ const http = require('node:http');
 const envPath = require('node:path').join(__dirname, '.env');
 if (require('node:fs').existsSync(envPath)) process.loadEnvFile(envPath);
 const accessApi = require('./access-api.js');
+const zapSignTest = require('./zapsign-test.js');
 const usernameLogin = require('./username-login.js');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -18,6 +19,7 @@ const files = Object.fromEntries([
   ['ui-theme.css','text/css'],['forge.min.js','text/javascript'],['certificado-reader.worker.js','text/javascript'],['forge-LICENSE.txt','text/plain'],['styles.css','text/css'],['assistente.css','text/css'],['sidebar.js','text/javascript'],['section-page.js','text/javascript'],['financeiro.js','text/javascript'],['app.js','text/javascript'],['pages.js','text/javascript'],['fleet.js','text/javascript'],['empresa.js','text/javascript'],['locacoes.js','text/javascript'],['contratos.js','text/javascript'],['contrato.js','text/javascript'],['registros.js','text/javascript'],['modelos-contrato.js','text/javascript'],['certificados.js','text/javascript'],['assistente.js','text/javascript'],['auth-guard.js','text/javascript'],['app-context.js','text/javascript'],['login.js','text/javascript'],['modelo_contrato.docx','application/vnd.openxmlformats-officedocument.wordprocessingml.document'],['modelo_contrato_texto.txt','text/plain'],['papel_timbrado_preview.png','image/png'],['papel_timbrado_alquiler.pdf','application/pdf'],['fluxo-login-locacao.bpmn','application/xml'],
 ].map(([name,type]) => [`/${name}`, [name, `${type}; charset=utf-8`]]));
 for (const [name,type] of [['perfil.html','text/html'],['perfil.js','text/javascript'],['conta.css','text/css'],['esqueci-senha.html','text/html'],['esqueci-senha.js','text/javascript'],['assinaturas.html','text/html'],['assinaturas.js','text/javascript'],['redefinir-senha.html','text/html'],['redefinir-senha.js','text/javascript'],['pdf-preview.js','text/javascript'],['pdfjs/pdf.mjs','text/javascript'],['pdfjs/pdf.worker.mjs','text/javascript'],['rich-document.js','text/javascript'],['documentos-modelo.html','text/html'],['documentos-modelo.js','text/javascript'],['document-model-core.js','text/javascript'],['document-model-pdf.js','text/javascript'],['document-model-records.js','text/javascript'],['empresa-branding.js','text/javascript'],['controle.html','text/html'],['acessos.html','text/html'],['acessos.js','text/javascript'],['acessos.css','text/css'],['access-policy.js','text/javascript'],['modulos.js','text/javascript']]) files['/'+name]=[name,type+'; charset=utf-8'];
+files['/assinaturas-teste.js']=['assinaturas-teste.js','text/javascript; charset=utf-8'];
 files['/assistente-intake.mjs']=['assistente-intake.mjs','text/javascript; charset=utf-8'];
 for(const name of ['site-ui.js','favicon.svg']) files['/'+name]=[name,name.endsWith('.svg')?'image/svg+xml':'text/javascript; charset=utf-8'];
 files['/frota.html']=['frota.html','text/html; charset=utf-8'];
@@ -204,6 +206,11 @@ async function handler(request,response) {
     try { await requireModule(request, 'locacao');
       if(route==='/api/assistente/configurar') {const allowed=await rpcUser(request,'acesso_desenvolvedor',{});if(!allowed)throw Object.assign(new Error('Somente o desenvolvedor pode configurar a integração.'),{status:403});}
     } catch(error){return json(response,error.status||503,{error:error.message});}
+  }
+  if(route==='/api/assinaturas/zapsign/status'&&request.method==='GET')return json(response,200,zapSignTest.status());
+  if(route==='/api/assinaturas/zapsign/testar'){
+   if(request.method!=='POST')return json(response,405,{error:'Método não permitido.'});
+   try{if(!await rpcUser(request,'acesso_desenvolvedor',{}))throw Object.assign(new Error('Somente o desenvolvedor pode executar o teste.'),{status:403});await readJson(request,1024);return json(response,200,await zapSignTest.createTest());}catch(error){return json(response,error.status||500,{error:error.status?error.message:'Não foi possível concluir o teste da ZapSign.'});}
   }
   if(route==='/api/assinaturas/status'&&request.method==='GET') return json(response,200,{active:Boolean(autentiqueToken),provider:'autentique',sandbox:autentiqueSandbox});
   if(route==='/api/assinaturas/enviar') {

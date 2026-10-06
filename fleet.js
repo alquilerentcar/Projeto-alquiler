@@ -51,7 +51,7 @@ async function loadCars(force = true) {
 function renderCars() {
   const search = $("#cars-search").value.trim().toLocaleLowerCase("pt-BR");
   const status = $("#cars-status").value;
-  const rows = state.cars.filter((row) => (status === "todos" || row.situacao === status) && [row.placa, row.marca, row.modelo].join(" ").toLocaleLowerCase("pt-BR").includes(search));
+  const rows = state.cars.filter((row) => (status === "todos" || row.situacao === status) && [row.placa, row.marca, row.modelo, row.proprietario_nome].join(" ").toLocaleLowerCase("pt-BR").includes(search));
   $("#cars-total").textContent = state.cars.length;
   $("#cars-available").textContent = state.cars.filter((r) => r.situacao === "Disponível").length;
   $("#cars-rented").textContent = state.cars.filter((r) => r.situacao === "Locado").length;
@@ -60,7 +60,7 @@ function renderCars() {
   const body = $("#cars-body"); body.replaceChildren();
   for (const row of rows) {
     const tr = document.createElement("tr");
-    tr.append(td(row.placa), td([row.marca, row.modelo].filter(Boolean).join(" ") || "—"), td(row.ano), td(money(row.valor_diaria)), td(money(row.caucao)), td(row.situacao), rowButton(row, openCar));
+    tr.append(td(row.placa), td([row.marca, row.modelo].filter(Boolean).join(" ") || "—"), td(row.ano), td(row.proprietario_nome), td(money(row.valor_diaria)), td(money(row.caucao)), td(row.situacao), rowButton(row, openCar));
     body.append(tr);
   }
   $("#cars-empty").classList.toggle("hidden", rows.length > 0);

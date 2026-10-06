@@ -35,23 +35,7 @@ const menu=`
       <a class="menu-link${active('contratos.html')}" href="contratos.html">Contratos / Termos de locação</a><a class="menu-link${active('alteracoes.html')}" href="alteracoes.html">Alterações de veículo</a><a class="menu-link${active('recibos.html')}" href="recibos.html">Recibos</a><a class="menu-link${active('distratos.html')}" href="distratos.html">Distratos</a>
     </div></details>
     <a class="menu-link${active('assinaturas.html')}" href="assinaturas.html">${icon('✎')}<span>Assinaturas</span></a>
-    <details${groupOpen(['financeiro.html'])}><summary>${icon('R$')}<span>Financeiro</span></summary><div class="menu-children finance-menu">
-      <a class="menu-link${page==='financeiro.html'&&!section?' active':''}" href="financeiro.html">Visão geral</a>
-      <a class="menu-link${financeActive('contas-pagar')}" href="financeiro.html?secao=contas-pagar">Contas a pagar</a>
-      <a class="menu-link${financeActive('contas-receber')}" href="financeiro.html?secao=contas-receber">Contas a receber</a>
-      <a class="menu-link${financeActive('extrato')}" href="financeiro.html?secao=extrato">Extrato</a>
-      <a class="menu-link${financeActive('dre')}" href="financeiro.html?secao=dre">DRE gerencial</a>
-      <a class="menu-link${financeActive('fluxo-caixa')}" href="financeiro.html?secao=fluxo-caixa">Fluxo de caixa</a>
-      <a class="menu-link${financeActive('conciliacao')}" href="financeiro.html?secao=conciliacao">Conciliação</a>
-      <a class="menu-link${financeActive('contas-bancarias')}" href="financeiro.html?secao=contas-bancarias">Contas bancárias</a>
-      <details class="menu-nested"${['categorias','meios-pagamento','centros-custo','condicoes-pagamento'].includes(section)?' open':''}><summary>Parâmetros</summary><div class="menu-children">
-      <a class="menu-link${financeActive('categorias')}" href="financeiro.html?secao=categorias">Categorias</a>
-      <a class="menu-link${financeActive('meios-pagamento')}" href="financeiro.html?secao=meios-pagamento">Meios de pagamento</a>
-      <a class="menu-link${financeActive('centros-custo')}" href="financeiro.html?secao=centros-custo">Centros de custos</a>
-      <a class="menu-link${financeActive('condicoes-pagamento')}" href="financeiro.html?secao=condicoes-pagamento">Condições de pagamento</a>
-      </div></details><details class="menu-nested"${section==='relatorios'?' open':''}><summary>Análises</summary><div class="menu-children">
-      <a class="menu-link${financeActive('relatorios')}" href="financeiro.html?secao=relatorios">Relatórios</a></div></details>
-    </div></details>
+    <details${groupOpen(['financeiro.html'])}><summary>${icon('R$')}<span>Financeiro</span></summary><div class="menu-children finance-menu"><a class="menu-link${page==='financeiro.html'&&!section?' active':''}" href="financeiro.html">Entradas do dia</a><a class="menu-link${financeActive('contas-receber')}" href="financeiro.html?secao=contas-receber">Contas a receber</a><a class="menu-link${page==='financeiro.html'&&['recebidos','extrato'].includes(section)?' active':''}" href="financeiro.html?secao=recebidos">Recebimentos</a></div></details>
     <span class="menu-section-label">CONTA E ADMINISTRAÇÃO</span>
     <details hidden data-company-admin${groupOpen(['empresa.html','acessos.html'])}><summary>${icon('⚙')}<span>Administração</span></summary><div class="menu-children"><a class="menu-link${active('empresa.html')}" href="empresa.html">Empresa</a><a class="menu-link${active('acessos.html')}" href="acessos.html">Acessos / Usuários</a></div></details>
     <a hidden data-admin-only class="menu-link${active('controle.html')}" href="controle.html">${icon('BG')}<span>Controle · BG SYSTEMS</span></a>

@@ -198,8 +198,8 @@ async function handler(request,response) {
       if(route==='/api/assistente/configurar') {const allowed=await rpcUser(request,'acesso_desenvolvedor',{});if(!allowed)throw Object.assign(new Error('Somente o desenvolvedor pode configurar a integração.'),{status:403});}
     } catch(error){return json(response,error.status||503,{error:error.message});}
   }
-  if(route==='/api/assinaturas/zapsign/status'&&request.method==='GET')return json(response,200,zapSignTest.status());
-  if(route==='/api/assinaturas/zapsign/testar'){
+  if(route==='/api/zapsign-status'&&request.method==='GET')return json(response,200,zapSignTest.status());
+  if(route==='/api/zapsign-testar'){
    if(request.method!=='POST')return json(response,405,{error:'Método não permitido.'});
    try{if(!await rpcUser(request,'acesso_desenvolvedor',{}))throw Object.assign(new Error('Somente o desenvolvedor pode executar o teste.'),{status:403});await readJson(request,1024);return json(response,200,await zapSignTest.createTest());}catch(error){return json(response,error.status||500,{error:error.status?error.message:'Não foi possível concluir o teste da ZapSign.'});}
   }

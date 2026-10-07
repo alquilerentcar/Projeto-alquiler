@@ -170,16 +170,7 @@ async function contractCompanyData(request,data){
  return {...data,modelo_blocos:model?(model.formatacao?.length?model.formatacao:model.conteudo.split('\n').map(text=>({align:'justify',runs:[{text}]}))):null,modelo_versao:model?.versao||null,empresa_razao_social:company.razao_social,empresa_cnpj:company.cnpj,empresa_endereco:company.endereco||'',empresa_email:company.email||'',empresa_telefone:company.telefone||''};
 }
 async function generateContract(data,preview=false) {
-  const bundledPython=path.join(require('node:os').homedir(),'.cache','codex-runtimes','codex-primary-runtime','dependencies','python','python.exe');
-  const python=process.env.PYTHON_PATH||(fs.existsSync(bundledPython)?bundledPython:'python');
-  const script=path.join(__dirname,'gerar_contrato_web.py');
-  const child=spawn(python,[script,...(preview?['--preview']:[])],{windowsHide:true,stdio:['pipe','pipe','pipe']});
-  const chunks=[]; let errors='';
-  child.stdout.on('data',chunk=>chunks.push(chunk)); child.stderr.on('data',chunk=>errors+=chunk);
-  child.stdin.end(JSON.stringify(data));
-  const code=await new Promise((resolve,reject)=>{child.on('close',resolve);child.on('error',reject)});
-  if(code!==0) throw Object.assign(new Error(errors.trim()||'Falha ao preencher o modelo Word.'),{status:500});
-  return Buffer.concat(chunks);
+  return require('./contract-node.cjs').generate(data,path.join(__dirname,'modelo_contrato.docx'),preview);
 }
 async function rpcUser(request,name,body) {
   const authorization=request.headers.authorization||'';

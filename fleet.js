@@ -1,3 +1,4 @@
+import {vehicleSituation} from './veiculos-situacao.mjs';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireAuth, bindLogout } from "./auth-guard.js";
 
@@ -6,7 +7,8 @@ await requireAuth(db);
 bindLogout(db);
 const $ = (selector) => document.querySelector(selector);
 const page = document.body.dataset.page;
-const state = { cars: [], editing: null };
+const state = { cars: [], editing: null, periods: [], rentals: [], occupations: [], clients: [], verified:false };
+const company=window.alquilerContext.company;
 let toastTimer;
 
 function toast(text, error = false) {
@@ -36,31 +38,36 @@ function nullable(form, name) { return value(form, name) || null; }
 function rowButton(row, callback) {
   const cell = document.createElement("td");
   const button = el("button", "Editar", "btn btn-quiet");
-  button.type = "button";
+  button.type = "button"; if(row.empresa_id && row.empresa_id !== company.id){button.disabled=true;button.title="Edite o cadastro na empresa proprietária do veículo.";}
   button.addEventListener("click", () => callback(row));
-  cell.append(button);
+  const history=el('a','Ver frota','btn btn-quiet');history.href='/frota?placa='+encodeURIComponent(row.placa);cell.append(button,history);
   return cell;
 }
+const situation=row=>vehicleSituation(row,state.periods,state.rentals,state.occupations,state.verified);
 async function loadCars(force = true) {
-  $("#cars-count").textContent = "Carregando…";
-  const { data, error } = await window.bgLoadList("carros", () => db.from("carros").select("*").order("placa").range(0, 999), force);
-  if (error) { $("#cars-count").textContent = "Falha ao carregar"; return toast(errorText(error), true); }
-  state.cars = data || [];
-  renderCars();
+ $('#cars-count').textContent='Conferindo veículos e ocupações…';const generation=state.generation=(state.generation||0)+1;
+ const results=await Promise.allSettled([window.bgLoadList('carros',()=>db.from('carros').select('*').order('placa').range(0,999),force),db.rpc('frota_painel',{p_empresa:company.id}),db.from('locacoes').select('carro_id,cliente_id,status').eq('empresa_id',company.id).eq('status','Ativa'),db.from('frota_levantamento').select('*').eq('empresa_id',company.id).eq('ativo',true)]);
+ if(generation!==state.generation)return;
+ const unwrap=r=>r.status==='fulfilled'?r.value:{error:{message:r.reason?.message||'Falha de conexão'}};const [catalog,panel,rentals,occupations]=results.map(unwrap);
+ if(catalog.error){$('#cars-count').textContent='Falha ao carregar';return toast(errorText(catalog.error),true);}
+ state.periods=panel.data?.periodos||[];state.clients=panel.data?.clientes||[];state.rentals=rentals.data||[];state.occupations=occupations.data||[];state.verified=![panel,rentals,occupations].some(r=>r.error);
+ const cars=new Map((catalog.data||[]).map(c=>[c.id,c]));for(const car of panel.data?.carros||[]){if(cars.has(car.id)||state.periods.some(p=>p.carro_id===car.id&&!p.fim)||state.rentals.some(r=>r.carro_id===car.id)||state.occupations.some(r=>r.carro_id===car.id))cars.set(car.id,car);}
+ state.cars=[...cars.values()].sort((a,b)=>a.placa.localeCompare(b.placa));renderCars();
+ $('#cars-availability-note').textContent=state.verified?'Disponíveis: veículos marcados como disponíveis, sem locatário, locação ativa ou período de manutenção/indisponibilidade.':'Não foi possível conferir todas as ocupações. A disponibilidade não está confirmada. '+[panel,rentals,occupations].filter(r=>r.error).map(r=>r.error.message).join(' · ');
 }
 function renderCars() {
   const search = $("#cars-search").value.trim().toLocaleLowerCase("pt-BR");
   const status = $("#cars-status").value;
-  const rows = state.cars.filter((row) => (status === "todos" || row.situacao === status) && [row.placa, row.marca, row.modelo, row.proprietario_nome].join(" ").toLocaleLowerCase("pt-BR").includes(search));
+  const rows = state.cars.filter((row) => (status === "todos" || situation(row).status === status) && [row.placa, row.marca, row.modelo, row.proprietario_nome, situation(row).person, state.clients.find(c=>c.id===situation(row).clientId)?.nome].join(" ").toLocaleLowerCase("pt-BR").includes(search));
   $("#cars-total").textContent = state.cars.length;
-  $("#cars-available").textContent = state.cars.filter((r) => r.situacao === "Disponível").length;
-  $("#cars-rented").textContent = state.cars.filter((r) => r.situacao === "Locado").length;
-  $("#cars-maintenance").textContent = state.cars.filter((r) => r.situacao === "Manutenção").length;
-  $("#cars-count").textContent = `${rows.length} de ${state.cars.length} carros`;
+  $("#cars-available").textContent = state.cars.filter((r) => situation(r).status === "Disponível").length;
+  $("#cars-rented").textContent = state.cars.filter((r) => situation(r).status === "Locado").length;
+  $("#cars-maintenance").textContent = state.cars.filter((r) => situation(r).status === "Manutenção").length;
+  if(!state.verified)$("#cars-available").textContent="—"; $("#cars-count").textContent = `${rows.length} de ${state.cars.length} carros`;
   const body = $("#cars-body"); body.replaceChildren();
   for (const row of rows) {
     const tr = document.createElement("tr");
-    tr.append(td(row.placa), td([row.marca, row.modelo].filter(Boolean).join(" ") || "—"), td(row.ano), td(row.proprietario_nome), td(money(row.valor_diaria)), td(money(row.caucao)), td(row.situacao), rowButton(row, openCar));
+    tr.append(td(row.placa), td([row.marca, row.modelo].filter(Boolean).join(" ") || "—"), td(row.ano), td(row.proprietario_nome), td(money(row.valor_diaria)), td(money(row.caucao)), td(situation(row).person||state.clients.find(c=>c.id===situation(row).clientId)?.nome||'—'), td(situation(row).status), rowButton(row, openCar));
     body.append(tr);
   }
   $("#cars-empty").classList.toggle("hidden", rows.length > 0);
@@ -70,7 +77,7 @@ function openCar(row = null) {
   const form = $("#car-form"); form.reset();
   $("#car-dialog-title").textContent = row ? "Editar carro" : "Novo carro";
   if (row) for (const field of ["proprietario_nome", "proprietario_documento", "localizacao", "placa", "situacao", "marca", "modelo", "ano", "cor", "renavam", "chassi", "valor_diaria", "caucao", "observacoes"]) form.elements.namedItem(field).value = row[field] ?? "";
-  $("#car-dialog").showModal();
+  const selected=form.elements.namedItem('situacao');selected.disabled=!!row&&situation(row).locked;const note=$('#car-operation-note');note.textContent=selected.disabled?'Situação atual: '+situation(row).status+'. Altere a ocupação na Frota ou encerre a locação; editar o cadastro não libera este veículo.':'';$('#car-dialog').showModal();
 }
 async function saveCar(event) {
   event.preventDefault();
@@ -78,7 +85,7 @@ async function saveCar(event) {
   const placa = value(form, "placa").toUpperCase().replace(/[^A-Z0-9]/g, "");
   if (!/^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/.test(placa)) return toast("Informe uma placa válida com 7 caracteres.", true);
   const payload = { proprietario_nome: nullable(form, "proprietario_nome"), proprietario_documento: nullable(form, "proprietario_documento"), localizacao: nullable(form, "localizacao"), placa, situacao: value(form, "situacao"), marca: nullable(form, "marca"), modelo: nullable(form, "modelo"), ano: nullable(form, "ano") ? Number(value(form, "ano")) : null, cor: nullable(form, "cor"), renavam: nullable(form, "renavam"), chassi: nullable(form, "chassi"), valor_diaria: nullable(form, "valor_diaria") ? Number(value(form, "valor_diaria")) : null, caucao: nullable(form, "caucao") ? Number(value(form, "caucao")) : null, observacoes: nullable(form, "observacoes") };
-  const button = $("#save-car"); button.disabled = true;
+  if(state.editing&&form.elements.namedItem('situacao').disabled)delete payload.situacao;const button = $('#save-car');button.disabled = true;
   const query = state.editing ? db.from("carros").update(payload).eq("id", state.editing) : db.from("carros").insert(payload);
   const { error } = await query;
   button.disabled = false;

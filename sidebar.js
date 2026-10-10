@@ -26,8 +26,8 @@ const menu=`
     <a class="menu-link${active('dashboard.html')}" href="dashboard.html">${icon('⌂')}<span>Dashboard</span></a>
     <a class="menu-link${active('notificacoes.html')}" href="notificacoes.html">${icon('◉')}<span>Notificações</span><b class="menu-count">0</b></a>
     <span class="menu-section-label">OPERAÇÃO</span>
-    <details${groupOpen(['clientes.html','carros.html','modelos-contrato.html','certificados.html'])}><summary>${icon('▦')}<span>Cadastros</span></summary><div class="menu-children">
-      <a class="menu-link${active('clientes.html')}" href="clientes.html">Clientes</a><a class="menu-link${active('carros.html')}" href="carros.html">Veículos</a><a class="menu-link${active('modelos-contrato.html')}" href="modelos-contrato.html">Modelos de documentos</a><a class="menu-link${active('certificados.html')}" href="certificados.html">Certificados digitais</a>
+    <details${groupOpen(['fornecedores.html','clientes.html','carros.html','modelos-contrato.html','certificados.html'])}><summary>${icon('▦')}<span>Cadastros</span></summary><div class="menu-children">
+      <a class="menu-link${active('clientes.html')}" href="clientes.html">Clientes</a><a class="menu-link${active('fornecedores.html')}" href="fornecedores.html">Fornecedores</a><a class="menu-link${active('carros.html')}" href="carros.html">Veículos</a><a class="menu-link${active('modelos-contrato.html')}" href="modelos-contrato.html">Modelos de documentos</a><a class="menu-link${active('certificados.html')}" href="certificados.html">Certificados digitais</a>
     </div></details>
     <a class="menu-link${active('frota.html')}" href="frota.html">${icon('▣')}<span>Frota e diárias</span></a>
     <a class="menu-link${active('locacoes.html')}" href="locacoes.html">${icon('▤')}<span>Locações</span></a>

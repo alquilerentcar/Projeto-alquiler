@@ -87,7 +87,7 @@ root.querySelector('.ai-form').addEventListener('submit', async event => {
   const message = input.value.trim(); if (!message&&!queuedFiles.length) return;
   if(queuedFiles.length){if(intakeBusy)return;addMessage('user',(message||'Ler os documentos anexados')+'\nAnexos: '+queuedFiles.map(file=>file.name).join(', '));input.value='';await readQueuedFiles(message);return;}
   const command=message.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-  if(!/contrato|loca[cç][aã]o|ve[ií]culo|carro|modelo|documento|recibo|distrato|termo/i.test(message)&&/^(?:(?:pode|quero|vamos|por favor)\s+)?(?:cadastrar|cadastre|salvar|salve|criar|crie)\b/.test(command)){
+  if(!/fornecedor|oficina|manuten[cç][aã]o|contrato|loca[cç][aã]o|ve[ií]culo|carro|modelo|documento|recibo|distrato|termo/i.test(message)&&/^(?:(?:pode|quero|vamos|por favor)\s+)?(?:cadastrar|cadastre|salvar|salve|criar|crie)\b/.test(command)){
     addMessage('user',message);input.value='';await commitIntake();return;
   }
   const prior = history.slice(-8);

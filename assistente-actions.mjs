@@ -1,3 +1,4 @@
+import {showOperationalAction} from './assistente-operacao.mjs';
 import {plainBlocks} from './rich-document.js';
 export function rentalPayload(values,company){
  const daily=Number(values.diaria),deposit=Number(values.caucao||0);
@@ -7,6 +8,7 @@ export function rentalPayload(values,company){
  return {empresa_id:company,cliente_id:values.cliente_id,carro_id:values.carro_id,data_inicio:start.toISOString(),data_fim:end?.toISOString()||null,valor_diaria:daily,valor_caucao:deposit,valor_caucao_pago:0,saldo_caucao:deposit,numero_parcelas_caucao:100,valor_parcela_caucao:deposit/100,multa_atraso_percentual:11,status:'Reservada',observacoes:String(values.observacoes||'').slice(0,4000)||null};
 }
 export async function showAction({action,db,context,host,notify,userId}){
+ if(await showOperationalAction({action,db,context,host,notify,userId}))return;
  if(!['locacao','modelo'].includes(action?.tipo))return;
  const company=context.company?.id;if(!company)throw Error('Selecione uma empresa.');
  if(action.tipo==='modelo'&&!context.canManageCompany)throw Error('Somente o administrador da empresa pode criar modelos.');

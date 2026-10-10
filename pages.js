@@ -73,6 +73,7 @@ function renderSuppliers() {
   const search = $("#supplier-search").value.trim().toLocaleLowerCase("pt-BR");
   const filter = $("#supplier-status").value;
   const filtered = state.suppliers.filter((row) => {
+    if ($("#supplier-category")?.value && (row.categoria_fornecedor||"outros") !== $("#supplier-category").value) return false;
     if (filter === "ativos" && !active(row)) return false;
     if (filter === "inativos" && active(row)) return false;
     if (!search) return true;
@@ -102,16 +103,17 @@ function renderSuppliers() {
     retire.addEventListener("click", () => changeSupplierStatus(row));
     group.append(edit, retire);
     actions.append(group);
-    tr.append(name, node("td", documentNumber(row.cnpj)), node("td", row.celular || row.telefone || "—"), node("td", row.cidade || "—"), status, actions);
+    tr.append(name, node("td",supplierCategory(row.categoria_fornecedor)), node("td", documentNumber(row.cnpj)), node("td", row.celular || row.telefone || "—"), node("td", row.cidade || "—"), status, actions);
     body.append(tr);
   }
 }
-const supplierFields = ["razao_social", "nome_fantasia", "cnpj", "inscricao_estadual", "email", "telefone", "celular", "cep", "uf", "endereco", "numero", "complemento", "bairro", "cidade"];
+const supplierCategory=value=>({oficina:"Oficina",veiculos:"Fornecedor de veículos",ambos:"Oficina e veículos",outros:"Outros / não classificado"}[value]||"Outros / não classificado");
+const supplierFields = ["categoria_fornecedor","razao_social", "nome_fantasia", "cnpj", "inscricao_estadual", "email", "telefone", "celular", "cep", "uf", "endereco", "numero", "complemento", "bairro", "cidade"];
 function openSupplier(row = null) {
   state.editingSupplier = row;
   const form = $("#supplier-form");
   form.reset();
-  for (const field of supplierFields) form.elements.namedItem(field).value = row?.[field] ?? "";
+  for (const field of supplierFields) form.elements.namedItem(field).value = row?.[field] ?? (field === "categoria_fornecedor" ? "outros" : "");
   $("#supplier-dialog-title").textContent = row ? "Editar fornecedor" : "Novo fornecedor";
   $("#supplier-dialog").showModal();
 }
@@ -152,6 +154,7 @@ function supplierPage() {
   $("#new-supplier-button").addEventListener("click", () => openSupplier());
   $("#refresh-suppliers").addEventListener("click", loadSuppliers);
   $("#supplier-search").addEventListener("input", renderSuppliers);
+  $("#supplier-category").addEventListener("change",renderSuppliers);
   $("#supplier-status").addEventListener("change", renderSuppliers);
   $("#supplier-form").addEventListener("submit", saveSupplier);
   $("#close-supplier-dialog").addEventListener("click", () => $("#supplier-dialog").close());

@@ -77,7 +77,7 @@ function openCar(row = null) {
   const form = $("#car-form"); form.reset();
   $("#car-dialog-title").textContent = row ? "Editar carro" : "Novo carro";
   if (row) for (const field of ["proprietario_nome", "proprietario_documento", "localizacao", "placa", "situacao", "marca", "modelo", "ano", "cor", "renavam", "chassi", "valor_diaria", "caucao", "observacoes"]) form.elements.namedItem(field).value = row[field] ?? "";
-  const selected=form.elements.namedItem('situacao');selected.disabled=!!row&&situation(row).locked;const note=$('#car-operation-note');note.textContent=selected.disabled?'Situação atual: '+situation(row).status+'. Altere a ocupação na Frota ou encerre a locação; editar o cadastro não libera este veículo.':'';$('#car-dialog').showModal();
+  const selected=form.elements.namedItem('situacao');selected.disabled=!!row&&situation(row).locked;const note=$('#car-operation-note');note.textContent=selected.disabled?'Situação atual: '+situation(row).status+'. Altere a ocupação na Frota ou encerre a locação; editar o cadastro não libera este veículo.':'';updateDescriptionArea(row?situation(row).status:form.elements.namedItem('situacao').value);$('#car-dialog').showModal();
 }
 async function saveCar(event) {
   event.preventDefault();
@@ -85,7 +85,7 @@ async function saveCar(event) {
   const placa = value(form, "placa").toUpperCase().replace(/[^A-Z0-9]/g, "");
   if (!/^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/.test(placa)) return toast("Informe uma placa válida com 7 caracteres.", true);
   const payload = { proprietario_nome: nullable(form, "proprietario_nome"), proprietario_documento: nullable(form, "proprietario_documento"), localizacao: nullable(form, "localizacao"), placa, situacao: value(form, "situacao"), marca: nullable(form, "marca"), modelo: nullable(form, "modelo"), ano: nullable(form, "ano") ? Number(value(form, "ano")) : null, cor: nullable(form, "cor"), renavam: nullable(form, "renavam"), chassi: nullable(form, "chassi"), valor_diaria: nullable(form, "valor_diaria") ? Number(value(form, "valor_diaria")) : null, caucao: nullable(form, "caucao") ? Number(value(form, "caucao")) : null, observacoes: nullable(form, "observacoes") };
-  if(state.editing&&form.elements.namedItem('situacao').disabled)delete payload.situacao;const button = $('#save-car');button.disabled = true;
+  if(state.editing&&form.elements.namedItem('situacao').disabled)delete payload.situacao;else payload.situacao_confirmada_em=new Date().toISOString();const button = $('#save-car');button.disabled = true;
   const query = state.editing ? db.from("carros").update(payload).eq("id", state.editing) : db.from("carros").insert(payload);
   const { error } = await query;
   button.disabled = false;
@@ -102,6 +102,9 @@ async function saveCar(event) {
     $("#cars-status").addEventListener("change", renderCars);
     $("#car-form").addEventListener("submit", saveCar);
     for (const id of ["#close-car-dialog", "#cancel-car"]) $(id).addEventListener("click", () => $("#car-dialog").close());
-    loadCars(false);
+    $('#cars-search').value=new URLSearchParams(location.search).get('placa')||'';loadCars(false);
   }
 }
+
+function updateDescriptionArea(status){const maintenance=['Manutenção','Revisão'].includes(status);$('#car-description-title').textContent=maintenance?(status==='Revisão'?'Descrição da revisão':'Descrição da manutenção'):'Observações do veículo';$('#car-description-label').textContent=maintenance?'Problema, diagnóstico e serviços necessários':'Observações';$('#car-description-help').textContent=maintenance?'Registre o problema identificado, o que será feito e as orientações da oficina. A descrição será exibida na Frota e no histórico do carro.':'Informações adicionais do veículo.';}
+$('#car-form').elements.namedItem('situacao').addEventListener('change',e=>updateDescriptionArea(e.target.value));

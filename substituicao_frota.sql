@@ -2,7 +2,7 @@
 begin;
 create table if not exists public.frota_substituicoes (
  id uuid primary key, empresa_id uuid not null references public.empresas(id),
- criado_por uuid not null references auth.users(id), criado_em timestamptz not null default now(),
+ criado_por uuid not null, criado_em timestamptz not null default now(),
  confirmado_em timestamptz, origem_tipo text not null check(origem_tipo in ('levantamento','periodo','locacao')),
  origem_id uuid not null, cliente_id uuid not null references public.clientes(id),
  anterior_id uuid not null references public.carros(id), posterior_id uuid not null references public.carros(id),
@@ -10,6 +10,7 @@ create table if not exists public.frota_substituicoes (
  snapshot jsonb not null, valores jsonb not null, texto text not null, fotos integer not null check(fotos between 1 and 20),
  check(anterior_id<>posterior_id)
 );
+alter table public.frota_substituicoes drop constraint if exists frota_substituicoes_criado_por_fkey;
 alter table public.frota_substituicoes enable row level security;
 revoke all on public.frota_substituicoes from public,anon,authenticated;
 grant select on public.frota_substituicoes to authenticated;

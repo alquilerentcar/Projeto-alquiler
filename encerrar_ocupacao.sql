@@ -4,8 +4,9 @@ create table if not exists public.frota_ocupacoes_encerradas(
  id uuid primary key,empresa_id uuid not null references public.empresas(id),carro_id uuid not null references public.carros(id),
  origem text not null check(origem in ('levantamento','periodo')),origem_id uuid not null,
  snapshot jsonb not null,fim timestamptz not null,motivo text not null,situacao_posterior text not null,
- criado_por uuid not null references auth.users(id),criado_em timestamptz not null default now(),unique(origem,origem_id)
+ criado_por uuid not null,criado_em timestamptz not null default now(),unique(origem,origem_id)
 );
+alter table public.frota_ocupacoes_encerradas drop constraint if exists frota_ocupacoes_encerradas_criado_por_fkey;
 alter table public.frota_ocupacoes_encerradas enable row level security;
 revoke all on public.frota_ocupacoes_encerradas from public,anon,authenticated;
 grant select on public.frota_ocupacoes_encerradas to authenticated;

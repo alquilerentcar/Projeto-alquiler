@@ -29,7 +29,7 @@ const menu=`
     <details${groupOpen(['fornecedores.html','clientes.html','carros.html','modelos-contrato.html','certificados.html'])}><summary>${icon('▦')}<span>Cadastros</span></summary><div class="menu-children">
       <a class="menu-link${active('clientes.html')}" href="clientes.html">Clientes</a><a class="menu-link${active('fornecedores.html')}" href="fornecedores.html">Fornecedores</a><a class="menu-link${active('carros.html')}" href="carros.html">Veículos</a><a class="menu-link${active('modelos-contrato.html')}" href="modelos-contrato.html">Modelos de documentos</a><a class="menu-link${active('certificados.html')}" href="certificados.html">Certificados digitais</a>
     </div></details>
-    <a class="menu-link${active('frota.html')}" href="frota.html">${icon('▣')}<span>Frota e diárias</span></a>
+    <a class="menu-link${active('frota.html')}" href="frota.html">${icon('▣')}<span>Frotas e ocupações</span></a>
     <a class="menu-link${active('locacoes.html')}" href="locacoes.html">${icon('▤')}<span>Locações</span></a>
     <details${groupOpen(['contratos.html','alteracoes.html','recibos.html','distratos.html'])}><summary>${icon('▧')}<span>Documentos</span></summary><div class="menu-children">
       <a class="menu-link${active('contratos.html')}" href="contratos.html">Contratos / Termos de locação</a><a class="menu-link${active('alteracoes.html')}" href="alteracoes.html">Substituição de veículo</a><a class="menu-link${active('recibos.html')}" href="recibos.html">Recibos</a><a class="menu-link${active('distratos.html')}" href="distratos.html">Distratos e encerramentos</a>

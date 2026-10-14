@@ -43,6 +43,7 @@ files['/substituicao.html']=['substituicao.html','text/html; charset=utf-8'];
 files['/substituicao.js']=['substituicao.js','text/javascript; charset=utf-8'];
 files['/encerrar-ocupacao.mjs']=['encerrar-ocupacao.mjs','text/javascript; charset=utf-8'];
 files['/relatorios-frota.mjs']=['relatorios-frota.mjs','text/javascript; charset=utf-8'];
+for(const name of ['frota-situacao-editor.mjs','frota-locatario-editor.mjs'])files['/'+name]=[name,'text/javascript; charset=utf-8'];
 const cleanRoutes={substituicao:'/locacao/substituicao',relatorios:'/relatorios',frota:'/locacao/frota',login:'/login',modulos:'/modulos',perfil:'/conta/perfil','esqueci-senha':'/conta/esqueci-senha','redefinir-senha':'/conta/redefinir-senha',controle:'/controle',acessos:'/administracao/acessos',empresa:'/administracao/empresa',dashboard:'/locacao/dashboard',clientes:'/cadastros/clientes',carros:'/cadastros/carros',fornecedores:'/cadastros/fornecedores','modelos-contrato':'/cadastros/modelos-contrato',certificados:'/cadastros/certificados',locacoes:'/locacao/locacoes',contratos:'/locacao/contratos',contrato:'/locacao/contrato',assinaturas:'/locacao/assinaturas',registros:'/locacao/registros',alteracoes:'/locacao/alteracoes',recibos:'/locacao/recibos',distratos:'/locacao/distratos','documentos-modelo':'/locacao/documentos-modelo',financeiro:'/financeiro',notificacoes:'/notificacoes'};
 for(const [name,route] of Object.entries(cleanRoutes))files[route]=files['/'+name+'.html'];
 files['/usuarios.html'] = ['usuarios.html','text/html; charset=utf-8'];

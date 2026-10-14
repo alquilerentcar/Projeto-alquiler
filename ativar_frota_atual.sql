@@ -1,9 +1,9 @@
--- Execute no SQL Editor como postgres. Preserva dados, contratos e recebimentos.
+-- Execute no SQL Editor como postgres. Preserva histórico, contratos e recebimentos.
 -- Aplicar uma vez no SQL Editor como postgres. Não apaga contratos ou ocupações.
 begin;
 create table if not exists public.frota_substituicoes (
  id uuid primary key, empresa_id uuid not null references public.empresas(id),
- criado_por uuid not null references auth.users(id), criado_em timestamptz not null default now(),
+ criado_por uuid not null, criado_em timestamptz not null default now(),
  confirmado_em timestamptz, origem_tipo text not null check(origem_tipo in ('levantamento','periodo','locacao')),
  origem_id uuid not null, cliente_id uuid not null references public.clientes(id),
  anterior_id uuid not null references public.carros(id), posterior_id uuid not null references public.carros(id),
@@ -11,6 +11,7 @@ create table if not exists public.frota_substituicoes (
  snapshot jsonb not null, valores jsonb not null, texto text not null, fotos integer not null check(fotos between 1 and 20),
  check(anterior_id<>posterior_id)
 );
+alter table public.frota_substituicoes drop constraint if exists frota_substituicoes_criado_por_fkey;
 alter table public.frota_substituicoes enable row level security;
 revoke all on public.frota_substituicoes from public,anon,authenticated;
 grant select on public.frota_substituicoes to authenticated;
@@ -153,8 +154,9 @@ create table if not exists public.frota_ocupacoes_encerradas(
  id uuid primary key,empresa_id uuid not null references public.empresas(id),carro_id uuid not null references public.carros(id),
  origem text not null check(origem in ('levantamento','periodo')),origem_id uuid not null,
  snapshot jsonb not null,fim timestamptz not null,motivo text not null,situacao_posterior text not null,
- criado_por uuid not null references auth.users(id),criado_em timestamptz not null default now(),unique(origem,origem_id)
+ criado_por uuid not null,criado_em timestamptz not null default now(),unique(origem,origem_id)
 );
+alter table public.frota_ocupacoes_encerradas drop constraint if exists frota_ocupacoes_encerradas_criado_por_fkey;
 alter table public.frota_ocupacoes_encerradas enable row level security;
 revoke all on public.frota_ocupacoes_encerradas from public,anon,authenticated;
 grant select on public.frota_ocupacoes_encerradas to authenticated;
@@ -215,3 +217,103 @@ drop trigger if exists bloquear_vendido_periodos on public.frota_periodos;
 create trigger bloquear_vendido_periodos before insert or update on public.frota_periodos for each row execute function public.impedir_ocupacao_veiculo_vendido();
 revoke all on function public.impedir_ocupacao_veiculo_vendido() from public,anon,authenticated;
 commit;
+
+-- Atualização de situação pela lista de Frotas e ocupações. Não encerra locações.
+begin;
+create table if not exists public.frota_situacao_eventos(
+ id uuid primary key default gen_random_uuid(),empresa_id uuid not null references public.empresas(id),carro_id uuid not null references public.carros(id),
+ situacao_anterior text,situacao_nova text not null,descricao text,criado_por uuid not null,criado_em timestamptz not null default now()
+);
+alter table public.frota_situacao_eventos drop constraint if exists frota_situacao_eventos_criado_por_fkey;
+alter table public.frota_situacao_eventos enable row level security;
+revoke all on public.frota_situacao_eventos from public,anon,authenticated;
+grant select on public.frota_situacao_eventos to authenticated;
+drop policy if exists frota_situacao_leitura on public.frota_situacao_eventos;
+create policy frota_situacao_leitura on public.frota_situacao_eventos for select to authenticated using(public.acesso_modulo(empresa_id,'locacao'));
+create or replace function public.frota_definir_situacao(p_empresa uuid,p_carro uuid,p_situacao text,p_descricao text default null)
+returns text language plpgsql security definer set search_path='' as $$
+declare c public.carros;
+begin
+ if auth.uid() is null or not coalesce(public.acesso_modulo(p_empresa,'locacao'),false) then raise exception 'Sem acesso à empresa.';end if;
+ if p_situacao is null or p_situacao not in ('Disponível','Indisponível','Manutenção','Revisão') or length(coalesce(p_descricao,''))>2000 then raise exception 'Situação ou descrição inválida.';end if;
+ perform pg_advisory_xact_lock(7261002);
+ select * into c from public.carros where id=p_carro for update;
+ if c.id is null or c.empresa_id<>p_empresa then raise exception 'Altere a situação na empresa responsável por este veículo.';end if;
+ if c.situacao in ('Vendido','Inativo') then raise exception 'Confira o cadastro do veículo vendido ou inativo antes de alterar a situação.';end if;
+ if exists(select 1 from public.frota_levantamento where carro_id=c.id and ativo)
+ or exists(select 1 from public.locacoes where carro_id=c.id and status='Ativa')
+ or exists(select 1 from public.frota_periodos where carro_id=c.id and fim is null) then raise exception 'Encerre a ocupação ou o período atual antes de alterar a situação do carro.';end if;
+ if p_situacao in ('Manutenção','Revisão') and nullif(trim(p_descricao),'') is null then raise exception 'Informe a descrição da manutenção ou revisão.';end if;
+ if c.situacao is not distinct from p_situacao and (p_descricao is null or c.observacoes is not distinct from trim(p_descricao)) then return p_situacao;end if;
+ insert into public.frota_situacao_eventos(empresa_id,carro_id,situacao_anterior,situacao_nova,descricao,criado_por)
+ values(p_empresa,c.id,c.situacao,p_situacao,nullif(trim(p_descricao),''),auth.uid());
+ update public.carros set situacao=p_situacao,situacao_confirmada_em=now(),observacoes=case when p_descricao is not null then nullif(trim(p_descricao),'') else observacoes end where id=c.id;
+ return p_situacao;
+end $$;
+revoke all on function public.frota_definir_situacao(uuid,uuid,text,text) from public,anon;
+grant execute on function public.frota_definir_situacao(uuid,uuid,text,text) to authenticated;
+notify pgrst,'reload schema';
+commit;
+select 'Situação do veículo na lista de frota preparada' as resultado;
+
+-- Corrigir vínculos ou registrar troca de locatário sem apagar o histórico.
+begin;
+create table if not exists public.frota_locatario_eventos(
+ id uuid primary key,empresa_id uuid not null references public.empresas(id),carro_id uuid not null references public.carros(id),
+ origem text not null,origem_id uuid not null,acao text not null,cliente_anterior uuid,cliente_novo uuid not null references public.clientes(id),
+ snapshot jsonb not null,data_movimentacao timestamptz,motivo text not null,novo_periodo uuid references public.frota_periodos(id),
+ criado_por uuid not null,criado_em timestamptz not null default now()
+);
+alter table public.frota_locatario_eventos drop constraint if exists frota_locatario_eventos_criado_por_fkey;
+alter table public.frota_locatario_eventos enable row level security;
+revoke all on public.frota_locatario_eventos from public,anon,authenticated;
+grant select on public.frota_locatario_eventos to authenticated;
+drop policy if exists frota_locatario_leitura on public.frota_locatario_eventos;
+create policy frota_locatario_leitura on public.frota_locatario_eventos for select to authenticated using(public.acesso_modulo(empresa_id,'locacao'));
+create or replace function public.frota_alterar_locatario(p_empresa uuid,p_id uuid,p_origem text,p_ocupacao uuid,p_cliente uuid,p_acao text,p_motivo text,p_data timestamptz default null,p_diaria numeric default null,p_mesma_pessoa boolean default false)
+returns uuid language plpgsql security definer set search_path='' as $$
+declare old jsonb;aid uuid;novo uuid;existing public.frota_locatario_eventos;
+begin
+ if auth.uid() is null or not coalesce(public.acesso_modulo(p_empresa,'locacao'),false) then raise exception 'Sem acesso.';end if;
+ perform pg_advisory_xact_lock(7261002);
+ select * into existing from public.frota_locatario_eventos where id=p_id;
+ if existing.id is not null then
+  if existing.empresa_id<>p_empresa or existing.criado_por<>auth.uid() then raise exception 'Sem acesso ao registro.';end if;
+  return existing.id;
+ end if;
+ if p_id is null or p_acao is null or p_acao not in ('corrigir','trocar') or nullif(trim(p_motivo),'') is null or length(p_motivo)>2000 then raise exception 'Confira a ação e o motivo.';end if;
+ if not exists(select 1 from public.clientes where id=p_cliente and empresa_id=p_empresa and situacao='Ativo') then raise exception 'Selecione um cliente ativo desta empresa.';end if;
+ if p_origem='levantamento' then
+  select to_jsonb(t) into old from public.frota_levantamento t where id=p_ocupacao and empresa_id=p_empresa and ativo for update;
+ elsif p_origem='periodo' then
+  select to_jsonb(t) into old from public.frota_periodos t where id=p_ocupacao and empresa_id=p_empresa and fim is null and tipo='locacao' for update;
+ else raise exception 'A locação com contrato deve ser tratada em Gerenciar etapas.';end if;
+ if old is null then raise exception 'A ocupação já mudou. Atualize a lista.';end if;
+ aid:=(old->>'carro_id')::uuid;
+ if aid is null then raise exception 'Vincule o veículo antes de alterar o locatário.';end if;
+ if (old->>'cliente_id')::uuid=p_cliente then raise exception 'Este cadastro já é o locatário atual.';end if;
+ if p_acao='corrigir' then
+  if not coalesce(p_mesma_pessoa,false) then raise exception 'Confirme que é a mesma pessoa para corrigir o vínculo.';end if;
+  if exists(select 1 from public.locacoes where carro_id=aid and status='Ativa') then raise exception 'Confira o vínculo na locação com contrato.';end if;
+  if p_origem='levantamento' and exists(select 1 from public.frota_periodos where carro_id=aid and fim is null) then raise exception 'Corrija o vínculo no período ativo da frota.';end if;
+  if p_origem='periodo' and exists(select 1 from public.frota_levantamento where carro_id=aid and ativo and empresa_id=p_empresa and cliente_id is not null and cliente_id is distinct from (old->>'cliente_id')::uuid) then raise exception 'Há um levantamento com outro cliente. Confira os vínculos antes de corrigir.';end if;
+  if p_origem='levantamento' then
+   update public.frota_levantamento set cliente_id=p_cliente where id=p_ocupacao;
+  else update public.frota_periodos set cliente_id=p_cliente where id=p_ocupacao;
+  end if;
+  if p_origem='periodo' then update public.frota_levantamento set cliente_id=p_cliente where empresa_id=p_empresa and carro_id=aid and ativo and (cliente_id is null or cliente_id=(old->>'cliente_id')::uuid);end if;
+ else
+  if p_data is null or p_data>now() or p_diaria is null or p_diaria<0 or p_diaria>99999999.99 then raise exception 'Informe a data real da troca e a diária acordada.';end if;
+  perform public.frota_encerrar_ocupacao(p_empresa,p_id,p_origem,p_ocupacao,p_data,p_motivo,'Disponível');
+  novo:=public.frota_movimentar(p_empresa,jsonb_build_object('acao','iniciar','carro',aid,'tipo','locacao','cliente',p_cliente,'data',p_data,'diaria',p_diaria,'observacoes',p_motivo));
+  update public.carros set situacao='Locado' where id=aid;
+ end if;
+ insert into public.frota_locatario_eventos(id,empresa_id,carro_id,origem,origem_id,acao,cliente_anterior,cliente_novo,snapshot,data_movimentacao,motivo,novo_periodo,criado_por)
+ values(p_id,p_empresa,aid,p_origem,p_ocupacao,p_acao,(old->>'cliente_id')::uuid,p_cliente,old,case when p_acao='trocar' then p_data else now() end,trim(p_motivo),novo,auth.uid());
+ return p_id;
+end $$;
+revoke all on function public.frota_alterar_locatario(uuid,uuid,text,uuid,uuid,text,text,timestamptz,numeric,boolean) from public,anon;
+grant execute on function public.frota_alterar_locatario(uuid,uuid,text,uuid,uuid,text,text,timestamptz,numeric,boolean) to authenticated;
+notify pgrst,'reload schema';
+commit;
+select 'Alteração do locatário na lista preparada' as resultado;

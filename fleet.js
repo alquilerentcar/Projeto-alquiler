@@ -1,3 +1,4 @@
+import {vehicleMileage} from './relatorios-frota.mjs';
 import {vehicleSituation} from './veiculos-situacao.mjs';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireAuth, bindLogout } from "./auth-guard.js";
@@ -7,7 +8,7 @@ await requireAuth(db);
 bindLogout(db);
 const $ = (selector) => document.querySelector(selector);
 const page = document.body.dataset.page;
-const state = { cars: [], editing: null, periods: [], rentals: [], occupations: [], clients: [], verified:false };
+const state = { cars: [], editing: null, periods: [], rentals: [], occupations: [], clients: [], verified:false,readings:[],kmError:false };
 const company=window.alquilerContext.company;
 let toastTimer;
 
@@ -46,11 +47,11 @@ function rowButton(row, callback) {
 const situation=row=>vehicleSituation(row,state.periods,state.rentals,state.occupations,state.verified);
 async function loadCars(force = true) {
  $('#cars-count').textContent='Conferindo veículos e ocupações…';const generation=state.generation=(state.generation||0)+1;
- const results=await Promise.allSettled([window.bgLoadList('carros',()=>db.from('carros').select('*').order('placa').range(0,999),force),db.rpc('frota_painel',{p_empresa:company.id}),db.from('locacoes').select('carro_id,cliente_id,status').eq('empresa_id',company.id).eq('status','Ativa'),db.from('frota_levantamento').select('*').eq('empresa_id',company.id).eq('ativo',true)]);
+ const results=await Promise.allSettled([window.bgLoadList('carros',()=>db.from('carros').select('*').order('placa').range(0,999),force),db.rpc('frota_painel',{p_empresa:company.id}),db.from('locacoes').select('carro_id,cliente_id,status').eq('empresa_id',company.id).eq('status','Ativa'),db.from('frota_levantamento').select('*').eq('empresa_id',company.id).eq('ativo',true),db.from('frota_km').select('carro_id,km,leitura_em').eq('empresa_id',company.id)]);
  if(generation!==state.generation)return;
- const unwrap=r=>r.status==='fulfilled'?r.value:{error:{message:r.reason?.message||'Falha de conexão'}};const [catalog,panel,rentals,occupations]=results.map(unwrap);
+ const unwrap=r=>r.status==='fulfilled'?r.value:{error:{message:r.reason?.message||'Falha de conexão'}};const [catalog,panel,rentals,occupations,km]=results.map(unwrap);
  if(catalog.error){$('#cars-count').textContent='Falha ao carregar';return toast(errorText(catalog.error),true);}
- state.periods=panel.data?.periodos||[];state.clients=panel.data?.clientes||[];state.rentals=rentals.data||[];state.occupations=occupations.data||[];state.verified=![panel,rentals,occupations].some(r=>r.error);
+ state.readings=km.data||[];state.kmError=!!km.error;state.periods=panel.data?.periodos||[];state.clients=panel.data?.clientes||[];state.rentals=rentals.data||[];state.occupations=occupations.data||[];state.verified=![panel,rentals,occupations].some(r=>r.error);
  const cars=new Map((catalog.data||[]).map(c=>[c.id,c]));for(const car of panel.data?.carros||[]){if(cars.has(car.id)||state.periods.some(p=>p.carro_id===car.id&&!p.fim)||state.rentals.some(r=>r.carro_id===car.id)||state.occupations.some(r=>r.carro_id===car.id))cars.set(car.id,car);}
  state.cars=[...cars.values()].sort((a,b)=>a.placa.localeCompare(b.placa));renderCars();
  $('#cars-availability-note').textContent=state.verified?'Disponíveis: veículos marcados como disponíveis, sem locatário, locação ativa ou período de manutenção/indisponibilidade.':'Não foi possível conferir todas as ocupações. A disponibilidade não está confirmada. '+[panel,rentals,occupations].filter(r=>r.error).map(r=>r.error.message).join(' · ');
@@ -66,8 +67,8 @@ function renderCars() {
   if(!state.verified)$("#cars-available").textContent="—"; $("#cars-count").textContent = `${rows.length} de ${state.cars.length} carros`;
   const body = $("#cars-body"); body.replaceChildren();
   for (const row of rows) {
-    const tr = document.createElement("tr");
-    tr.append(td(row.placa), td([row.marca, row.modelo].filter(Boolean).join(" ") || "—"), td(row.ano), td(row.proprietario_nome), td(money(row.valor_diaria)), td(money(row.caucao)), td(situation(row).person||state.clients.find(c=>c.id===situation(row).clientId)?.nome||'—'), td(situation(row).status), rowButton(row, openCar));
+    const tr = document.createElement("tr"),reading=vehicleMileage(row,state.readings,state.occupations);
+    tr.append(td(row.placa), td([row.marca, row.modelo].filter(Boolean).join(" ") || "—"), td(row.ano), td(reading.km==null?(state.kmError?'Consulta indisponível':'Não informado'):Number(reading.km).toLocaleString('pt-BR')+' km'),td(reading.date?new Date(reading.date).toLocaleDateString('pt-BR',{timeZone:'America/Manaus'}):'Data não informada'),td(row.proprietario_nome), td(money(row.valor_diaria)), td(money(row.caucao)), td(state.clients.find(c=>c.id===situation(row).clientId)?.nome||situation(row).person||'—'), td(situation(row).status), rowButton(row, openCar));
     body.append(tr);
   }
   $("#cars-empty").classList.toggle("hidden", rows.length > 0);

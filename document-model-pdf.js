@@ -1,7 +1,7 @@
 import {PDFDocument,StandardFonts,rgb} from 'https://esm.sh/pdf-lib@1.17.1';
 import {companyStationery} from './empresa-branding.js';
 import {plainBlocks} from './rich-document.js';
-export async function modelPdf(db,company,text,documentNumber=null,formatacao=null){
+export async function modelPdf(db,company,text,documentNumber=null,formatacao=null,photos=[]){
  const stationery=await companyStationery(db,company,PDFDocument),pdf=await PDFDocument.create();
  const fonts=await Promise.all([StandardFonts.TimesRoman,StandardFonts.TimesRomanBold,StandardFonts.TimesRomanItalic,StandardFonts.TimesRomanBoldItalic].map(f=>pdf.embedFont(f)));
  const blocks=Array.isArray(formatacao)&&formatacao.length?formatacao:plainBlocks(text);let page,y,width,height,number=0;
@@ -13,6 +13,12 @@ export async function modelPdf(db,company,text,documentNumber=null,formatacao=nu
   for(let i=0;i<lines.length;i++){const chars=lines[i];while(chars.at(-1)?.char===' ')chars.pop();const heightLine=Math.max(12,...chars.map(g=>g.size))*1.2;if(y-heightLine<57)await addPage();const w=chars.reduce((s,g)=>s+g.width,0),spaces=chars.filter(g=>g.char===' ').length;let x=85+(b.align==='center'?(maxWidth-w)/2:b.align==='right'?maxWidth-w:0);const extra=b.align==='justify'&&i<lines.length-1&&spaces?(maxWidth-w)/spaces:0;
    for(const g of chars){page.drawText(g.char,{x,y,size:g.size,font:g.font});if(g.underline)page.drawLine({start:{x,y:y-2},end:{x:x+g.width,y:y-2},thickness:.5});x+=g.width+(g.char===' '?extra:0)}y-=heightLine;
   }y-=12;
+ }
+ for(const photo of photos){
+  await addPage();page.drawText(photo.title||'Veículo substituto',{x:85,y,size:11,font:fonts[1]});y-=24;
+  const bytes=new Uint8Array(await photo.blob.arrayBuffer()),image=await pdf.embedJpg(bytes);
+  const maxWidth=width-142,maxHeight=y-70,scale=Math.min(maxWidth/image.width,maxHeight/image.height);
+  const w=image.width*scale,h=image.height*scale;page.drawImage(image,{x:85+(maxWidth-w)/2,y:y-h,width:w,height:h});
  }
  return pdf.save();
 }

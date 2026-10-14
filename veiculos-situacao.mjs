@@ -3,5 +3,5 @@ export function vehicleSituation(car,periods=[],rentals=[],occupations=[],verifi
  if(occupation||rental||period?.tipo==='locacao'||car.ocupado_externo)return {status:'Locado',occupation,clientId:occupation?.cliente_id||rental?.cliente_id||period?.cliente_id,person:occupation?.responsavel,source:occupation?'Ocupação informada':rental?'Locação ativa':car.ocupado_externo?'Em uso em outra empresa':'Período da frota',locked:true};
  if(period)return {status:period.tipo==='manutencao'?'Manutenção':'Indisponível',source:period.localizacao||'Período da frota',locked:true};
  if(!verified)return {status:'Situação a confirmar',source:'Não foi possível conferir as ocupações',locked:true};
- return {status:['Disponível','Locado','Manutenção','Revisão','Indisponível','Inativo'].includes(car.situacao)?car.situacao:'Situação a confirmar',source:'Cadastro do veículo',locked:false};
+ return {status:['Disponível','Locado','Manutenção','Revisão','Indisponível','Inativo','Vendido'].includes(car.situacao)?car.situacao:'Situação a confirmar',source:'Cadastro do veículo',locked:false};
 }

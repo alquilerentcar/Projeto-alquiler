@@ -90,6 +90,10 @@
     {
       "source": "/locacao/frota",
       "destination": "/frota"
+    },
+    {
+      "source": "/locacao/substituicao",
+      "destination": "/substituicao"
     }
   ],
   "headers": [

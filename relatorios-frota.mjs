@@ -1,0 +1,12 @@
+export function vehicleMileage(car,readings=[],occupations=[]){const row=readings.filter(r=>r.carro_id===car.id).sort((a,b)=>new Date(b.leitura_em)-new Date(a.leitura_em))[0],occupation=occupations.find(o=>o.ativo!==false&&(o.carro_id===car.id||o.placa===car.placa));return row?{km:row.km,date:row.leitura_em}:occupation?.km!=null?{km:occupation.km,date:occupation.km_data?occupation.km_data+'T12:00:00-04:00':null}:{km:null,date:null};}
+export function fleetReportRows(panel,occupations,readings,rentals,company,view){
+ const cars=(panel.carros||[]).filter(c=>c.empresa_id===company||(occupations||[]).some(o=>o.ativo&&((o.carro_id&&o.carro_id===c.id)||o.placa===c.placa))||(panel.periodos||[]).some(p=>!p.fim&&p.carro_id===c.id));
+ if(view==='ocupacoes')for(const o of occupations||[])if(o.ativo&&!cars.some(c=>c.id===o.carro_id||c.placa===o.placa))cars.push({id:o.carro_id,placa:o.placa,modelo:'Cadastro do veículo pendente'});
+ const person=id=>(panel.clientes||[]).find(c=>c.id===id)?.nome||'Locatário não vinculado';
+ const date=value=>value?new Date(value).toLocaleString('pt-BR',{timeZone:'America/Manaus'}):'Não informado';
+ const current=c=>{const p=(panel.periodos||[]).find(p=>p.carro_id===c.id&&!p.fim&&p.tipo==='locacao'),r=(rentals||[]).find(r=>r.carro_id===c.id&&r.status==='Ativa'),o=(occupations||[]).find(o=>o.ativo&&o.carro_id===c.id);return p?{name:person(p.cliente_id),start:p.inicio,daily:p.diaria}:r?{name:person(r.cliente_id),start:r.data_inicio,daily:r.valor_diaria}:o?{name:o.cliente_id?person(o.cliente_id):o.responsavel,start:o.inicio,daily:o.diaria}:null;};
+ const km=c=>{const records=(readings||[]).filter(r=>r.carro_id===c.id).sort((a,b)=>new Date(b.leitura_em)-new Date(a.leitura_em)),r=records[0],o=(occupations||[]).find(o=>o.carro_id===c.id&&o.ativo);return r?[r.km,date(r.leitura_em)]:o?.km!=null?[o.km,o.km_data?date(o.km_data+'T12:00:00-04:00'):'Data não informada']:['Não informado','Não informado'];};
+ return cars.sort((a,b)=>a.placa.localeCompare(b.placa)).flatMap(c=>{const o=current(c),k=km(c),period=(panel.periodos||[]).find(p=>p.carro_id===c.id&&!p.fim),status=o?'Locado':period?.tipo==='manutencao'?'Manutenção':period?'Indisponível':c.situacao||'A confirmar';if(view==='ocupacoes'&&!o)return [];
+ return [view==='ocupacoes'?[o.name,c.placa,c.modelo||'Não informado',c.ano||'Não informado',date(o.start),o.daily??'A informar',...k]:[c.placa,c.modelo||'Não informado',c.ano||'Não informado',c.proprietario_nome||'Não informado',status,o?.name||'Sem locatário',...k]];
+ });
+}

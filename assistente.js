@@ -57,11 +57,12 @@ if (sessionStorage.getItem(openKey) === 'true') toggle(true);
 async function post(url, data) {
   const response = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)});
   const result = await response.json();
-  if (!response.ok) throw new Error(result.error || 'Não foi possível concluir a solicitação.');
+  if (!response.ok) throw Object.assign(new Error(result.error || 'Não foi possível concluir a solicitação.'),{status:response.status,retryAfterSeconds:result.retryAfterSeconds});
   return result;
 }
 
-let aiProvider='gemini';
+let aiProvider='gemini',chatBusy=false,cooldownUntil=0;
+function releaseChat(){if(chatBusy)return;const remaining=Math.ceil((cooldownUntil-Date.now())/1000);input.disabled=sendButton.disabled=remaining>0;sendButton.title=remaining>0?'Aguarde '+remaining+' segundos.':'';if(remaining>0)setTimeout(releaseChat,1000);}
 async function refreshStatus() {
   try {
     const response = await fetch('/api/assistente/status');
@@ -90,12 +91,12 @@ root.querySelector('.ai-form').addEventListener('submit', async event => {
   if(!/fornecedor|oficina|manuten[cç][aã]o|contrato|loca[cç][aã]o|ve[ií]culo|carro|modelo|documento|recibo|distrato|termo/i.test(message)&&/^(?:(?:pode|quero|vamos|por favor)\s+)?(?:cadastrar|cadastre|salvar|salve|criar|crie)\b/.test(command)){
     addMessage('user',message);input.value='';await commitIntake();return;
   }
-  const prior = history.slice(-8);
+  chatBusy=true;const prior = history.slice(-8);
   addMessage('user', message); input.value = ''; input.disabled = sendButton.disabled = true;
   const pending = addMessage('bot', 'Pensando…', false);
   try { const result = await post('/api/assistente/conversar', {message, history: prior, page}); pending.remove(); addMessage('bot', result.reply || 'Não consegui formular uma resposta.'); if(result.action)await showAction({action:result.action,db,context:window.alquilerContext,host:messages,notify:text=>addMessage('bot',text),userId:identity.session.user.id}); }
-  catch (error) { pending.remove(); addMessage('bot', error.message, false); }
-  finally { input.disabled = sendButton.disabled = false; input.focus(); }
+  catch (error) { pending.remove();addMessage('bot',error.message,false);if(error.status===429){input.value=message;if(Number(error.retryAfterSeconds)>0)cooldownUntil=Date.now()+Math.min(86400,Number(error.retryAfterSeconds))*1000;}}
+  finally {chatBusy=false;releaseChat();if(!input.disabled)input.focus();}
 });
 
 let intakeRecords=[],intakeReview=null,intakeSaved={},intakeBusy=false,queuedFiles=[];
@@ -156,6 +157,6 @@ async function readQueuedFiles(instruction){
  const files=queuedFiles;queuedFiles=[];intakeBusy=true;fileInput.disabled=true;input.disabled=sendButton.disabled=true;renderQueuedFiles();
  if(intakeReview)intakeReview.querySelectorAll('input,select,button').forEach(control=>control.disabled=true);
  const progress=addMessage('bot','Lendo '+files.length+' documento(s)…',false);
- try{for(const file of files){const record={file,draft:{},kind:''};intakeRecords.push(record);try{const result=await intakeExtraction(file,instruction);record.draft=result.draft||{};record.kind=attachmentKinds[result.documentType]?result.documentType:'';}catch(error){addMessage('bot',file.name+': '+error.message,false);}}progress.remove();showIntakeReview();addMessage('bot','Confira os dados acima. Você pode clicar em Cadastrar e anexar documentos ou escrever “pode cadastrar”. Os arquivos só serão salvos ao concluir.',false);}
- finally{intakeBusy=false;fileInput.disabled=false;input.disabled=sendButton.disabled=false;input.focus();}
+ try{for(let fileIndex=0;fileIndex<files.length;fileIndex++){const file=files[fileIndex],record={file,draft:{},kind:''};intakeRecords.push(record);try{const result=await intakeExtraction(file,instruction);record.draft=result.draft||{};record.kind=attachmentKinds[result.documentType]?result.documentType:'';}catch(error){addMessage('bot',file.name+': '+error.message,false);if(error.status===429){intakeRecords.pop();queuedFiles=files.slice(fileIndex).concat(queuedFiles);renderQueuedFiles();if(Number(error.retryAfterSeconds)>0)cooldownUntil=Date.now()+Number(error.retryAfterSeconds)*1000;addMessage('bot','Os documentos pendentes foram preservados. Envie novamente quando o provedor liberar.',false);break;}}}progress.remove();showIntakeReview();addMessage('bot','Confira os dados acima. Você pode clicar em Cadastrar e anexar documentos ou escrever “pode cadastrar”. Os arquivos só serão salvos ao concluir.',false);}
+ finally{intakeBusy=false;fileInput.disabled=false;releaseChat();if(!input.disabled)input.focus();}
 }

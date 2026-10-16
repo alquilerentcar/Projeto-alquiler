@@ -18,7 +18,6 @@ export function intakePayload(draft){
 export async function saveIntake(db,companyId,draft,records,saved={}){
  const data=intakePayload(draft),kinds=new Set();
  for(const record of records){if(!attachmentKinds[record.kind])throw Error('Identifique cada arquivo como CNH, RG ou comprovante.');if(kinds.has(record.kind))throw Error('Envie um único arquivo por tipo. Junte frente e verso em um PDF.');kinds.add(record.kind);if(!['application/pdf','image/jpeg','image/png','image/webp'].includes(record.file.type)||record.file.size>8*1024*1024)throw Error('Use PDF, JPG, PNG ou WebP de até 8 MB por arquivo.');}
- if(!records.length)throw Error('Envie os documentos antes de salvar.');
  const session=await db.auth.getSession();if(!session.data?.session)throw Error('Sua sessão expirou. Entre novamente.');
  if(window.alquilerContext?.company?.id!==companyId)throw Error('A empresa mudou. Reinicie a leitura na empresa correta.');
  let client;

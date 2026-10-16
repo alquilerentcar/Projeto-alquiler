@@ -1,3 +1,4 @@
+import {parseClientText,cleanClientDraft} from './assistente-texto.mjs';
 import {showAction} from './assistente-actions.mjs';
 import {intakeLabels,attachmentKinds,mergeIntake,saveIntake} from './assistente-intake.mjs';
 import {getAuthenticatedClient} from './auth-guard.js';
@@ -22,7 +23,7 @@ root.innerHTML = `<button class="ai-launch" type="button" aria-label="Abrir assi
     <div class="ai-messages" role="log" aria-live="polite"></div>
     <div class="ai-setup" hidden><strong>Assistente indisponível</strong><span>A integração precisa ser configurada pelo administrador do sistema.</span></div>
     <div class="ai-actions"><label class="ai-file-button">📎 Anexar documentos<input class="ai-file" type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" hidden></label></div>
-    <form class="ai-form"><input class="ai-input" type="text" maxlength="2000" placeholder="Pergunte sobre os cadastros…" aria-label="Mensagem ao assistente"><button type="submit" aria-label="Enviar mensagem">➤</button></form>
+    <form class="ai-form"><input class="ai-input" type="text" maxlength="12000" placeholder="Pergunte sobre os cadastros…" aria-label="Mensagem ao assistente"><button type="submit" aria-label="Enviar mensagem">➤</button></form>
     <small class="ai-footnote">Documentos e consultas são enviados ao Gemini quando você solicita.</small>
   </section>`;
 document.body.append(root);
@@ -46,7 +47,7 @@ function addMessage(role, content, persist = true) {
   return node;
 }
 if (history.length) history.forEach(item => addMessage(item.role === 'user' ? 'user' : 'bot', item.content, false));
-else addMessage('bot', 'Olá! Posso buscar clientes e cadastrar com os documentos anexados. Envie CNH e comprovante juntos, confira os dados e peça para cadastrar.');
+else addMessage('bot', 'Olá! Posso buscar clientes e preparar cadastros pelos dados escritos ou por documentos anexados. Envie nome, CPF e os demais dados; depois confira e confirme o cadastro.');
 
 function toggle(open) { panel.hidden = !open; launch.setAttribute('aria-expanded', String(open)); sessionStorage.setItem(openKey, String(open)); if (open) input.focus(); }
 launch.addEventListener('click', () => toggle(panel.hidden));
@@ -87,51 +88,53 @@ root.querySelector('.ai-form').addEventListener('submit', async event => {
   if(!window.alquilerContext.company?.id){addMessage('bot','Selecione uma empresa na aba Módulos antes de consultar ou cadastrar dados.',false);return;}
   const message = input.value.trim(); if (!message&&!queuedFiles.length) return;
   if(queuedFiles.length){if(intakeBusy)return;addMessage('user',(message||'Ler os documentos anexados')+'\nAnexos: '+queuedFiles.map(file=>file.name).join(', '));input.value='';await readQueuedFiles(message);return;}
+  const structured=parseClientText(message);if(structured){addMessage('user',message);input.value='';prepareTextIntake(structured);return;}
   const command=message.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-  if(!/fornecedor|oficina|manuten[cç][aã]o|contrato|loca[cç][aã]o|ve[ií]culo|carro|modelo|documento|recibo|distrato|termo/i.test(message)&&/^(?:(?:pode|quero|vamos|por favor)\s+)?(?:cadastrar|cadastre|salvar|salve|criar|crie)\b/.test(command)){
+  if(intakeReview&&!/fornecedor|oficina|manuten[cç][aã]o|contrato|loca[cç][aã]o|ve[ií]culo|carro|modelo|documento|recibo|distrato|termo/i.test(message)&&/^(?:(?:pode|quero|vamos|por favor)\s+)?(?:cadastrar|cadastre|salvar|salve|criar|crie)\b/.test(command)){
     addMessage('user',message);input.value='';await commitIntake();return;
   }
   chatBusy=true;const prior = history.slice(-8);
   addMessage('user', message); input.value = ''; input.disabled = sendButton.disabled = true;
   const pending = addMessage('bot', 'Pensando…', false);
-  try { const result = await post('/api/assistente/conversar', {message, history: prior, page}); pending.remove(); addMessage('bot', result.reply || 'Não consegui formular uma resposta.'); if(result.action)await showAction({action:result.action,db,context:window.alquilerContext,host:messages,notify:text=>addMessage('bot',text),userId:identity.session.user.id}); }
+  try { const result = await post('/api/assistente/conversar', {message, history: prior, page}); pending.remove(); addMessage('bot', result.reply || 'Não consegui formular uma resposta.'); if(result.action?.tipo==='cliente')prepareTextIntake(cleanClientDraft(result.action.draft));else if(result.action)await showAction({action:result.action,db,context:window.alquilerContext,host:messages,notify:text=>addMessage('bot',text),userId:identity.session.user.id}); }
   catch (error) { pending.remove();addMessage('bot',error.message,false);if(error.status===429){input.value=message;if(Number(error.retryAfterSeconds)>0)cooldownUntil=Date.now()+Math.min(86400,Number(error.retryAfterSeconds))*1000;}}
   finally {chatBusy=false;releaseChat();if(!input.disabled)input.focus();}
 });
 
-let intakeRecords=[],intakeReview=null,intakeSaved={},intakeBusy=false,queuedFiles=[];
+let intakeTextDraft=null,intakeRecords=[],intakeReview=null,intakeSaved={},intakeBusy=false,queuedFiles=[];
 const queuedHost=document.createElement('div');queuedHost.className='ai-pending-attachments';root.querySelector('.ai-actions').append(queuedHost);
 function renderQueuedFiles(){queuedHost.replaceChildren();for(const file of queuedFiles){const row=document.createElement('div'),name=document.createElement('span'),remove=document.createElement('button');name.textContent=file.name;remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Remover anexo '+file.name);remove.disabled=intakeBusy;remove.onclick=()=>{queuedFiles=queuedFiles.filter(item=>item!==file);renderQueuedFiles();};row.append(name,remove);queuedHost.append(row);}if(queuedFiles.length){const note=document.createElement('small');note.textContent='Prontos para enviar. Escreva sua orientação e clique em Enviar.';queuedHost.append(note);}}
 const intakeCompany=window.alquilerContext.company?.id||'plataforma';
 function intakeReadReview(){const draft={};for(const field of Object.keys(intakeLabels)){const control=intakeReview?.querySelector(`[name="${field}"]`);if(control)draft[field]=control.value;}return draft;}
+function prepareTextIntake(result){if(intakeBusy){addMessage('bot','Aguarde a leitura ou gravação em andamento.',false);return;}if(intakeSaved.clientId){addMessage('bot','Conclua ou descarte os anexos do cadastro já salvo antes de preparar outra pessoa.',false);return;}intakeTextDraft=result.draft;intakeReview?.remove();intakeReview=null;showIntakeReview();for(const warning of result.warnings||[])addMessage('bot',warning,false);addMessage('bot','Dados preparados. Confira os campos e clique em Cadastrar cliente ou escreva “pode cadastrar”. Anexos são opcionais.',false);}
 function showIntakeReview(){
  const edited=intakeReview?intakeReadReview():{};intakeReview?.remove();
- const fields=mergeIntake(intakeRecords),form=document.createElement('form');form.className='ai-intake';form.noValidate=true;
- const title=document.createElement('strong');title.textContent='Confira os dados e os anexos';form.append(title);
- const info=document.createElement('p');info.textContent='Empresa: '+window.alquilerContext.company.nome_fantasia+'. Originais ficam em armazenamento privado. Campos ausentes podem ser preenchidos abaixo.';form.append(info);
+ const fields=mergeIntake([...intakeRecords,...(intakeTextDraft?[{file:{name:'Mensagem informada'},draft:intakeTextDraft}]:[])]),form=document.createElement('form');form.className='ai-intake';form.noValidate=true;
+ const title=document.createElement('strong');title.textContent=intakeRecords.length?'Confira os dados e os anexos':'Confira o cadastro pelos dados informados';form.append(title);
+ const info=document.createElement('p');info.textContent='Empresa: '+window.alquilerContext.company.nome_fantasia+'. Campos ausentes podem ser preenchidos abaixo. Os documentos anexados ficam em armazenamento privado.';form.append(info);
  for(const record of intakeRecords){const box=document.createElement('div');box.className='ai-intake-file';const name=document.createElement('strong');name.textContent=record.file.name;const select=document.createElement('select');select.setAttribute('aria-label','Tipo do arquivo '+record.file.name);select.add(new Option('Escolha o tipo de documento',''));for(const [kind,value] of Object.entries(attachmentKinds))select.add(new Option(value.label,kind));select.value=record.kind||'';select.onchange=()=>{record.kind=select.value;};box.append(name,select);const summary=document.createElement('small');summary.textContent=Object.entries(record.draft||{}).filter(([,v])=>v).map(([key,value])=>(intakeLabels[key]||key)+': '+value).join(' · ')||'Leitura indisponível: preencha os campos manualmente.';box.append(summary);const remove=document.createElement('button');remove.type='button';remove.textContent='Remover arquivo';remove.onclick=()=>{intakeRecords=intakeRecords.filter(item=>item!==record);showIntakeReview();};box.append(remove);form.append(box);}
- for(const field of new Set(['nome_completo','cpf','cnh','data_nascimento','email','contato_1_numero','cep','endereco','numero','bairro','cidade','uf',...Object.keys(fields)])){
+ for(const field of Object.keys(intakeLabels)){
   const label=document.createElement('label'),caption=document.createElement('span');caption.textContent=intakeLabels[field];const control=document.createElement('input');control.name=field;control.maxLength=200;control.autocomplete='off';control.value=fields[field]?.length>1?'':(edited[field]||fields[field]?.[0]?.value||'');label.append(caption,control);
   if(fields[field]?.length>1){const warning=document.createElement('small');warning.textContent='Valores diferentes nos documentos. Escolha ou corrija:';const select=document.createElement('select');select.add(new Option('Escolher dado',''));for(const item of fields[field])select.add(new Option(item.value+' — '+item.source,item.value));select.onchange=()=>{control.value=select.value;};label.append(warning,select);control.dataset.conflict='true';}
   form.append(label);
  }
- const submit=document.createElement('button');submit.type='submit';submit.className='ai-review';submit.textContent=intakeSaved.clientId?'Concluir anexos pendentes':'Cadastrar e anexar documentos';form.append(submit);
- const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Descartar documentos desta leitura';cancel.onclick=()=>{intakeRecords=[];intakeSaved={};form.remove();intakeReview=null;};form.append(cancel);
+ const submit=document.createElement('button');submit.type='submit';submit.className='ai-review';submit.textContent=intakeSaved.clientId?'Concluir anexos pendentes':intakeRecords.length?'Cadastrar e anexar documentos':'Cadastrar cliente';form.append(submit);
+ const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Descartar cadastro em preparação';cancel.onclick=()=>{intakeTextDraft=null;intakeRecords=[];intakeSaved={};form.remove();intakeReview=null;};form.append(cancel);
  form.addEventListener('submit',event=>{event.preventDefault();commitIntake();});intakeReview=form;messages.append(form);messages.scrollTop=messages.scrollHeight;
 }
 async function commitIntake(){
  if(queuedFiles.length)return addMessage('bot','Você tem arquivos ainda não enviados. Envie a mensagem com os anexos antes de concluir o cadastro.',false);
  if(intakeBusy)return addMessage('bot','Aguarde a leitura ou gravação em andamento.',false);
- if(!intakeRecords.length)return addMessage('bot','Envie a CNH e o comprovante pelo botão Anexar documentos. Vou mostrar os dados para conferência e cadastrar com os anexos.',false);
+ if(!intakeRecords.length&&!intakeTextDraft)return addMessage('bot','Envie nome, CPF e os demais dados por escrito, ou anexe os documentos, para preparar o cadastro.',false);
  const draft=intakeReadReview();
  for(const control of intakeReview.querySelectorAll('input[data-conflict]'))if(!control.value.trim())return addMessage('bot','Confira os valores diferentes antes de cadastrar: '+intakeLabels[control.name]+'.',false);
  intakeBusy=true;fileInput.disabled=true;intakeReview.querySelectorAll('input,select,button').forEach(control=>control.disabled=true);
- const progress=addMessage('bot','Salvando o cadastro e os documentos originais…',false);
+ const progress=addMessage('bot',intakeRecords.length?'Salvando o cadastro e os documentos originais…':'Salvando o cadastro…',false);
  try{
   const result=await saveIntake(db,intakeCompany,draft,intakeRecords,intakeSaved);progress.remove();
-  addMessage('bot',(result.created?'Cliente cadastrado':'Cadastro existente localizado e campos vazios completados')+': '+result.client.nome_completo+'. Documentos vinculados ao cadastro.'+(result.skipped.length?' Anexos anteriores preservados: '+result.skipped.join(', ')+'. Os arquivos novos desses tipos não foram substituídos.':''),false);
+  addMessage('bot',(result.created?'Cliente cadastrado':'Cadastro existente localizado e campos vazios completados')+': '+result.client.nome_completo+(intakeRecords.length?'. Documentos vinculados ao cadastro.':'. Cadastro salvo com os dados informados; nenhum documento anexado.')+(result.skipped.length?' Anexos anteriores preservados: '+result.skipped.join(', ')+'. Os arquivos novos desses tipos não foram substituídos.':''),false);
   const link=document.createElement('a');link.href='/cadastros/clientes';link.textContent='Ver cadastro em Clientes';link.className='ai-review';messages.append(link);
-  intakeRecords=[];intakeSaved={};intakeReview.remove();intakeReview=null;
+  intakeTextDraft=null;intakeRecords=[];intakeSaved={};intakeReview.remove();intakeReview=null;
  }catch(error){progress.remove();addMessage('bot',(intakeSaved.clientId?'O cadastro já foi salvo. Parte dos anexos pode estar vinculada. Corrija o problema e clique em Concluir anexos pendentes; não será criado outro cliente. ':'Não foi possível cadastrar. ')+(error.message||'Falha na gravação.'),false);if(intakeReview){intakeReview.querySelectorAll('input,select,button').forEach(control=>control.disabled=false);if(intakeSaved.clientId)intakeReview.querySelector('button[type=submit]').textContent='Concluir anexos pendentes';}}
  finally{intakeBusy=false;fileInput.disabled=false;}
 }

@@ -22,6 +22,7 @@ for (const [name,type] of [['perfil.html','text/html'],['perfil.js','text/javasc
 files['/ocupacoes-pendencias.js']=['ocupacoes-pendencias.js','text/javascript; charset=utf-8'];
 files['/mural.js']=['mural.js','text/javascript; charset=utf-8'];
 files['/assinaturas-teste.js']=['assinaturas-teste.js','text/javascript; charset=utf-8'];
+files['/endereco-contrato.mjs']=['endereco-contrato.mjs','text/javascript; charset=utf-8'];
 files['/assistente-texto.mjs']=['assistente-texto.mjs','text/javascript; charset=utf-8'];
 files['/assistente-actions.mjs']=['assistente-actions.mjs','text/javascript; charset=utf-8'];
 files['/assistente-intake.mjs']=['assistente-intake.mjs','text/javascript; charset=utf-8'];
@@ -192,7 +193,8 @@ async function contractCompanyData(request,data){
  const company=context.company;
  if(!company?.id||company.id!==request.headers['x-empresa-id'])throw Object.assign(new Error('Empresa não autorizada.'),{status:403});
  const model=await rpcUser(request,'modelo_contrato_vigente',{p_empresa:company.id});
- return {...data,modelo_blocos:model?(model.formatacao?.length?model.formatacao:model.conteudo.split('\n').map(text=>({align:'justify',runs:[{text}]}))):null,modelo_versao:model?.versao||null,empresa_razao_social:company.razao_social,empresa_cnpj:company.cnpj,empresa_endereco:[company.endereco,company.numero,company.complemento,company.bairro,company.cidade,company.uf,company.cep&&('CEP '+company.cep)].filter(Boolean).join(', '),empresa_email:company.email||'',empresa_telefone:company.telefone||''};
+ const {companyAddressValues}=await import('./endereco-contrato.mjs');
+ return {...data,...companyAddressValues(company),empresa_nome_fantasia:company.nome_fantasia||'',modelo_blocos:model?(model.formatacao?.length?model.formatacao:model.conteudo.split('\n').map(text=>({align:'justify',runs:[{text}]}))):null,modelo_versao:model?.versao||null,empresa_razao_social:company.razao_social,empresa_cnpj:company.cnpj,empresa_endereco:[company.endereco,company.numero,company.complemento,company.bairro,company.cidade,company.uf,company.cep&&('CEP '+company.cep)].filter(Boolean).join(', '),empresa_email:company.email||'',empresa_telefone:company.telefone||''};
 }
 async function generateContract(data,preview=false) {
   return require('./contract-node.cjs').generate(data,path.join(__dirname,'modelo_contrato.docx'),preview);
@@ -222,6 +224,10 @@ async function handler(request,response) {
     try { await requireModule(request, 'locacao');
       if(route==='/api/assistente/configurar') {const allowed=await rpcUser(request,'acesso_desenvolvedor',{});if(!allowed)throw Object.assign(new Error('Somente o desenvolvedor pode configurar a integração.'),{status:403});}
     } catch(error){return json(response,error.status||503,{error:error.message,...(error.retryAfterSeconds?{retryAfterSeconds:error.retryAfterSeconds}:{})});}
+  }
+  if(route==='/api/locacoes/rascunho/excluir'){
+   if(request.method!=='POST')return json(response,405,{error:'Método não permitido.'});
+   try{const drafts=require('./rental-drafts.cjs');const body=await readJson(request,4096);const result=await drafts.deleteDraft(body,{empresa:request.headers['x-empresa-id'],url:supabaseUrl,serviceKey:process.env.SUPABASE_SERVICE_ROLE_KEY,rpc:(name,args)=>drafts.callDraftRpc(request,name,args,{url:supabaseUrl,key:supabaseKey})});return json(response,200,result);}catch(error){return json(response,error.status||500,{error:error.status?error.message:'Não foi possível concluir a exclusão do rascunho.'});}
   }
   if(route==='/api/zapsign-status'&&request.method==='GET')return json(response,200,zapSignTest.status());
   if(route==='/api/zapsign-testar'){

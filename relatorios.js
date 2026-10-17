@@ -18,4 +18,55 @@ function renderFleet(view){const rows=fleetReportRows(panel,occupations,readings
 $('#report-export').onclick=()=>{const rows=[...document.querySelectorAll('#report-head tr,#report-body tr')].map(tr=>[...tr.cells].map(cell=>'"'+cell.textContent.replace(/^[=+@\-]/,value=>"'"+value).replaceAll('"','""')+'"').join(';'));const blob=new Blob(['\ufeff'+rows.join('\r\n')],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download='relatorio-'+$('#report-view').value+'-'+localDate()+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
 $('#report-refresh').onclick=load;$('#report-search').oninput=render;$('#report-view').onchange=render;$('#report-from').onchange=$('#report-to').onchange=load;await load();
 
+// O PDF usa somente a tabela e os totais exibidos, respeitando a busca atual.
+async function reportPdf(mode){
+ if($('#report-refresh').disabled||$('#report-error').textContent||!panel){$('#report-error').textContent='Aguarde a consulta terminar ou atualize o relatório antes de gerar o PDF.';return;}
+ const snapshot={title:$('#report-title').textContent,headers:[...$('#report-head th')].map(c=>c.textContent),rows:[...$('#report-body tr')].map(r=>[...r.cells].map(c=>c.textContent)),summary:[...$('#report-metrics .metric')].map(c=>[...c.children].map(n=>n.textContent).join(': ')),note:$('#report-note').textContent,filter:['ocupacoes','veiculos'].includes($('#report-view').value)?'Posição atual da frota':`Período: ${$('#report-from').value.split('-').reverse().join('/')} a ${$('#report-to').value.split('-').reverse().join('/')}`,search:$('#report-search').value.trim()};
+ let popup=mode==='print'?window.open('about:blank','_blank'):null;
+ if(mode==='print'&&!popup){$('#report-error').textContent='Permita abrir uma nova aba para visualizar e imprimir o PDF.';return;}
+ if(popup){popup.document.title='Preparando relatório';popup.document.body.textContent='Preparando PDF com o timbrado da empresa…';}
+ const buttons=[$('#report-pdf'),$('#report-print')];buttons.forEach(b=>b.disabled=true);
+ try{
+  const [{PDFDocument,StandardFonts,rgb},{companyStationery}]=await Promise.all([import('https://esm.sh/pdf-lib@1.17.1'),import('./empresa-branding.js')]);
+  const company=window.alquilerContext.company,stationery=await companyStationery(db,company,PDFDocument);
+  const bytes=await buildReportPdf({PDFDocument,StandardFonts,rgb},stationery,snapshot),url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));
+  if(popup)popup.location.replace(url);else{const a=node('a');a.href=url;a.download='relatorio-'+$('#report-view').value+'-'+localDate()+'.pdf';a.click();}
+  // A aba do PDF oferece os controles nativos de impressão e download.
+  setTimeout(()=>URL.revokeObjectURL(url),600000);
+ }catch(e){if(popup)popup.close();$('#report-error').textContent='Não foi possível gerar o relatório: '+e.message;}
+ finally{buttons.forEach(b=>b.disabled=false);}
+}
+$('#report-pdf').onclick=()=>reportPdf('download');$('#report-print').onclick=()=>reportPdf('print');
+
+async function buildReportPdf({PDFDocument,StandardFonts,rgb},stationery,report){
+ const pdf=await PDFDocument.create(),font=await pdf.embedFont(StandardFonts.Helvetica),bold=await pdf.embedFont(StandardFonts.HelveticaBold);
+ const safe=v=>String(v??'').replace(/[–—]/g,'-').replace(/\s+/g,' ').split('').filter(c=>{try{font.encodeText(c);return true;}catch{return false;}}).join('');
+ const wrap=(value,width,size=8,f=font)=>{const lines=[];let line='';for(const word of safe(value).split(' ')){for(const part of word.match(/.{1,100}/g)||['']){if(line&&f.widthOfTextAtSize(line+' '+part,size)>width){lines.push(line);line='';}for(const char of part){if(f.widthOfTextAtSize(line+char,size)>width&&line){lines.push(line);line='';}line+=char;}line+=' ';}}if(line.trim())lines.push(line.trim());return lines.length?lines:[''];};
+ let page,y,width,height,index=0;const margin=48,bottom=66,size=8,lineHeight=11,pages=[];
+ const template=stationery.getPage(0).getSize();width=template.width;height=template.height;
+ if(width<350||height<400)throw Error('O papel timbrado deve ter tamanho de página adequado ao relatório.');
+ const usable=width-margin*2,weights=report.headers.map(h=>/LOCAT|VEÍCULO|REFERÊNCIA|PROPRIET|SITUAÇÃO/.test(h)?1.7:1),sum=weights.reduce((a,b)=>a+b,0),cols=weights.map(w=>usable*w/sum);
+ const titles=report.headers.map(h=>({'KM ATUAL REGISTRADO':'KM ATUAL','DATA DA LEITURA':'LEITURA','INÍCIO DA OCUPAÇÃO':'INÍCIO'}[h]||h));
+ const drawLines=(lines,x,top,f=font,s=size)=>lines.forEach((t,i)=>page.drawText(t,{x,y:top-i*lineHeight,size:s,font:f,color:rgb(.12,.16,.22)}));
+ async function nextPage(){const [copy]=await pdf.copyPages(stationery,[0]);page=pdf.addPage(copy);pages.push(page);index++;y=height-124;
+  for(const line of wrap(report.title,usable,13,bold)){page.drawText(line,{x:margin,y,size:13,font:bold});y-=17;}y-=2;
+  for(const line of wrap(report.filter+(report.search?' · Busca: '+report.search:''),usable,8)){drawLines([line],margin,y);y-=11;}y-=6;
+  const heads=titles.map((h,i)=>wrap(h,cols[i]-10,7,bold)),hh=Math.max(...heads.map(h=>h.length))*lineHeight+12;
+  page.drawRectangle({x:margin,y:y-hh+3,width:usable,height:hh,color:rgb(.92,.94,.97)});let x=margin;
+  heads.forEach((h,i)=>{drawLines(h,x+5,y-8,bold,7);x+=cols[i];});y-=hh+3;
+ }
+ await nextPage();
+ for(const row of report.rows){const cells=report.headers.map((_,i)=>wrap(row.length===1?(i===0?row[0]:''):row[i],cols[i]-10));let offset=0,total=Math.max(...cells.map(c=>c.length));
+  if(total*lineHeight+12>y-bottom&&total*lineHeight+12<height-260)await nextPage();
+  while(offset<total){if(y-bottom<lineHeight+12)await nextPage();const count=Math.min(total-offset,Math.floor((y-bottom-12)/lineHeight)),rh=count*lineHeight+12;let x=margin;
+   cells.forEach((lines,i)=>{drawLines(lines.slice(offset,offset+count),x+5,y-8);x+=cols[i];});page.drawLine({start:{x:margin,y:y-rh+3},end:{x:width-margin,y:y-rh+3},thickness:.4,color:rgb(.82,.85,.9)});y-=rh;offset+=count;
+  }
+ }
+ const notes=[...report.summary,report.note].filter(Boolean);y-=12;
+ for(const note of notes){for(const line of wrap(note,usable,8)){if(y<bottom+12)await nextPage();drawLines([line],margin,y);y-=lineHeight;}y-=7;}
+ const issued=new Date().toLocaleString('pt-BR',{timeZone:'America/Manaus'});
+ pages.forEach((p,i)=>{p.drawText(safe('Emitido em '+issued+' - Manaus'),{x:margin,y:51,size:7,font});p.drawText(`${i+1} / ${pages.length}`,{x:width-margin-35,y:51,size:7,font});});
+ return pdf.save();
+}
+
 async function readReceipts(from,to){const until=new Date(Date.parse(to+'T12:00:00Z')+86400000).toISOString().slice(0,10)+'T00:00:00-04:00';let data=[];for(let offset=0;;offset+=1000){let response=await db.from('frota_recebimentos').select('*').eq('empresa_id',empresa).or('and(recebido_em.gte.'+from+'T00:00:00-04:00,recebido_em.lt.'+until+'),and(recebido_em.is.null,criado_em.gte.'+from+'T00:00:00-04:00,criado_em.lt.'+until+')').order('criado_em',{ascending:false}).order('id').range(offset,offset+999);if(response.error&&['42703','PGRST204'].includes(response.error.code))response=await db.from('frota_recebimentos').select('*').eq('empresa_id',empresa).gte('criado_em',from+'T00:00:00-04:00').lt('criado_em',until).order('criado_em',{ascending:false}).order('id').range(offset,offset+999);if(response.error)return response;data.push(...response.data);if(response.data.length<1000)return {data};}}

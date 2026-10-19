@@ -10,7 +10,7 @@ let cars=[],clients=[],occupations=[],versions=[],prepared=null,busy=false,photo
 const automatic=new Set(['tipo_substituicao','previsao_retorno','situacao_anterior','diaria_substituto','empresa_razao_social','empresa_cnpj','empresa_endereco','nome_locatario','cpf','cnh','endereco','veiculo_anterior','veiculo_placa','carro_anterior','veiculo_posterior','nova_placa','carro_posterior','dados_veiculo_anterior','dados_veiculo_posterior','data_troca','data_alteracao']);
 const node=(tag,text,cls='')=>{const n=document.createElement(tag);n.textContent=text;n.className=cls;return n;};
 const car=id=>cars.find(c=>c.id===id),client=id=>clients.find(c=>c.id===id),label=id=>{const c=car(id);return c?`${c.placa} · ${c.modelo||''}`:'Veículo não cadastrado';};
-async function rpc(name,args){const {data,error}=await db.rpc(name,args);if(error)throw error;return data;}
+async function rpc(name,args){const {data,error}=await db.rpc(name,args);if(error)throw new Error(error.code==='42702'?'Há uma ambiguidade na função do banco. Execute corrigir_substituicao_periodos.sql no Supabase como postgres.':(error.message||'Não foi possível concluir a operação.')+(error.code?' (código '+error.code+')':''));return data;}
 function selected(){return occupations.find(o=>o.key===form.elements.ocupacao.value);}
 function renderFields(){
  const host=$('#swap-fields');host.replaceChildren();const version=versions.find(v=>v.id===form.elements.modelo.value),occupation=selected();

@@ -31,8 +31,9 @@ const menu=`
     </div></details>
     <a class="menu-link${active('frota.html')}" href="frota.html">${icon('▣')}<span>Frotas e ocupações</span></a>
     <a class="menu-link${active('locacoes.html')}" href="locacoes.html">${icon('▤')}<span>Locações</span></a>
+    <a class="menu-link${['substituicao.html','alteracoes.html'].includes(page)?' active':''}" href="/locacao/substituicao">${icon('▣')}<span>Substituição de veículos</span></a>
     <details${groupOpen(['contratos.html','alteracoes.html','recibos.html','distratos.html'])}><summary>${icon('▧')}<span>Documentos</span></summary><div class="menu-children">
-      <a class="menu-link${active('contratos.html')}" href="contratos.html">Contratos / Termos de locação</a><a class="menu-link${active('alteracoes.html')}" href="alteracoes.html">Substituição de veículo</a><a class="menu-link${active('recibos.html')}" href="recibos.html">Recibos</a><a class="menu-link${active('distratos.html')}" href="distratos.html">Distratos e encerramentos</a>
+      <a class="menu-link${active('contratos.html')}" href="contratos.html">Contratos / Termos de locação</a><a class="menu-link${active('recibos.html')}" href="recibos.html">Recibos</a><a class="menu-link${active('distratos.html')}" href="distratos.html">Distratos e encerramentos</a>
     </div></details>
     <a class="menu-link${active('assinaturas.html')}" href="assinaturas.html">${icon('✎')}<span>Assinaturas</span></a>
     <details${groupOpen(['financeiro.html'])}><summary>${icon('R$')}<span>Financeiro</span></summary><div class="menu-children finance-menu"><a class="menu-link${page==='financeiro.html'&&!section?' active':''}" href="financeiro.html">Entradas do dia</a><a class="menu-link${financeActive('contas-receber')}" href="financeiro.html?secao=contas-receber">Contas a receber</a><a class="menu-link${page==='financeiro.html'&&['recebidos','extrato'].includes(section)?' active':''}" href="financeiro.html?secao=recebidos">Recebimentos</a></div></details>

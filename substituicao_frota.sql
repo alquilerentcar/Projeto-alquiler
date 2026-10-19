@@ -43,7 +43,7 @@ begin
  if p_origem='levantamento' then
   select to_jsonb(t) into origem from public.frota_levantamento t where id=p_ocupacao and empresa_id=p_empresa and ativo;
  elsif p_origem='periodo' then
-  select to_jsonb(t) into origem from public.frota_periodos t where id=p_ocupacao and empresa_id=p_empresa and fim is null and tipo='locacao';
+  select to_jsonb(t) into origem from public.frota_periodos t where t.id=p_ocupacao and t.empresa_id=p_empresa and t.fim is null and t.tipo='locacao';
  elsif p_origem='locacao' then
   select to_jsonb(t) into origem from public.locacoes t where id=p_ocupacao and empresa_id=p_empresa and status='Ativa';
  else raise exception 'Origem inválida.';end if;

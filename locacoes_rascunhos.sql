@@ -1,5 +1,17 @@
 -- Execute como postgres. Habilita edição e exclusão de rascunhos sem excluir registros agora.
 begin;
+-- A tabela de pagamentos legada não foi instalada em todas as bases.
+-- As tabelas financeiras atuais continuam sendo verificadas obrigatoriamente.
+create or replace function public.locacao_rascunho_tem_pagamentos(p_empresa uuid,p_locacao uuid)
+returns boolean language plpgsql security definer set search_path='' as $$
+declare legado boolean:=false;
+begin
+ if to_regclass('public.pagamentos_locacao') is not null then
+  execute 'select exists(select 1 from public.pagamentos_locacao where locacao_id=$1)' into legado using p_locacao;
+ end if;
+ return legado or exists(select 1 from public.frota_recebimentos where empresa_id=p_empresa and grupo_id=p_locacao);
+end $$;
+revoke all on function public.locacao_rascunho_tem_pagamentos(uuid,uuid) from public,anon,authenticated;
 alter table public.locacoes add column if not exists revisao_rascunho integer not null default 0;
 create or replace function public.locacao_revisao_rascunho() returns trigger language plpgsql set search_path='' as $$
 begin new.revisao_rascunho:=old.revisao_rascunho+1;return new;end $$;
@@ -50,7 +62,7 @@ begin
   exists(select 1 from public.locacoes where carro_id=carro and id<>p_locacao and status in ('Reservada','Ativa'))
   or exists(select 1 from public.frota_periodos p where p.carro_id=carro and p.fim is null)
   or exists(select 1 from public.frota_levantamento where carro_id=carro and ativo)) then raise exception 'O veículo escolhido já está ocupado ou reservado.';end if;
- if cliente is distinct from (original->>'cliente_id')::uuid and (coalesce((original->>'valor_pago')::numeric,0)>0 or coalesce((original->>'valor_caucao_pago')::numeric,0)>0 or exists(select 1 from public.pagamentos_locacao where locacao_id=p_locacao)) then raise exception 'Há valores registrados. Não transfira esse rascunho para outra pessoa.';end if;
+ if cliente is distinct from (original->>'cliente_id')::uuid and (coalesce((original->>'valor_pago')::numeric,0)>0 or coalesce((original->>'valor_caucao_pago')::numeric,0)>0 or public.locacao_rascunho_tem_pagamentos(p_empresa,p_locacao)) then raise exception 'Há valores registrados. Não transfira esse rascunho para outra pessoa.';end if;
  update public.locacoes set cliente_id=cliente,carro_id=carro,data_inicio=inicio,data_fim=fim,valor_diaria=round(diaria,2),valor_caucao=round(caucao,2),valor_caucao_pago=round(pago,2),saldo_caucao=round(caucao-pago,2),numero_parcelas_caucao=partes,valor_parcela_caucao=round(parcela,2),multa_atraso_percentual=multa,observacoes=nullif(trim(p_dados->>'observacoes'),'') where id=p_locacao and empresa_id=p_empresa returning to_jsonb(locacoes.*) into result;
  return result;
 end $$;
@@ -79,8 +91,7 @@ begin
  end if;
  r:=public.locacao_conferir_rascunho(p_empresa,p_locacao,p_revisao);
  if coalesce((r->>'valor_pago')::numeric,0)>0 or coalesce((r->>'valor_caucao_pago')::numeric,0)>0
- or exists(select 1 from public.pagamentos_locacao where locacao_id=p_locacao)
- or exists(select 1 from public.frota_recebimentos where empresa_id=p_empresa and grupo_id=p_locacao)
+ or public.locacao_rascunho_tem_pagamentos(p_empresa,p_locacao)
  then raise exception 'Há pagamentos registrados. A exclusão de um rascunho não pode apagar movimentação financeira.';end if;
  select coalesce(jsonb_agg(jsonb_build_object('bucket',bucket_id,'path',name)),'[]') into files from storage.objects
  where bucket_id in ('documentos-locacao','documentos-contratuais') and name like p_locacao::text||'/%';

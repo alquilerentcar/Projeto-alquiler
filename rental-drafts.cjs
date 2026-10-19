@@ -17,6 +17,8 @@ async function callDraftRpc(request,name,body,{url,key,requestFetch=fetch}){
  if(!authorization.startsWith('Bearer '))throw fail(401,'Entre novamente no sistema.');
  if(!['locacao_excluir_rascunho','locacao_exclusao_limpeza'].includes(name))throw fail(400,'Operação inválida.');
  let response;try{response=await requestFetch(url+'/rest/v1/rpc/'+name,{method:'POST',headers:{apikey:key,Authorization:authorization,'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(15000)});}catch{throw fail(503,'Não foi possível concluir a solicitação. Tente novamente.');}
+ // A função de confirmação retorna void: PostgREST responde 204 após salvar.
+ if(response.status===204&&name==='locacao_exclusao_limpeza')return null;
  let result;try{result=await response.json();}catch{throw fail(503,'O banco não confirmou a operação. Tente novamente.');}
  if(!response.ok){if(['42P01','42702','42703'].includes(result.code))throw fail(503,'A estrutura do banco precisa de uma correção. Execute corrigir_substituicao_e_rascunhos.sql no Supabase como postgres.');if(result.code==='PGRST202')throw fail(503,'Execute locacoes_rascunhos.sql no Supabase para ativar a exclusão.');if(result.code==='23503')throw fail(409,'Há registros vinculados que impedem a exclusão deste rascunho.');throw fail(response.status===401?401:result.code==='42501'?403:409,result.message||'Não foi possível excluir o rascunho.');}
  return result;

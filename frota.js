@@ -4,7 +4,7 @@ import {editFleetOccupant} from './frota-locatario-editor.mjs';
 import {closeOccupation} from './encerrar-ocupacao.mjs';
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
 import {requireAuth,bindLogout} from './auth-guard.js';
-import {openVehicleHistory} from './frota-km.js';
+import {openVehicleHistory} from './frota-km.js?v=20261019-tipos';
 import {money,localDate,fleetStatus,totals} from './frota-core.mjs';
 const db=createClient('https://xtelzwclrzzlsqjecscl.supabase.co','sb_publishable_37VAv7_GhtRLum-WVwMv0w_EiD0HqZ3');
 await requireAuth(db);bindLogout(db);
@@ -46,7 +46,7 @@ function render(){
   else if(p){const finish=node('button','Concluir período','btn btn-quiet');finish.onclick=()=>open('encerrar',p);actions.append(finish);}
   else if(old){const rental=node('a','Gerenciar locação','btn btn-quiet');rental.href='/locacao/locacoes';actions.append(rental);}
   else if(!occupied&&car.situacao==='Disponível'){const add=node('button','Registrar ocupação','btn btn-primary');add.onclick=()=>open('iniciar',null,car.id);actions.append(add);}
-  actionsCell.append(actions);row.append(plate,person,km,dailyCell,statusCell,actionsCell);body.append(row);
+  const personId=p?.cliente_id||old?.cliente_id||o?.cliente_id;if(personId){const terms=node('a','Termos do locatário','btn btn-quiet');terms.href='/locacao/substituicao?cliente='+encodeURIComponent(personId);actions.append(terms);}actionsCell.append(actions);row.append(plate,person,km,dailyCell,statusCell,actionsCell);body.append(row);
  }
  const metrics=$('#fleet-metrics');metrics.replaceChildren();for(const [label,value]of [['Total',cars.length],['Locados',counts.Locado||0],['Disponíveis',counts.Disponível||0],['Manutenção',counts.Manutenção||0],['Revisão',counts.Revisão||0],['Vendidos',counts.Vendido||0]]){const metric=node('div','','metric');metric.append(node('span',label),node('strong',value));metrics.append(metric);}
  $('#fleet-result-count').textContent=shown+' de '+cars.length+' veículos';if(!shown){const row=node('tr'),cell=node('td','Nenhum veículo neste filtro.');cell.colSpan=6;row.append(cell);body.append(row);}

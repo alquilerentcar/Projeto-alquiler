@@ -12,6 +12,7 @@ create table if not exists public.frota_substituicoes (
 );
 alter table public.frota_substituicoes drop constraint if exists frota_substituicoes_criado_por_fkey;
 alter table public.frota_substituicoes enable row level security;
+create index if not exists frota_substituicoes_cliente on public.frota_substituicoes(empresa_id,cliente_id,data_troca desc);
 revoke all on public.frota_substituicoes from public,anon,authenticated;
 grant select on public.frota_substituicoes to authenticated;
 drop policy if exists substituicoes_leitura on public.frota_substituicoes;
@@ -20,7 +21,7 @@ using(public.acesso_modulo(empresa_id,'locacao'));
 
 create or replace function public.substituicao_preparar(p_empresa uuid,p_id uuid,p_origem text,p_ocupacao uuid,p_carro uuid,p_data timestamptz,p_versao uuid,p_valores jsonb,p_fotos integer)
 returns jsonb language plpgsql security definer set search_path='' as $$
-declare d public.frota_substituicoes; origem jsonb; anterior public.carros; posterior public.carros;
+declare d public.frota_substituicoes; origem jsonb; anterior public.carros; posterior public.carros; tipo text; retorno timestamptz; diaria numeric; situacao text; complemento text;
  c public.clientes; e public.empresas; v public.versoes_modelos_documentos; campos jsonb; txt text; marker text[]; cid uuid; aid uuid;
 begin
  if auth.uid() is null or not coalesce(public.acesso_modulo(p_empresa,'locacao'),false) then raise exception 'Sem acesso à empresa.';end if;
@@ -31,6 +32,14 @@ begin
  end if;
  if p_id is null or p_data is null or p_data>now() or p_fotos is null or p_fotos not between 1 and 20
  or jsonb_typeof(p_valores) is distinct from 'object' or length(p_valores::text)>50000 then raise exception 'Confira data, fotos e dados da troca.';end if;
+ tipo:=p_valores->>'tipo_substituicao';situacao:=p_valores->>'situacao_anterior';
+ if tipo is null or tipo not in ('temporaria','permanente') then raise exception 'Informe se a substituição é temporária ou permanente.';end if;
+ if situacao is null or situacao not in ('Disponível','Manutenção','Revisão','Indisponível') then raise exception 'Informe a situação do carro anterior.';end if;
+ if tipo='temporaria' then retorno:=nullif(p_valores->>'previsao_retorno','')::timestamptz;
+  if retorno is null or retorno<=p_data then raise exception 'A previsão de retorno deve ser posterior à troca.';end if;
+ end if;
+ diaria:=nullif(p_valores->>'diaria_substituto','')::numeric;
+ if diaria is null or diaria<=0 or diaria>1000000 then raise exception 'Confira a diária do substituto.';end if;
  if p_origem='levantamento' then
   select to_jsonb(t) into origem from public.frota_levantamento t where id=p_ocupacao and empresa_id=p_empresa and ativo;
  elsif p_origem='periodo' then
@@ -51,7 +60,7 @@ begin
  select vv.* into v from public.versoes_modelos_documentos vv join public.modelos_documentos m on m.id=vv.modelo_id
  where vv.id=p_versao and m.empresa_id=p_empresa and not m.arquivado and m.versao_publicada=vv.versao;
  if v.id is null or v.nome !~* '(substitui|altera)' then raise exception 'Selecione um modelo publicado de substituição de veículo.';end if;
- campos:=p_valores||jsonb_build_object('empresa_razao_social',e.razao_social,'empresa_cnpj',e.cnpj,'empresa_endereco',e.endereco,
+ campos:=p_valores||jsonb_build_object('tipo_substituicao',tipo,'situacao_anterior',situacao,'previsao_retorno',retorno,'diaria_substituto',diaria,'empresa_razao_social',e.razao_social,'empresa_cnpj',e.cnpj,'empresa_endereco',e.endereco,
  'nome_locatario',c.nome_completo,'cpf',c.cpf,'cnh',c.cnh,'endereco',c.endereco,
  'veiculo_anterior',anterior.placa,'veiculo_placa',anterior.placa,'carro_anterior',anterior.placa,
  'veiculo_posterior',posterior.placa,'nova_placa',posterior.placa,'carro_posterior',posterior.placa,
@@ -66,9 +75,11 @@ begin
   if nullif(trim(campos->>marker[2]),'') is null then raise exception 'Preencha o campo: %',marker[2];end if;
   txt:=replace(txt,marker[1],campos->>marker[2]);
  end loop;
+ complemento:=concat('Substituição ',case when tipo='temporaria' then 'temporária' else 'permanente' end,'. Situação do veículo anterior: ',situacao,'. Diária acordada para o veículo substituto: R$ ',replace(to_char(diaria,'FM999999990.00'),'.',','),'.',case when retorno is not null then ' Retorno previsto: '||to_char(retorno at time zone 'America/Manaus','DD/MM/YYYY HH24:MI')||' (Manaus). O retorno depende de nova confirmação da entrega dos veículos.' else '' end);
+ txt:=txt||E'\n\n'||complemento;
  insert into public.frota_substituicoes(id,empresa_id,criado_por,origem_tipo,origem_id,cliente_id,anterior_id,posterior_id,data_troca,versao_id,snapshot,valores,texto,fotos)
  values(p_id,p_empresa,auth.uid(),p_origem,p_ocupacao,cid,aid,p_carro,p_data,p_versao,
- jsonb_build_object('empresa',to_jsonb(e),'cliente',to_jsonb(c),'anterior',to_jsonb(anterior),'posterior',to_jsonb(posterior),'ocupacao',origem,'modelo',to_jsonb(v)),campos,txt,p_fotos) returning * into d;
+ jsonb_build_object('empresa',to_jsonb(e),'cliente',to_jsonb(c),'anterior',to_jsonb(anterior),'posterior',to_jsonb(posterior),'ocupacao',origem,'modelo',to_jsonb(v),'complemento',complemento),campos,txt,p_fotos) returning * into d;
  return to_jsonb(d);
 end $$;
 
@@ -101,21 +112,21 @@ begin
  or exists(select 1 from public.frota_levantamento where carro_id=d.anterior_id and ativo and (empresa_id<>d.empresa_id or cliente_id is distinct from d.cliente_id))
  or exists(select 1 from public.locacoes where carro_id=d.anterior_id and status='Ativa' and (d.origem_tipo<>'locacao' or id<>d.origem_id)) then raise exception 'Há outra ocupação ativa no carro anterior. Confira a frota.';end if;
  if d.origem_tipo='periodo' then
-  novo:=public.frota_movimentar(d.empresa_id,jsonb_build_object('acao','trocar','periodo',d.origem_id,'carro',d.posterior_id,'data',d.data_troca,'diaria',origem->>'diaria','observacoes',d.valores->>'motivo_alteracao'));
+  novo:=public.frota_movimentar(d.empresa_id,jsonb_build_object('acao','trocar','periodo',d.origem_id,'carro',d.posterior_id,'data',d.data_troca,'diaria',coalesce(d.valores->>'diaria_substituto',origem->>'diaria'),'observacoes',d.valores->>'motivo_alteracao'));
  elsif d.origem_tipo='locacao' then
-  update public.locacoes set carro_id=d.posterior_id where id=d.origem_id;
+  update public.locacoes set carro_id=d.posterior_id,valor_diaria=coalesce(nullif(d.valores->>'diaria_substituto','')::numeric,valor_diaria) where id=d.origem_id;
   update public.frota_levantamento set ativo=false where carro_id=d.anterior_id and cliente_id=d.cliente_id and empresa_id=d.empresa_id and ativo;
  else
   update public.frota_substituicoes set snapshot=snapshot||jsonb_build_object('historico_anterior_substituto',(select to_jsonb(t) from public.frota_levantamento t where empresa_id=d.empresa_id and placa=car.placa)) where id=d.id;
   update public.frota_levantamento set ativo=false where id=d.origem_id;
   insert into public.frota_levantamento(empresa_id,placa,carro_id,cliente_id,responsavel,contato,inicio,diaria,ativo,km,km_data)
-  values(d.empresa_id,car.placa,car.id,d.cliente_id,origem->>'responsavel',origem->>'contato',d.data_troca,(origem->>'diaria')::numeric,true,
+  values(d.empresa_id,car.placa,car.id,d.cliente_id,origem->>'responsavel',origem->>'contato',d.data_troca,coalesce(nullif(d.valores->>'diaria_substituto','')::numeric,(origem->>'diaria')::numeric),true,
    nullif(d.valores->>'quilometragem_posterior','')::bigint,(d.data_troca at time zone 'America/Manaus')::date)
   on conflict(empresa_id,placa) do update set carro_id=excluded.carro_id,cliente_id=excluded.cliente_id,responsavel=excluded.responsavel,contato=excluded.contato,inicio=excluded.inicio,diaria=excluded.diaria,ativo=true,km=excluded.km,km_data=excluded.km_data;
  end if;
  update public.frota_levantamento set ativo=false where empresa_id=d.empresa_id and carro_id=d.anterior_id and cliente_id=d.cliente_id and ativo;
  update public.carros set situacao='Locado' where id=d.posterior_id;
- update public.carros set situacao='Disponível' where id=d.anterior_id and situacao='Locado';
+ update public.carros set situacao=coalesce(d.valores->>'situacao_anterior','Disponível'),observacoes=case when d.valores->>'situacao_anterior' in ('Manutenção','Revisão','Indisponível') then d.valores->>'motivo_alteracao' else observacoes end where id=d.anterior_id;
  update public.frota_substituicoes set confirmado_em=now() where id=d.id returning * into d;
  return to_jsonb(d);
 end $$;
@@ -143,6 +154,14 @@ drop policy if exists substituicao_storage_sem_exclusao on storage.objects;
 create policy substituicao_storage_sem_exclusao on storage.objects as restrictive for delete to public using(bucket_id<>'substituicoes-frota');
 revoke all on function public.substituicao_preparar(uuid,uuid,text,uuid,uuid,timestamptz,uuid,jsonb,integer),public.substituicao_confirmar(uuid),public.substituicao_arquivo(text,boolean) from public,anon;
 grant execute on function public.substituicao_preparar(uuid,uuid,text,uuid,uuid,timestamptz,uuid,jsonb,integer),public.substituicao_confirmar(uuid),public.substituicao_arquivo(text,boolean) to authenticated;
+create or replace function public.substituicao_configuracao(p_empresa uuid)
+returns integer language plpgsql stable security definer set search_path='' as $$
+begin
+ if auth.uid() is null or not coalesce(public.acesso_modulo(p_empresa,'locacao'),false) then raise exception 'Sem acesso à empresa.';end if;
+ return 2;
+end $$;
+revoke all on function public.substituicao_configuracao(uuid) from public,anon;
+grant execute on function public.substituicao_configuracao(uuid) to authenticated;
 notify pgrst,'reload schema';
 commit;
 select 'Substituição integrada à frota preparada' as resultado;

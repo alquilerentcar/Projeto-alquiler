@@ -26,8 +26,8 @@ export async function openVehicleHistory(db,company,car,state,legacy){
   for(const p of periods.filter(p=>Date.parse(p.start)<=end&&(!p.end||Date.parse(p.end)>=start)).sort((a,b)=>Date.parse(b.start)-Date.parse(a.start)))event(occupancy,p.name,date(p.start)+' → '+date(p.end),p.reason);
   if(imported)event(occupancy,imported.responsavel,'Ocupação informada · início '+(imported.inicio?date(imported.inicio):'a confirmar'),'A data do KM não altera a data de início da locação.');
   for(const d of substitutions.filter(d=>Date.parse(d.data_troca)>=start&&Date.parse(d.data_troca)<=end)){
-   event(occupancy,d.snapshot.cliente.nome_completo,date(d.data_troca)+' · '+d.snapshot.anterior.placa+' → '+d.snapshot.posterior.placa,d.valores.motivo_alteracao);
-   const a=el('a','Abrir termo e fotos');a.className='btn btn-quiet';a.href='/locacao/substituicao';occupancy.lastElementChild.append(a);
+   event(occupancy,d.snapshot.cliente.nome_completo,date(d.data_troca)+' · '+d.snapshot.anterior.placa+' → '+d.snapshot.posterior.placa,(d.valores.tipo_substituicao==='temporaria'?'Temporária · ':d.valores.tipo_substituicao==='permanente'?'Permanente · ':'')+d.valores.motivo_alteracao);
+   const a=el('a','Abrir termo e fotos');a.className='btn btn-quiet';a.href='/locacao/substituicao?termo='+encodeURIComponent(d.id);occupancy.lastElementChild.append(a);
   }
   for(const d of closures.filter(d=>d.origem==='levantamento'&&Date.parse(d.fim)>=start&&(!d.snapshot.inicio||Date.parse(d.snapshot.inicio)<=end)))event(occupancy,name(d.snapshot.cliente_id)==='Cliente não identificado'?d.snapshot.responsavel:name(d.snapshot.cliente_id),(d.snapshot.inicio?date(d.snapshot.inicio):'Início não informado')+' → '+date(d.fim),d.motivo+' · Situação após devolução: '+d.situacao_posterior);
   if(!occupancy.children.length)history.append(el('p','Nenhuma ocupação encontrada neste período.'));

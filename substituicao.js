@@ -3,7 +3,7 @@ import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
 import {fieldsIn} from './document-model-core.js';
 import {fillBlocks} from './rich-document.js';
 import {modelPdf} from './document-model-pdf.js?v=20261019-termo';
-import {TERM_STARTERS,substitutionValues,substitutionBlocks} from './termos-locacao.mjs?v=20261019-referencia';
+import {TERM_STARTERS,substitutionValues,substitutionBlocks} from './termos-locacao.mjs?v=20261019-modelo-solicitado';
 const db=createClient('https://xtelzwclrzzlsqjecscl.supabase.co','sb_publishable_37VAv7_GhtRLum-WVwMv0w_EiD0HqZ3');
 await requireAuth(db);bindLogout(db);
 const context=window.alquilerContext,$=s=>document.querySelector(s),form=$('#swap-form'),status=$('#swap-status');
@@ -43,7 +43,7 @@ async function load(){
  const [panel,imported,rentals,c,models]=await Promise.all([
   rpc('frota_painel',{p_empresa:context.company.id}),db.from('frota_levantamento').select('*').eq('empresa_id',context.company.id).eq('ativo',true),
   db.from('locacoes').select('id,cliente_id,carro_id,data_inicio,valor_diaria').eq('empresa_id',context.company.id).eq('status','Ativa'),
-  db.from('clientes').select('id,nome_completo,rg,nacionalidade,estado_civil,profissao,endereco,numero,complemento,bairro,cidade,uf,cep').eq('empresa_id',context.company.id),rpc('modelos_documentos_publicados',{p_empresa:context.company.id})]);
+  db.from('clientes').select('id,nome_completo,rg,cnh,email,contato_1_numero,contato_2_numero,contato_2_responsavel,contato_3_numero,contato_3_responsavel,contato_4_numero,contato_4_responsavel,nacionalidade,estado_civil,profissao,endereco,numero,complemento,bairro,cidade,uf,cep').eq('empresa_id',context.company.id),rpc('modelos_documentos_publicados',{p_empresa:context.company.id})]);
  for(const r of [imported,rentals,c])if(r.error)throw r.error;
  cars=panel.carros||[];clients=c.data;versions=models.filter(v=>/substitui|altera/i.test(v.nome));
  occupations=(panel.periodos||[]).filter(p=>!p.fim&&p.tipo==='locacao').map(o=>({...o,key:'periodo:'+o.id,tipo:'periodo'}));

@@ -93,9 +93,10 @@ begin
   return to_jsonb(existing);
  end if;
  r:=public.locacao_conferir_rascunho(p_empresa,p_locacao,p_revisao);
- if coalesce((r->>'valor_pago')::numeric,0)>0 or coalesce((r->>'valor_caucao_pago')::numeric,0)>0
- or public.locacao_rascunho_tem_pagamentos(p_empresa,p_locacao)
- then raise exception 'Há pagamentos registrados. A exclusão de um rascunho não pode apagar movimentação financeira.';end if;
+ -- Valores digitados no formulário não comprovam recebimento.
+ -- Somente lançamentos financeiros vinculados impedem a exclusão.
+ if public.locacao_rascunho_tem_pagamentos(p_empresa,p_locacao)
+ then raise exception 'Há recebimentos lançados no financeiro para esta locação. Confira ou estorne os lançamentos antes de excluir. A caução apenas preenchida no rascunho não bloqueia a exclusão.';end if;
  select coalesce(jsonb_agg(jsonb_build_object('bucket',bucket_id,'path',name)),'[]') into files from storage.objects
  where bucket_id in ('documentos-locacao','documentos-contratuais') and name like p_locacao::text||'/%';
  insert into public.locacoes_rascunhos_excluidos(id,empresa_id,locacao_id,autor,arquivos,arquivos_pendentes) values(p_operacao,p_empresa,p_locacao,auth.uid(),files,files);

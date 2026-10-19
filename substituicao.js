@@ -2,7 +2,7 @@ import {requireAuth,bindLogout} from './auth-guard.js';
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
 import {fieldsIn} from './document-model-core.js';
 import {fillBlocks} from './rich-document.js';
-import {modelPdf} from './document-model-pdf.js?v=20261019-termo';
+import {modelPdf} from './document-model-pdf.js?v=20261019-pdf-size';
 import {TERM_STARTERS,substitutionValues,substitutionBlocks} from './termos-locacao.mjs?v=20261019-modelo-solicitado';
 const db=createClient('https://xtelzwclrzzlsqjecscl.supabase.co','sb_publishable_37VAv7_GhtRLum-WVwMv0w_EiD0HqZ3');
 await requireAuth(db);bindLogout(db);

@@ -1,5 +1,13 @@
 export const BRANDING_BUCKET='identidade-empresas';
 export const DEFAULT_COLOR='#2864da';
+const stationeryPages=new WeakMap();
+// O formulário PDF do timbrado é incorporado uma única vez por documento.
+export async function addStationeryPage(output,stationery){
+ let cache=stationeryPages.get(output);if(!cache){cache=new WeakMap();stationeryPages.set(output,cache);}
+ const source=stationery.getPage(0);let embedded=cache.get(source);
+ if(!embedded){embedded=output.embedPage(source);cache.set(source,embedded);}
+ const background=await embedded,page=output.addPage([background.width,background.height]);page.drawPage(background);return page;
+}
 export function themeColors(value){
  const primary=/^#[0-9a-f]{6}$/i.test(value||'')?value:DEFAULT_COLOR;
  const channels=primary.slice(1).match(/../g).map(x=>parseInt(x,16)/255);

@@ -227,7 +227,7 @@ async function handler(request,response) {
   }
   if(route==='/api/locacoes/rascunho/excluir'){
    if(request.method!=='POST')return json(response,405,{error:'Método não permitido.'});
-   try{const drafts=require('./rental-drafts.cjs');const body=await readJson(request,4096);const result=await drafts.deleteDraft(body,{empresa:request.headers['x-empresa-id'],url:supabaseUrl,serviceKey:process.env.SUPABASE_SERVICE_ROLE_KEY,rpc:(name,args)=>drafts.callDraftRpc(request,name,args,{url:supabaseUrl,key:supabaseKey})});return json(response,200,result);}catch(error){return json(response,error.status||500,{error:error.status?error.message:'Não foi possível concluir a exclusão do rascunho.'});}
+   try{const drafts=require('./rental-drafts.cjs');const body=await readJson(request,4096);const result=await (body?.tipo==='contrato'?drafts.deleteUnsignedContract:drafts.deleteDraft)(body,{empresa:request.headers['x-empresa-id'],url:supabaseUrl,serviceKey:process.env.SUPABASE_SERVICE_ROLE_KEY,rpc:(name,args)=>drafts.callDraftRpc(request,name,args,{url:supabaseUrl,key:supabaseKey})});return json(response,200,result);}catch(error){return json(response,error.status||500,{error:error.status?error.message:'Não foi possível concluir a exclusão do rascunho.'});}
   }
   if(route==='/api/zapsign-status'&&request.method==='GET')return json(response,200,zapSignTest.status());
   if(route==='/api/zapsign-testar'){

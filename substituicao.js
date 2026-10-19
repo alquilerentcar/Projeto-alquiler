@@ -2,7 +2,8 @@ import {requireAuth,bindLogout} from './auth-guard.js';
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
 import {fieldsIn} from './document-model-core.js';
 import {fillBlocks} from './rich-document.js';
-import {modelPdf} from './document-model-pdf.js';
+import {modelPdf} from './document-model-pdf.js?v=20261019-termo';
+import {TERM_STARTERS,substitutionValues,substitutionBlocks} from './termos-locacao.mjs?v=20261019-referencia';
 const db=createClient('https://xtelzwclrzzlsqjecscl.supabase.co','sb_publishable_37VAv7_GhtRLum-WVwMv0w_EiD0HqZ3');
 await requireAuth(db);bindLogout(db);
 const context=window.alquilerContext,$=s=>document.querySelector(s),form=$('#swap-form'),status=$('#swap-status');
@@ -17,11 +18,12 @@ function selected(){return occupations.find(o=>o.key===form.elements.ocupacao.va
 function renderFields(){
  const host=$('#swap-fields');host.replaceChildren();const version=versions.find(v=>v.id===form.elements.modelo.value),occupation=selected();
  const old=car(occupation?.carro_id),next=car(form.elements.substituto.value);
+ const defaults=substitutionValues(context.company,client(occupation?.cliente_id)||{},old||{},next||{},form.elements.data.value?form.elements.data.value+'-04:00':null);
  $('#swap-current').textContent=occupation?`Ocupação atual: ${client(occupation.cliente_id)?.nome_completo||occupation.responsavel} — ${label(occupation.carro_id)}`:'Escolha o locatário na ocupação atual.';
  $('#swap-vehicle-note').textContent=next?`Substituto: ${label(next.id)}. Confira a diária e a situação do carro anterior.`:'';
  if(!version)return;
  for(const key of new Set([...fieldsIn(version.conteudo),'motivo_alteracao','quilometragem_posterior'])){
-  if(automatic.has(key)||key==='data_inicio'&&(occupation?.inicio||occupation?.data_inicio))continue;
+  if(defaults[key]||automatic.has(key)||key==='data_inicio'&&(occupation?.inicio||occupation?.data_inicio))continue;
   const title=node('label',''),span=node('span',key.replaceAll('_',' ')),input=document.createElement(/motivo|condicoes/.test(key)?'textarea':'input');
   input.name=key;input.required=true;input.maxLength=4000;if(input.tagName==='TEXTAREA')input.rows=3;
   if(/quilometragem/.test(key)){input.type='number';input.min='0';input.step='1';}
@@ -41,7 +43,7 @@ async function load(){
  const [panel,imported,rentals,c,models]=await Promise.all([
   rpc('frota_painel',{p_empresa:context.company.id}),db.from('frota_levantamento').select('*').eq('empresa_id',context.company.id).eq('ativo',true),
   db.from('locacoes').select('id,cliente_id,carro_id,data_inicio,valor_diaria').eq('empresa_id',context.company.id).eq('status','Ativa'),
-  db.from('clientes').select('id,nome_completo').eq('empresa_id',context.company.id),rpc('modelos_documentos_publicados',{p_empresa:context.company.id})]);
+  db.from('clientes').select('id,nome_completo,rg,nacionalidade,estado_civil,profissao,endereco,numero,complemento,bairro,cidade,uf,cep').eq('empresa_id',context.company.id),rpc('modelos_documentos_publicados',{p_empresa:context.company.id})]);
  for(const r of [imported,rentals,c])if(r.error)throw r.error;
  cars=panel.carros||[];clients=c.data;versions=models.filter(v=>/substitui|altera/i.test(v.nome));
  occupations=(panel.periodos||[]).filter(p=>!p.fim&&p.tipo==='locacao').map(o=>({...o,key:'periodo:'+o.id,tipo:'periodo'}));
@@ -68,12 +70,12 @@ async function finish(doc,local=[]){
  for(const [i,blob]of local.entries())await upload(`${root}/foto-${i+1}.jpg`,blob,'image/jpeg');
  const images=[];for(let i=1;i<=doc.fotos;i++)images.push({blob:await download(`${root}/foto-${i}.jpg`),title:`Veículo substituto ${doc.snapshot.posterior.placa} — foto ${i}`});
  const blocks=doc.snapshot.modelo.formatacao?.length?fillBlocks(doc.snapshot.modelo.formatacao,doc.valores):null;
- if(blocks&&doc.snapshot.complemento)blocks.push({align:'justify',runs:[{text:doc.snapshot.complemento}]});
- const bytes=await modelPdf(db,doc.snapshot.empresa,doc.texto,null,blocks,images);
+ if(blocks&&doc.snapshot.complemento){const at=doc.snapshot.modelo.formatacao.findIndex(b=>(b.runs||[]).some(r=>String(r.text||'').includes('{{ cidade_documento }}')));blocks.splice(at<0?blocks.length:at,0,{align:'justify',runs:[{text:doc.snapshot.complemento,size:11}]});}
+ const bytes=await modelPdf(db,doc.snapshot.empresa,doc.texto,null,blocks,images,{fontFamily:'Helvetica',paragraphGap:7,bottom:110});
  await upload(`${root}/termo.pdf`,new Blob([bytes],{type:'application/pdf'}),'application/pdf');
  await rpc('substituicao_confirmar',{p_id:doc.id});await openPdf(doc);
 }
-async function openPdf(doc){const {data,error}=await db.storage.from('substituicoes-frota').createSignedUrl(`${doc.empresa_id}/${doc.id}/termo.pdf`,600);if(error)throw error;const a=$('#swap-pdf');a.href=data.signedUrl;a.hidden=false;a.focus();}
+async function openPdf(doc){const {data,error}=await db.storage.from('substituicoes-frota').createSignedUrl(`${doc.empresa_id}/${doc.id}/termo.pdf`,600);if(error)throw error;const a=$('#swap-pdf');a.href=data.signedUrl;a.hidden=false;a.className='btn btn-primary';a.textContent='Abrir / baixar termo com fotos';a.focus();let frame=$('#swap-preview');if(!frame){frame=document.createElement('iframe');frame.id='swap-preview';frame.title='Termo de substituição com papel timbrado e fotos';frame.style.cssText='width:100%;height:75vh;border:1px solid #dce3ef;margin-top:16px';form.after(frame);}frame.src=data.signedUrl;frame.scrollIntoView?.({behavior:'smooth',block:'start'});}
 async function list(person,docId){
  let query=db.from('frota_substituicoes').select('*').eq('empresa_id',context.company.id);if(person)query=query.eq('cliente_id',person);if(docId)query=query.eq('id',docId);
  const {data,error}=await query.order('criado_em',{ascending:false}).limit(100);if(error)throw error;
@@ -83,6 +85,7 @@ async function list(person,docId){
   button.onclick=async()=>{if(busy)return;busy=true;button.disabled=true;try{if(doc.confirmado_em)await openPdf(doc);else{if(!confirm('Confirmar esta troca já preparada e atualizar a ocupação?'))return;await finish(doc);await load();status.textContent='Troca confirmada; histórico e ocupação atualizados.'}}catch(e){status.textContent=e.message+' Se faltam fotos da preparação, retome o envio na mesma tela em que iniciou.'}finally{busy=false;button.disabled=false}};row.append(description,button);host.append(row);}
 }
 $('#swap-search').oninput=renderOccupations;
+if(context.canManageCompany){const standard=node('button','Usar modelo padrão conforme referência','btn btn-quiet');standard.type='button';form.elements.modelo.closest('label').append(standard);standard.onclick=async()=>{if(busy)return;busy=true;standard.disabled=true;try{const starter=TERM_STARTERS.substituicao;let version=versions.find(v=>v.conteudo===starter.conteudo);if(!version){const saved=await rpc('modelo_documento_salvar_editor',{p_empresa:context.company.id,p_id:null,p_revisao:null,p_nome:starter.nome,p_conteudo:starter.conteudo,p_publicar:true,p_arquivado:false,p_formatacao:substitutionBlocks(starter.conteudo),p_tipo:'outro'});versions=(await rpc('modelos_documentos_publicados',{p_empresa:context.company.id})).filter(v=>/substitui|altera/i.test(v.nome));version=versions.find(v=>v.modelo_id===saved.id)||versions.find(v=>v.conteudo===starter.conteudo);form.elements.modelo.replaceChildren(new Option('Selecione um modelo publicado',''));for(const v of versions)form.elements.modelo.add(new Option(`${v.nome} · v${v.versao}`,v.id));}if(!version)throw Error('Não foi possível selecionar o modelo. Atualize a página.');form.elements.modelo.value=version.id;renderFields();status.textContent='Modelo padrão selecionado. Confira os campos que faltam no cadastro antes de gerar.';}catch(e){status.textContent=e.message;}finally{busy=false;standard.disabled=false;}};}
 for(const name of ['ocupacao','substituto','modelo'])form.elements[name].onchange=()=>{renderFields();if(name==='substituto')form.elements.diaria_substituto.value=car(form.elements.substituto.value)?.valor_diaria??'';};
 function typeFields(){const temporary=form.elements.tipo_substituicao.value==='temporaria';form.elements.previsao_retorno.closest('label').hidden=!temporary;form.elements.previsao_retorno.required=temporary;}
 form.elements.tipo_substituicao.onchange=typeFields;typeFields();
@@ -97,7 +100,7 @@ form.onsubmit=async event=>{event.preventDefault();if(busy)return;busy=true;cons
    if(!confirm('Gerar o termo com as fotos e confirmar a troca '+(form.elements.tipo_substituicao.value==='temporaria'?'temporária':'permanente')+'? A ocupação passará ao substituto. Situação do anterior: '+form.elements.situacao_anterior.value+'.'))return;
    status.textContent='Preparando as fotos do veículo substituto…';photos=[];for(const file of files)photos.push(await compress(file));
    const o=selected();if(!o?.cliente_id||!o?.carro_id)throw new Error('Vincule cliente e veículo no cadastro da ocupação antes de trocar.');
-   const values=Object.fromEntries([...$('#swap-fields').querySelectorAll('[name]')].map(el=>[el.name,el.value]));
+   const values={...substitutionValues(context.company,client(o.cliente_id)||{},car(o.carro_id)||{},car(form.elements.substituto.value)||{},moment.toISOString()),...Object.fromEntries([...$('#swap-fields').querySelectorAll('[name]')].map(el=>[el.name,el.value]))};
    Object.assign(values,{tipo_substituicao:form.elements.tipo_substituicao.value,previsao_retorno:form.elements.tipo_substituicao.value==='temporaria'?new Date(form.elements.previsao_retorno.value+'-04:00').toISOString():null,situacao_anterior:form.elements.situacao_anterior.value,diaria_substituto:form.elements.diaria_substituto.value});
    if(JSON.stringify(values).length>45000)throw new Error('Os textos da troca ficaram extensos demais. Reduza as observações antes de enviar.');
    prepared=await rpc('substituicao_preparar',{p_empresa:context.company.id,p_id:crypto.randomUUID(),p_origem:o.tipo,p_ocupacao:o.id,p_carro:form.elements.substituto.value,p_data:new Date(form.elements.data.value+'-04:00').toISOString(),p_versao:form.elements.modelo.value,p_valores:values,p_fotos:photos.length});

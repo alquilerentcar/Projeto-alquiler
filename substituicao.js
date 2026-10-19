@@ -6,6 +6,8 @@ import {modelPdf} from './document-model-pdf.js';
 const db=createClient('https://xtelzwclrzzlsqjecscl.supabase.co','sb_publishable_37VAv7_GhtRLum-WVwMv0w_EiD0HqZ3');
 await requireAuth(db);bindLogout(db);
 const context=window.alquilerContext,$=s=>document.querySelector(s),form=$('#swap-form'),status=$('#swap-status');
+const localMoment=()=>new Date(Date.now()-4*3600000).toISOString().slice(0,16);
+form.elements.data.value=localMoment();
 let cars=[],clients=[],occupations=[],versions=[],prepared=null,busy=false,photos=[];
 const automatic=new Set(['tipo_substituicao','previsao_retorno','situacao_anterior','diaria_substituto','empresa_razao_social','empresa_cnpj','empresa_endereco','nome_locatario','cpf','cnh','endereco','veiculo_anterior','veiculo_placa','carro_anterior','veiculo_posterior','nova_placa','carro_posterior','dados_veiculo_anterior','dados_veiculo_posterior','data_troca','data_alteracao']);
 const node=(tag,text,cls='')=>{const n=document.createElement(tag);n.textContent=text;n.className=cls;return n;};
@@ -87,18 +89,23 @@ form.elements.tipo_substituicao.onchange=typeFields;typeFields();
 form.onsubmit=async event=>{event.preventDefault();if(busy)return;busy=true;const button=$('#swap-confirm');button.disabled=true;
  try{
   if(!prepared){
+   const moment=new Date(form.elements.data.value+'-04:00');
+   if(!form.elements.data.value||!Number.isFinite(moment.getTime()))throw new Error('Informe a data e a hora reais da troca, no horário de Manaus.');
+   if(moment.getTime()>Date.now())throw new Error('A data e a hora da troca ainda estão no futuro. Informe quando a entrega realmente aconteceu, no horário de Manaus. Agora: '+new Date().toLocaleString('pt-BR',{timeZone:'America/Manaus'})+'.');
+   if(form.elements.tipo_substituicao.value==='temporaria'){const returnAt=new Date(form.elements.previsao_retorno.value+'-04:00');if(!form.elements.previsao_retorno.value||!Number.isFinite(returnAt.getTime())||returnAt<=moment)throw new Error('Informe uma previsão de retorno posterior à data da troca.');}
    const files=[...form.elements.fotos.files];if(!files.length||files.length>20)throw new Error('Selecione entre 1 e 20 fotos do veículo substituto.');
    if(!confirm('Gerar o termo com as fotos e confirmar a troca '+(form.elements.tipo_substituicao.value==='temporaria'?'temporária':'permanente')+'? A ocupação passará ao substituto. Situação do anterior: '+form.elements.situacao_anterior.value+'.'))return;
    status.textContent='Preparando as fotos do veículo substituto…';photos=[];for(const file of files)photos.push(await compress(file));
    const o=selected();if(!o?.cliente_id||!o?.carro_id)throw new Error('Vincule cliente e veículo no cadastro da ocupação antes de trocar.');
    const values=Object.fromEntries([...$('#swap-fields').querySelectorAll('[name]')].map(el=>[el.name,el.value]));
    Object.assign(values,{tipo_substituicao:form.elements.tipo_substituicao.value,previsao_retorno:form.elements.tipo_substituicao.value==='temporaria'?new Date(form.elements.previsao_retorno.value+'-04:00').toISOString():null,situacao_anterior:form.elements.situacao_anterior.value,diaria_substituto:form.elements.diaria_substituto.value});
+   if(JSON.stringify(values).length>45000)throw new Error('Os textos da troca ficaram extensos demais. Reduza as observações antes de enviar.');
    prepared=await rpc('substituicao_preparar',{p_empresa:context.company.id,p_id:crypto.randomUUID(),p_origem:o.tipo,p_ocupacao:o.id,p_carro:form.elements.substituto.value,p_data:new Date(form.elements.data.value+'-04:00').toISOString(),p_versao:form.elements.modelo.value,p_valores:values,p_fotos:photos.length});
    for(const el of form.elements)if(el!==button)el.disabled=true;
   }
   status.textContent='Gerando o PDF com papel timbrado e fotos. A frota será atualizada após o envio completo…';
   await finish(prepared,photos);prepared=null;photos=[];form.reset();for(const el of form.elements)el.disabled=false;
-  await load();typeFields();window.bgClearListCache?.();status.textContent='Termo gerado com fotos e salvo no histórico do locatário. Ocupação, diária e situação dos veículos atualizadas.';
+  form.elements.data.value=localMoment();await load();typeFields();window.bgClearListCache?.();status.textContent='Termo gerado com fotos e salvo no histórico do locatário. Ocupação, diária e situação dos veículos atualizadas.';
  }catch(error){status.textContent=error.message+(prepared?' Preparação preservada. Consulte o histórico ou clique novamente para retomar; o reenvio não duplica a troca.':'');}
  finally{busy=false;button.disabled=false;}
 };

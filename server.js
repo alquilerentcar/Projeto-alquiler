@@ -2,7 +2,7 @@ const http = require('node:http');
 const envPath = require('node:path').join(__dirname, '.env');
 if (require('node:fs').existsSync(envPath)) process.loadEnvFile(envPath);
 const accessApi = require('./access-api.js');
-const zapSignTest = require('./zapsign-test.js');
+const zapSignTest = require('./zapsign-sandbox.cjs');
 const usernameLogin = require('./username-login.js');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -229,16 +229,18 @@ async function handler(request,response) {
    if(request.method!=='POST')return json(response,405,{error:'Método não permitido.'});
    try{const drafts=require('./rental-drafts.cjs');const body=await readJson(request,4096);const result=await (body?.tipo==='contrato'?drafts.deleteUnsignedContract:drafts.deleteDraft)(body,{empresa:request.headers['x-empresa-id'],url:supabaseUrl,serviceKey:process.env.SUPABASE_SERVICE_ROLE_KEY,rpc:(name,args)=>drafts.callDraftRpc(request,name,args,{url:supabaseUrl,key:supabaseKey})});return json(response,200,result);}catch(error){return json(response,error.status||500,{error:error.status?error.message:'Não foi possível concluir a exclusão do rascunho.'});}
   }
-  if(route==='/api/zapsign-status'&&request.method==='GET')return json(response,200,zapSignTest.status());
+  if((route==='/api/zapsign-status'||route==='/api/assinaturas/status'&&new URL(request.url,'http://localhost').searchParams.get('teste')==='zapsign')&&request.method==='GET'){
+   try{if(!await rpcUser(request,'acesso_desenvolvedor',{}))return json(response,403,{error:'Somente o desenvolvedor pode consultar os testes.'});const reference=new URL(request.url,'http://localhost').searchParams.get('referencia');return json(response,200,reference?await zapSignTest.inspectTest(reference,{scope:request.headers['x-empresa-id']}):zapSignTest.status());}catch(error){return json(response,error.status||500,{error:error.status?error.message:'Não foi possível consultar o teste.'});}
+  }
   if(route==='/api/zapsign-testar'){
    if(request.method!=='POST')return json(response,405,{error:'Método não permitido.'});
-   try{if(!await rpcUser(request,'acesso_desenvolvedor',{}))throw Object.assign(new Error('Somente o desenvolvedor pode executar o teste.'),{status:403});await readJson(request,1024);return json(response,200,await zapSignTest.createTest());}catch(error){return json(response,error.status||500,{error:error.status?error.message:'Não foi possível concluir o teste da ZapSign.'});}
+   try{if(!await rpcUser(request,'acesso_desenvolvedor',{}))throw Object.assign(new Error('Somente o desenvolvedor pode executar o teste.'),{status:403});const body=await readJson(request,4096);return json(response,200,await zapSignTest.createTest({body,scope:request.headers['x-empresa-id']}));}catch(error){return json(response,error.status||500,{error:error.status?error.message:'Não foi possível concluir o teste da ZapSign.',uncertain:Boolean(error.uncertain)});}
   }
   if(route==='/api/assinaturas/status'&&request.method==='GET') return json(response,200,{active:Boolean(autentiqueToken),provider:'autentique',sandbox:autentiqueSandbox});
   if(route==='/api/assinaturas/enviar') {
     if(request.method!=='POST') return json(response,405,{error:'Método não permitido.'});
-    try { return json(response,200,await sendToAutentique(await readJson(request,70*1024*1024))); }
-    catch(error) { return json(response,error.status||500,{error:error.message||'Falha ao enviar para assinatura.'}); }
+    try { const body=await readJson(request,70*1024*1024);if(body?.tipo==='teste_zapsign'){if(!await rpcUser(request,'acesso_desenvolvedor',{}))return json(response,403,{error:'Somente o desenvolvedor pode executar o teste.'});return json(response,200,await zapSignTest.createTest({body,scope:request.headers['x-empresa-id']}));}return json(response,200,await sendToAutentique(body)); }
+    catch(error) { return json(response,error.status||500,{error:error.message||'Falha ao enviar para assinatura.',uncertain:Boolean(error.uncertain)}); }
   }
   if(route==='/api/contratos/preview') {
     if(request.method!=='POST') return json(response,405,{error:'Método não permitido.'});

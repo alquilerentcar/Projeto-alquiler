@@ -10,7 +10,7 @@ Depende das estruturas existentes de acesso, clientes, locações, documentos de
 
 - Clientes: CPF/CNPJ com máscara e verificação dos dígitos; nomes em maiúsculas; consulta individual de endereço pelo CEP. Número e complemento são preenchidos manualmente. Contato 1 é o próprio locatário; contatos 2 a 4 são referências.
 - Em cada cliente, **Documentos e débitos** abre o arquivo privado de contratos externos, termos, orçamentos e outros documentos. PDF, DOCX e imagens, até 10 MB por arquivo.
-- **Novo débito**: informe valor original, o que já foi pago, parcelas, frequência e primeiro vencimento. O pagamento anterior reduz o saldo sem gerar uma segunda entrada no caixa. O débito pertence ao locatário e permanece quando troca de carro.
+- **Novo débito**: informe valor de cada parcela, quantidade de parcelas ainda a pagar, o que já foi pago, frequência e primeiro vencimento. O total é calculado automaticamente somando as parcelas restantes e o valor anterior. O pagamento anterior reduz o saldo sem gerar uma segunda entrada no caixa. O débito pertence ao locatário e permanece quando troca de carro.
 - Financeiro → **Débitos extras** reúne as parcelas. Cada baixa registra valor e data/hora reais do recebimento. Administradores criam débitos; usuários autorizados registram recebimentos.
 - Vistoriadores são cadastrados por empresa. Administradores gerenciam nomes ativos; usuários selecionam quem realizou a vistoria. Nomes antigos dos documentos permanecem preservados.
 - O envio confirmado pelo provedor de assinatura inicia a ocupação de uma locação reservada, com registro no histórico. Isso não marca a assinatura nem a entrega física como concluídas. A verificação anterior ao envio não altera a ocupação. Conflitos de veículo são recusados.

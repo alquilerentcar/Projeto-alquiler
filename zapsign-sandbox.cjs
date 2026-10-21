@@ -1,6 +1,7 @@
 'use strict';
 const BASE='https://sandbox.api.zapsign.com.br/api/v1/docs/';
-const TITLE='GRUPO VERT - TESTE DE ASSINATURA - SEM VALIDADE JURIDICA';
+const TITLE='GRUPO ALQUILER - TESTE DE ASSINATURA - SEM VALIDADE JURIDICA';
+const LEGACY_TITLE='GRUPO VERT - TESTE DE ASSINATURA - SEM VALIDADE JURIDICA';
 const uuid=v=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 const fail=(status,message,uncertain=false)=>Object.assign(new Error(message),{status,uncertain});
 function token(env){return env.ZAPSIGN_SANDBOX_API_TOKEN||((env.VERCEL_ENV!=='production'||env.ZAPSIGN_SANDBOX==='true')?env.ZAPSIGN_API_TOKEN:'')||'';}
@@ -20,7 +21,7 @@ function buildPayload(body,scope){
  if(!uuid(body.operacao))throw fail(400,'Atualize a página antes de criar o teste.');
  const signer={name,email,auth_mode:method==='email'?'assinaturaTela-tokenEmail':'assinaturaTela-tokenSms',lock_name:true,lock_email:Boolean(email),lock_phone:Boolean(phone),require_document_photo:true,require_selfie_photo:true,send_automatic_email:body.enviar_email===true,send_automatic_whatsapp:false,send_automatic_whatsapp_signed_file:false};
  if(phone)Object.assign(signer,{phone_country:'55',phone_number:phone});
- return {name:TITLE,markdown_text:'# TESTE DE ASSINATURA — GRUPO VERT\n\nDocumento fictício para testar assinatura na tela, código de confirmação, fotos do documento de identificação e selfie.\n\nSEM VALIDADE JURÍDICA. Não representa contrato de locação, dívida, transferência ou autorização comercial. Não altera locações, ocupações ou pagamentos.\n\nAssino exclusivamente para testar a integração de assinatura eletrônica.',lang:'pt-br',external_id:'vert-sandbox:'+scope+':'+body.operacao,disable_signer_emails:false,signers:[signer]};
+ return {name:TITLE,markdown_text:'# TESTE DE ASSINATURA — GRUPO ALQUILER\n\nDocumento fictício para testar assinatura na tela, código de confirmação, fotos do documento de identificação e selfie.\n\nSEM VALIDADE JURÍDICA. Não representa contrato de locação, dívida, transferência ou autorização comercial. Não altera locações, ocupações ou pagamentos.\n\nAssino exclusivamente para testar a integração de assinatura eletrônica.',lang:'pt-br',external_id:'vert-sandbox:'+scope+':'+body.operacao,disable_signer_emails:false,signers:[signer]};
 }
 async function request(url,{env,fetchImpl,body}){
  let response;try{response=await fetchImpl(url,{method:body?'POST':'GET',redirect:'error',headers:{Authorization:'Bearer '+token(env),'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(body?35000:15000)});}catch{throw fail(504,body?'A ZapSign não confirmou a criação. O teste pode ter sido criado. Confira o sandbox antes de repetir.':'Não foi possível consultar o teste. Tente atualizar o resultado; não crie outro documento.',Boolean(body));}
@@ -45,7 +46,7 @@ async function createTest({env=process.env,fetchImpl=fetch,body,scope}={}){
 async function inspectTest(reference,{env=process.env,fetchImpl=fetch,scope}={}){
  ready(env);if(!uuid(reference)||!uuid(scope))throw fail(400,'Confira a referência do teste.');
  const result=await request(BASE+encodeURIComponent(reference)+'/',{env,fetchImpl});
- if(result.token!==reference||result.name!==TITLE||!String(result.external_id||'').startsWith('vert-sandbox:'+scope+':'))throw fail(403,'Este documento não pertence aos testes desta empresa.');
+ if(result.token!==reference||(result.name!==TITLE&&result.name!==LEGACY_TITLE)||!String(result.external_id||'').startsWith('vert-sandbox:'+scope+':'))throw fail(403,'Este documento não pertence aos testes desta empresa.');
  return resultView(result);
 }
 module.exports={status,createTest,inspectTest,buildPayload};

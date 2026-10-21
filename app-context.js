@@ -1,5 +1,5 @@
 import {applyCompanyTheme} from './empresa-branding.js';
-export const CURRENT_COMPANY={nome_fantasia:'BG SYSTEMS',cnpj:''};
+export const CURRENT_COMPANY={nome_fantasia:'Grupo Alquiler',logo_url:'/app-192.png',cnpj:''};
 export async function loadAppContext(client) {
   const {data,error}=await client.rpc('acessos_contexto',{p_empresa:sessionStorage.getItem('bgsys:empresa-id')||null});
   if(error||data?.schemaVersion!==2) throw new Error('Não foi possível validar o acesso. Verifique a conexão e aplique etapa1_acessos.sql no Supabase.');
@@ -7,7 +7,7 @@ export async function loadAppContext(client) {
   return {...data,documentModels,company:data.company||{...CURRENT_COMPANY},modules:data.modules||[]};
 }
 export function renderAppContext(context) {
-  const company=location.pathname.replace(/\.html$/,'').endsWith('/controle')?{nome_fantasia:'BG SYSTEMS',cnpj:''}:context.company;
+  const company=location.pathname.replace(/\.html$/,'').endsWith('/controle')?{nome_fantasia:'Grupo Alquiler',cnpj:''}:context.company;
   applyCompanyTheme(company);
   try {
     if(context.company?.id){
@@ -21,7 +21,7 @@ export function renderAppContext(context) {
   document.querySelectorAll('.global-user').forEach(node=>{node.textContent=context.user.nome;});
   document.querySelectorAll('.global-company').forEach(node=>{node.textContent=company.nome_fantasia;});
   document.querySelectorAll('.brand-mark').forEach(node=>{
-    node.textContent=(company.nome_fantasia||'BG').charAt(0).toUpperCase();
+    node.textContent=(company.nome_fantasia||'Grupo Alquiler').charAt(0).toUpperCase();
     node.classList.toggle('has-company-logo',Boolean(company.logo_url));
     node.style.backgroundImage=company.logo_url?`url("${String(company.logo_url).replace(/"/g,'%22')}")`:'';
     if(company.logo_url) node.textContent='';

@@ -40,7 +40,7 @@ files['/termos-locacao.mjs']=['termos-locacao.mjs','text/javascript; charset=utf
 files['/frota.js']=['frota.js','text/javascript; charset=utf-8'];
 files['/document-kind.mjs']=['document-kind.mjs','text/javascript; charset=utf-8'];
 files['/frota-core.mjs']=['frota-core.mjs','text/javascript; charset=utf-8'];
-for(const [name,type] of [['manifest.webmanifest','application/manifest+json'],['sw.js','text/javascript'],['pwa.js','text/javascript'],['offline.html','text/html'],['app-192.png','image/png'],['app-512.png','image/png']])files['/'+name]=[name,type];
+for(const [name,type] of [['manifest.webmanifest','application/manifest+json'],['sw.js','text/javascript'],['pwa.js','text/javascript'],['offline.html','text/html'],['app-192.png','image/png'],['app-512.png','image/png'],['grupo-alquiler-logo.png','image/png']])files['/'+name]=[name,type];
 files['/substituicao.html']=['substituicao.html','text/html; charset=utf-8'];
 files['/substituicao.js']=['substituicao.js','text/javascript; charset=utf-8'];
 files['/encerrar-ocupacao.mjs']=['encerrar-ocupacao.mjs','text/javascript; charset=utf-8'];

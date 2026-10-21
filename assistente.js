@@ -27,7 +27,7 @@ root.innerHTML = `<button class="ai-launch" type="button" aria-label="Abrir assi
     <small class="ai-footnote">Documentos e consultas são enviados ao Gemini quando você solicita.</small>
   </section>`;
 document.body.append(root);
-root.querySelector('.ai-company').textContent=window.alquilerContext.company?.nome_fantasia||'BG SYSTEMS · Selecione uma empresa';
+root.querySelector('.ai-company').textContent=window.alquilerContext.company?.nome_fantasia||'Grupo Alquiler · Selecione uma empresa';
 const panel = root.querySelector('.ai-panel');
 const launch = root.querySelector('.ai-launch');
 const messages = root.querySelector('.ai-messages');
@@ -76,7 +76,7 @@ async function refreshStatus() {
     root.querySelector('.ai-header strong').textContent=assistantName;
     setup.hidden = Boolean(status.active);
     setup.querySelector('strong').textContent='Assistente indisponível';
-    setup.querySelector('span').textContent='A integração central precisa ser configurada pela BG SYSTEMS. Você não precisa informar uma chave.';
+    setup.querySelector('span').textContent='A integração central precisa ser configurada pela Grupo Alquiler. Você não precisa informar uma chave.';
     root.querySelector('.ai-footnote').textContent='Documentos são enviados à '+(aiProvider==='groq'?'Groq':'Gemini')+' quando você solicita.';
     input.disabled = sendButton.disabled = !status.active;
   } catch { setup.hidden = false; }

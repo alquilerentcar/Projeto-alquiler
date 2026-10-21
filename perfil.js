@@ -6,7 +6,7 @@ const c=window.alquilerContext,form=document.querySelector('#password-form'),mes
 const {data,error}=await db.auth.getUser();
 if(error||!data.user){button.disabled=true;message.textContent='Não foi possível consultar sua conta. Entre novamente.';}
 else {
- for(const [label,value] of [['Nome',c.user.nome],['E-mail de acesso',data.user.email],['Identificação',c.user.usuario||'—'],['Empresa selecionada',c.company?.id?c.company.nome_fantasia:'Nenhuma empresa selecionada'],['Perfil',c.developer?'Desenvolvedor · BG SYSTEMS':c.user.administrador?'Administrador':'Operador'],['Módulos da empresa selecionada',c.modules.join(', ')||'Nenhum']]){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=value;document.querySelector('#profile-data').append(dt,dd);}
+ for(const [label,value] of [['Nome',c.user.nome],['E-mail de acesso',data.user.email],['Identificação',c.user.usuario||'—'],['Empresa selecionada',c.company?.id?c.company.nome_fantasia:'Nenhuma empresa selecionada'],['Perfil',c.developer?'Desenvolvedor · Grupo Alquiler':c.user.administrador?'Administrador':'Operador'],['Módulos da empresa selecionada',c.modules.join(', ')||'Nenhum']]){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=value;document.querySelector('#profile-data').append(dt,dd);}
  form.onsubmit=async event=>{event.preventDefault();if(button.disabled)return;const password=form.elements.password.value;
   if(password.length<12||password.length>128||password!==form.elements.confirmation.value){message.textContent='Use de 12 a 128 caracteres e confirme a mesma senha.';return;}
   if(password===form.elements.current.value){message.textContent='Escolha uma senha diferente da atual.';return;}

@@ -10,7 +10,7 @@ async function call(path, authorization, body, key=PUBLIC_KEY, method='POST') {
     if(data?.code==='PGRST202'||data?.code==='42P01') throw fail(503,path.includes('acessos_excluir_usuario')?'Aplique usuarios_manutencao.sql no SQL Editor do Supabase para ativar a exclusão de acessos.':'Aplique etapa1_acessos.sql no SQL Editor do Supabase para atualizar os acessos.');
     if(data?.code==='42501'||response.status===403) throw fail(403,'Você não tem permissão para gerenciar esses acessos.');
     if(response.status===401) throw fail(401,'Sessão inválida. Entre novamente.');
-    if(path==='/auth/v1/admin/users'&&(data?.error_code==='email_exists'||data?.code==='email_exists'||response.status===422&&/already.*registered|already.*exists/i.test(data?.msg||data?.message||'')))throw fail(409,'Este e-mail já possui uma conta de login. Excluir o acesso à empresa não exclui a conta do Supabase. Solicite à BG SYSTEMS a recuperação ou vinculação dessa conta; não é necessário criar outro e-mail.');
+    if(path==='/auth/v1/admin/users'&&(data?.error_code==='email_exists'||data?.code==='email_exists'||response.status===422&&/already.*registered|already.*exists/i.test(data?.msg||data?.message||'')))throw fail(409,'Este e-mail já possui uma conta de login. Excluir o acesso à empresa não exclui a conta do Supabase. Solicite à Grupo Alquiler a recuperação ou vinculação dessa conta; não é necessário criar outro e-mail.');
     if(data?.code==='23505'||data?.error_code==='email_exists') throw fail(409,'Já existe uma empresa, usuário ou e-mail com esses dados.');
     if(data?.code==='P0001') throw fail(400,data.message);
     throw fail(502,'Não foi possível concluir a operação no Supabase. Confira a configuração e tente novamente.');
@@ -33,7 +33,7 @@ module.exports=async function accessApi(req,body={}) {
   const empresa=req.headers['x-empresa-id']||null;
   if(!control&&!empresa)throw fail(400,'Selecione uma empresa.');
   const token=await verify(req,control,empresa);
-  if(body.action==='empresa'&&!control)throw fail(403,'Licenças são administradas exclusivamente no Controle da BG SYSTEMS.');
+  if(body.action==='empresa'&&!control)throw fail(403,'Licenças são administradas exclusivamente no Controle da Grupo Alquiler.');
   if(body.action?.startsWith('usuario_')&&!control&&body.usuario?.empresa_id!==empresa)throw fail(403,'Usuário fora da empresa selecionada.');
   if(req.method==='GET') return {...await call('/rest/v1/rpc/'+(control?'acessos_painel':'acessos_empresa_painel'),token,control?{}:{p_empresa:empresa}),criacao_contas_configurada:Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY)};
   if(body.action==='empresa') return call('/rest/v1/rpc/acessos_salvar_empresa',token,{p_dados:body.empresa,p_modulos:body.modulos});
@@ -47,7 +47,7 @@ module.exports=async function accessApi(req,body={}) {
     await call('/auth/v1/admin/users/'+encodeURIComponent(target),'Bearer '+key,{email,email_confirm:true},key,'PUT');
     return {ok:true};
   }
-  if(body.action==='usuario_excluir_conta'){if(!control)throw fail(403,'A exclusão completa de contas é feita no Controle da BG SYSTEMS.');return call('/rest/v1/rpc/acessos_excluir_conta',token,{p_empresa:body.usuario?.empresa_id,p_usuario:body.usuario?.id});}
+  if(body.action==='usuario_excluir_conta'){if(!control)throw fail(403,'A exclusão completa de contas é feita no Controle da Grupo Alquiler.');return call('/rest/v1/rpc/acessos_excluir_conta',token,{p_empresa:body.usuario?.empresa_id,p_usuario:body.usuario?.id});}
   if(body.action==='usuario_excluir') return call('/rest/v1/rpc/acessos_excluir_usuario',token,{p_empresa:body.usuario?.empresa_id,p_usuario:body.usuario?.id});
   if(body.action==='usuario_editar') return call('/rest/v1/rpc/acessos_salvar_usuario',token,{p_dados:body.usuario,p_modulos:body.modulos});
   if(body.action!=='usuario_criar') throw fail(400,'Operação desconhecida.');

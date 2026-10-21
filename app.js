@@ -118,7 +118,7 @@ function render() {
     const retire = textNode("button", isActive(client) ? "Retirar" : "Reativar", isActive(client) ? "danger" : "");
     retire.type = "button";
     retire.addEventListener("click", () => changeStatus(client));
-    actions.append(edit, retire);
+    const historyLink=textNode('a','Histórico');historyLink.href='/historico?cliente='+encodeURIComponent(client.id);historyLink.className='btn btn-quiet';actions.append(edit, historyLink, retire);
     actionCell.append(actions);
     row.append(nameCell, documentCell, contactCell, typeCell, statusCell, actionCell);
     body.append(row);

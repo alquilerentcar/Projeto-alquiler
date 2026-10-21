@@ -136,7 +136,7 @@ begin
  if p_id is null then raise exception 'Identificador da preparação ausente. Atualize a página.';end if;
  if p_data is null or not isfinite(p_data) then raise exception 'Informe a data e a hora reais da troca (Manaus).';end if;
  if p_data>now() then raise exception 'A data e a hora da troca estão no futuro. Informe a entrega real no horário de Manaus.';end if;
- if p_fotos is null or p_fotos not between 1 and 20 then raise exception 'Selecione entre 1 e 20 fotos do veículo substituto.';end if;
+ if p_fotos is null or p_fotos not between 1 and 60 then raise exception 'Selecione entre 1 e 60 fotos do veículo substituto.';end if;
  if jsonb_typeof(p_valores) is distinct from 'object' then raise exception 'Formato dos dados da troca inválido. Atualize a página.';end if;
  if length(p_valores::text)>50000 then raise exception 'Reduza os textos e observações da troca.';end if;
  tipo:=p_valores->>'tipo_substituicao';situacao:=p_valores->>'situacao_anterior';

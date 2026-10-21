@@ -30,6 +30,7 @@ const menu=`
       <a class="menu-link${active('clientes.html')}" href="clientes.html">Clientes</a><a class="menu-link${active('fornecedores.html')}" href="fornecedores.html">Fornecedores</a><a class="menu-link${active('carros.html')}" href="carros.html">Veículos</a><a class="menu-link${active('modelos-contrato.html')}" href="modelos-contrato.html">Modelos de documentos</a><a class="menu-link${active('certificados.html')}" href="certificados.html">Certificados digitais</a>
     </div></details>
     <a class="menu-link${active('frota.html')}" href="frota.html">${icon('▣')}<span>Frotas e ocupações</span></a>
+    <a class="menu-link${active('historico.html')}" href="/historico">${icon('▤')}<span>Históricos</span></a>
     <a class="menu-link${active('locacoes.html')}" href="locacoes.html">${icon('▤')}<span>Locações</span></a>
     <a class="menu-link${['substituicao.html','alteracoes.html'].includes(page)?' active':''}" href="/locacao/substituicao">${icon('▣')}<span>Substituição de veículos</span></a>
     <details${groupOpen(['contratos.html','alteracoes.html','recibos.html','distratos.html'])}><summary>${icon('▧')}<span>Documentos</span></summary><div class="menu-children">

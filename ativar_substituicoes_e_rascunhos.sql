@@ -130,7 +130,7 @@ create table if not exists public.frota_substituicoes (
  origem_id uuid not null, cliente_id uuid not null references public.clientes(id),
  anterior_id uuid not null references public.carros(id), posterior_id uuid not null references public.carros(id),
  data_troca timestamptz not null, versao_id uuid not null references public.versoes_modelos_documentos(id),
- snapshot jsonb not null, valores jsonb not null, texto text not null, fotos integer not null check(fotos between 1 and 20),
+ snapshot jsonb not null, valores jsonb not null, texto text not null, fotos integer not null check(fotos between 1 and 60),
  check(anterior_id<>posterior_id)
 );
 alter table public.frota_substituicoes drop constraint if exists frota_substituicoes_criado_por_fkey;
@@ -156,7 +156,7 @@ begin
  if p_id is null then raise exception 'Identificador da preparação ausente. Atualize a página.';end if;
  if p_data is null or not isfinite(p_data) then raise exception 'Informe a data e a hora reais da troca (Manaus).';end if;
  if p_data>now() then raise exception 'A data e a hora da troca estão no futuro. Informe a entrega real no horário de Manaus.';end if;
- if p_fotos is null or p_fotos not between 1 and 20 then raise exception 'Selecione entre 1 e 20 fotos do veículo substituto.';end if;
+ if p_fotos is null or p_fotos not between 1 and 60 then raise exception 'Selecione entre 1 e 60 fotos do veículo substituto.';end if;
  if jsonb_typeof(p_valores) is distinct from 'object' then raise exception 'Formato dos dados da troca inválido. Atualize a página.';end if;
  if length(p_valores::text)>50000 then raise exception 'Reduza os textos e observações da troca.';end if;
  tipo:=p_valores->>'tipo_substituicao';situacao:=p_valores->>'situacao_anterior';
@@ -293,5 +293,13 @@ notify pgrst,'reload schema';
 
 
 notify pgrst,'reload schema';
+create or replace function public.substituicao_limite_fotos(p_empresa uuid)
+returns integer language plpgsql security definer set search_path='' as $$
+begin
+ if auth.uid() is null or not coalesce(public.acesso_modulo(p_empresa,'locacao'),false) then raise exception using errcode='42501',message='Sem acesso à empresa.';end if;
+ return 60;
+end $$;
+revoke all on function public.substituicao_limite_fotos(uuid) from public,anon;
+grant execute on function public.substituicao_limite_fotos(uuid) to authenticated;
 commit;
 select 'Substituições e rascunhos habilitados' as resultado;

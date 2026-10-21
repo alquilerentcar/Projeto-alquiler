@@ -41,7 +41,7 @@ function rowButton(row, callback) {
   const button = el("button", "Editar", "btn btn-quiet");
   button.type = "button"; if(row.empresa_id && row.empresa_id !== company.id){button.disabled=true;button.title="Edite o cadastro na empresa proprietária do veículo.";}
   button.addEventListener("click", () => callback(row));
-  const history=el('a','Ver frota','btn btn-quiet');history.href='/frota?placa='+encodeURIComponent(row.placa);cell.append(button,history);
+  const history=el('a','Histórico completo','btn btn-quiet');history.href='/historico?carro='+encodeURIComponent(row.id);const fleet=el('a','Ver frota','btn btn-quiet');fleet.href='/frota?placa='+encodeURIComponent(row.placa);cell.append(button,history,fleet);
   return cell;
 }
 const situation=row=>vehicleSituation(row,state.periods,state.rentals,state.occupations,state.verified);

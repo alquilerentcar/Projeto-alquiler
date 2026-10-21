@@ -1,3 +1,5 @@
+import {formatCpf,formatCnpj,normalizeCnpj,upperName,validCpf,validCnpj,normalizePhone,validPhone,validEmail,formatPhone} from './cadastro-core.mjs';
+import {bindClientFields} from './cadastro-fields.mjs';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireAuth, bindLogout } from "./auth-guard.js";
 
@@ -42,13 +44,7 @@ function notify(message, error = false) {
 function digits(value) { return (value || "").replace(/\D/g, ""); }
 function clean(value) { const result = String(value ?? "").trim(); return result || null; }
 function isActive(client) { return (client.situacao || "Ativo").toLowerCase() !== "inativo"; }
-function formatDocument(client) {
-  const value = client.tipo_pessoa === "PJ" ? client.cnpj : client.cpf;
-  if (!value) return "Não informado";
-  if (value.length === 11) return value.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, "$1.$2.$3-$4");
-  if (value.length === 14) return value.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
-  return value;
-}
+function formatDocument(client) {return (client.tipo_pessoa==='PJ'?formatCnpj(client.cnpj):formatCpf(client.cpf))||'Não informado';}
 function errorText(error) {
   if (!error) return "Ocorreu um erro inesperado.";
   if (error.code === "23505") return "Este CPF, CNPJ ou ID de origem já está cadastrado.";
@@ -120,6 +116,7 @@ function render() {
     retire.addEventListener("click", () => changeStatus(client));
     const historyLink=textNode('a','Histórico');historyLink.href='/historico?cliente='+encodeURIComponent(client.id);historyLink.className='btn btn-quiet';actions.append(edit, historyLink, retire);
     actionCell.append(actions);
+    const profile=textNode('a','Documentos e débitos','btn btn-quiet');profile.href='/locatario?cliente='+encodeURIComponent(client.id);actions.append(profile);
     row.append(nameCell, documentCell, contactCell, typeCell, statusCell, actionCell);
     body.append(row);
   }
@@ -146,6 +143,7 @@ function openClient(client = null) {
   for (const button of document.querySelectorAll("[data-open]")) {
     button.classList.toggle("hidden", !client?.[button.dataset.open]);
   }
+  for(const name of ["cpf","cnpj","cep",...Array.from({length:4},(_,i)=>`contato_${i+1}_numero`)])form.elements[name]?.dispatchEvent(new Event("format-field"));
   $("#client-dialog").showModal();
 }
 
@@ -154,14 +152,16 @@ function getPayload() {
   const payload = {};
   for (const field of fields) payload[field] = clean(form.elements.namedItem(field)?.value);
   payload.tipo_pessoa = payload.tipo_pessoa || "PF";
-  payload.nome_completo = payload.nome_completo?.replace(/\s+/g, " ") || null;
+  payload.nome_completo = upperName(payload.nome_completo) || null;
   payload.cpf = digits(payload.cpf) || null;
-  payload.cnpj = digits(payload.cnpj) || null;
+  payload.cnpj = normalizeCnpj(payload.cnpj) || null;
   payload.cep = digits(payload.cep) || null;
   payload.uf = payload.uf?.toUpperCase() || null;
+  for(const key of ["nome_fantasia","nome_pai","nome_mae",...Array.from({length:4},(_,i)=>`contato_${i+1}_responsavel`)])if(payload[key])payload[key]=upperName(payload[key]);
+  if(payload.email)payload.email=payload.email.toLowerCase();
   for (let index = 1; index <= 4; index++) {
     const field = `contato_${index}_numero`;
-    payload[field] = digits(payload[field]) || null;
+    payload[field] = normalizePhone(payload[field]) || null;
   }
   if (payload.tipo_pessoa === "PF") {
     payload.cnpj = null;
@@ -180,12 +180,13 @@ function getPayload() {
 
 function validate(payload) {
   if (!payload.nome_completo) return "Informe o nome do cliente ou razão social.";
-  if (payload.cpf && payload.cpf.length !== 11) return "O CPF precisa ter 11 dígitos.";
-  if (payload.cnpj && payload.cnpj.length !== 14) return "O CNPJ precisa ter 14 dígitos.";
+  if(payload.cpf&&!validCpf(payload.cpf)&&payload.cpf!==digits(state.editing?.cpf))return "CPF inválido. Confira os dígitos no documento.";
+  if(payload.cnpj&&!validCnpj(payload.cnpj)&&payload.cnpj!==normalizeCnpj(state.editing?.cnpj))return "CNPJ inválido. Confira os caracteres e dígitos verificadores.";
+  if(payload.email&&!validEmail(payload.email)&&payload.email!==state.editing?.email)return "Confira o formato do e-mail.";
   if (payload.cep && payload.cep.length !== 8) return "O CEP precisa ter 8 dígitos.";
   for (let index = 1; index <= 4; index++) {
     const value = payload[`contato_${index}_numero`];
-    if (value && ![10, 11].includes(value.length)) return `O contato ${index} precisa ter DDD e 10 ou 11 dígitos.`;
+    if (value && !validPhone(value)) return `O contato ${index} precisa ter DDD e 10 ou 11 dígitos.`;
   }
   return null;
 }
@@ -277,8 +278,9 @@ async function openDocument(column) {
 async function init() {
   $("#contacts-grid").innerHTML = Array.from({ length: 4 }, (_, index) => {
     const number = index + 1;
-    return `<label><span>Contato ${number} · número</span><input name="contato_${number}_numero" inputmode="tel" placeholder="DDD + telefone" /></label><label><span>Contato ${number} · responsável</span><input name="contato_${number}_responsavel" placeholder="Nome completo" /></label>`;
+    return `<label><span>${number===1?"Contato 1 · telefone do locatário":"Contato "+number+" · referência / emergência"}</span><input name="contato_${number}_numero" inputmode="tel" placeholder="DDD + telefone" /></label><label><span>${number===1?"Nome do locatário":"Contato "+number+" · responsável"}</span><input name="contato_${number}_responsavel" placeholder="Nome completo" /></label>`;
   }).join("");
+  bindClientFields($("#client-form"));
   $("#refresh-button").addEventListener("click", loadClients);
   $("#new-client-button").addEventListener("click", () => openClient());
   $("#search-input").addEventListener("input", render);

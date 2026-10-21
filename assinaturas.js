@@ -37,13 +37,15 @@ $('#signature-send').onclick=async()=>{
  try{
  const fresh=await db.from('locacoes').select('*').eq('id',row.id).single();if(fresh.error)throw fresh.error;
  if(!fresh.data.contrato_gerado_em||fresh.data.contrato_gerado_em!==row.contrato_gerado_em||fresh.data.assinatura_referencia)throw new Error('O contrato mudou ou já foi enviado. Atualize antes de continuar.');
+ const check=await db.rpc('locacao_ocupar_por_envio',{p_empresa:window.alquilerContext.company.id,p_locacao:row.id,p_referencia:null});if(check.error)throw new Error(check.error.code==='PGRST202'?'Execute clientes_operacao_complementos.sql no Supabase antes de enviar.':check.error.message);
  let binary='';for(let i=0;i<pdfBytes.length;i+=32768)binary+=String.fromCharCode(...pdfBytes.subarray(i,i+32768));
  message('Enviando o PDF definitivo ('+(pdfBytes.length/1048576).toFixed(1)+' MB). Aguarde a confirmação da Autentique…');const response=await fetch('/api/assinaturas/enviar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pdfBase64:btoa(binary),clientName:client.nome_completo,clientEmail:client.email,documentName:documentRow.nome||'Contrato de locação'})}),result=await response.json();if(!response.ok)throw new Error(result.error||'Falha no envio.');
  if(!result.id)throw new Error('O provedor não retornou a referência do envio. Confira o painel da Autentique antes de tentar novamente.');
  sent=true;row.assinatura_referencia=result.id;
  const signature=(result.signatures||[]).find(s=>String(s.email).toLowerCase()===client.email.toLowerCase());
  const update=await db.from('locacoes').update({assinatura_referencia:result.id,assinatura_provedor:'autentique',status_assinatura:'Aguardando assinaturas',documento_assinado_url:signature?.link?.short_link||null}).eq('id',row.id);if(update.error)throw new Error(`Enviado à Autentique (${result.id}), mas houve falha ao salvar o acompanhamento. Não reenvie; confira o envio no provedor.`);
- $('#signature-details').textContent=`Aguardando assinatura · Destinatário: ${client.email}.`;message('PDF enviado. Aguardando as assinaturas.');
+ const occupied=await db.rpc('locacao_ocupar_por_envio',{p_empresa:window.alquilerContext.company.id,p_locacao:row.id,p_referencia:result.id});if(occupied.error)throw new Error('Envio confirmado, mas a ocupação precisa ser conferida: '+occupied.error.message+'. Não reenvie o documento.');window.bgClearListCache?.();
+ $('#signature-details').textContent=`Aguardando assinatura · Destinatário: ${client.email}.`;message('PDF enviado e ocupação iniciada. As assinaturas continuam pendentes.');
  }catch(e){message(e instanceof TypeError?'Conexão interrompida. O envio pode ter sido recebido; confira o painel da Autentique antes de reenviar.':e.message);if(sent)$('#signature-details').textContent='Envio realizado · acompanhamento precisa ser conferido.';}finally{busy=false;buttons();}
 };
 window.addEventListener('pagehide',()=>{if(url)URL.revokeObjectURL(url);clearPdfPreview($('#signature-pdf'));});

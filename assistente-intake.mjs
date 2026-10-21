@@ -1,15 +1,18 @@
-export const intakeLabels={nome_completo:'Nome completo',cpf:'CPF',data_nascimento:'Data de nascimento',rg:'RG',cnh:'Número da CNH',nacionalidade:'Nacionalidade',profissao:'Profissão',estado_civil:'Estado civil',email:'E-mail',cep:'CEP',endereco:'Endereço',numero:'Número',complemento:'Complemento',bairro:'Bairro',cidade:'Cidade',uf:'UF',nome_pai:'Nome do pai',nome_mae:'Nome da mãe',contato_1_numero:'Contato 1 · número',contato_1_responsavel:'Contato 1 · responsável',contato_2_numero:'Contato 2 · número',contato_2_responsavel:'Contato 2 · responsável',contato_3_numero:'Contato 3 · número',contato_3_responsavel:'Contato 3 · responsável',contato_4_numero:'Contato 4 · número',contato_4_responsavel:'Contato 4 · responsável'};
+import {verifyDraft,validCpf,formatCpf,upperName,validEmail} from './cadastro-core.mjs';
+export const intakeLabels={nome_completo:'Nome completo',cpf:'CPF',data_nascimento:'Data de nascimento',rg:'RG',cnh:'Número da CNH',nacionalidade:'Nacionalidade',profissao:'Profissão',estado_civil:'Estado civil',email:'E-mail',cep:'CEP',endereco:'Endereço',numero:'Número',complemento:'Complemento',bairro:'Bairro',cidade:'Cidade',uf:'UF',nome_pai:'Nome do pai',nome_mae:'Nome da mãe',contato_1_numero:'Contato 1 · telefone do locatário',contato_1_responsavel:'Contato 1 · nome do locatário',contato_2_numero:'Contato 2 · número',contato_2_responsavel:'Contato 2 · responsável',contato_3_numero:'Contato 3 · número',contato_3_responsavel:'Contato 3 · responsável',contato_4_numero:'Contato 4 · número',contato_4_responsavel:'Contato 4 · responsável'};
 export const attachmentKinds={cnh:{label:'CNH',column:'foto_cnh_path',folder:'cnh'},residencia:{label:'Comprovante de residência',column:'comprovante_residencia_path',folder:'comprovante'},rg:{label:'RG / identidade',column:'foto_rg_path',folder:'rg'}};
 export function mergeIntake(records){
  const fields={};
- for(const field of Object.keys(intakeLabels)){const values=[];for(const record of records){const value=String(record.draft?.[field]||'').trim();if(value&&!values.some(item=>item.value===value))values.push({value,source:record.file.name});}if(values.length)fields[field]=values;}
+ for(const field of Object.keys(intakeLabels)){const values=[];for(const record of records){const addressFields=['cep','endereco','numero','complemento','bairro','cidade','uf'];if(record.kind==='residencia'&&!addressFields.includes(field))continue;if(record.kind==='cnh'&&addressFields.includes(field))continue;const value=String(record.draft?.[field]||'').trim();if(value&&!values.some(item=>item.value===value))values.push({value,source:record.file.name});}if(values.length)fields[field]=values;}
  return fields;
 }
 export function intakePayload(draft){
  const data={};for(const key of Object.keys(intakeLabels)){const value=String(draft[key]||'').trim();if(value.length>200)throw Error('Campo muito longo: '+intakeLabels[key]);data[key]=value||null;}
  for(const key of ['cpf','cep',...Object.keys(data).filter(k=>/^contato_\d_numero$/.test(k))])if(data[key])data[key]=data[key].replace(/\D/g,'');
  if(!data.nome_completo)throw Error('Informe o nome completo.');
- if(!data.cpf||data.cpf.length!==11)throw Error('Confira o CPF com 11 dígitos antes de cadastrar.');
+ data.nome_completo=upperName(data.nome_completo);for(const key of ['nome_pai','nome_mae',...Array.from({length:4},(_,i)=>'contato_'+(i+1)+'_responsavel')])if(data[key])data[key]=upperName(data[key]);if(data.email)data.email=data.email.toLowerCase();if(!data.contato_1_responsavel)data.contato_1_responsavel=data.nome_completo;
+ if(data.email&&!validEmail(data.email))throw Error('Confira o e-mail antes de cadastrar.');
+ if(!data.cpf||!validCpf(data.cpf))throw Error('CPF inválido. Confira os dígitos diretamente no documento antes de cadastrar.');
  if(data.cep&&data.cep.length!==8)throw Error('Confira o CEP com oito dígitos.');
  for(const key of Object.keys(data).filter(k=>/^contato_\d_numero$/.test(k)))if(data[key]&&![10,11].includes(data[key].length))throw Error('Confira o telefone com DDD.');
  if(data.data_nascimento&&!/^\d{4}-\d{2}-\d{2}$/.test(data.data_nascimento))throw Error('Confira a data de nascimento no formato AAAA-MM-DD.');
@@ -21,8 +24,8 @@ export async function saveIntake(db,companyId,draft,records,saved={}){
  const session=await db.auth.getSession();if(!session.data?.session)throw Error('Sua sessão expirou. Entre novamente.');
  if(window.alquilerContext?.company?.id!==companyId)throw Error('A empresa mudou. Reinicie a leitura na empresa correta.');
  let client;
- if(saved.clientId){const result=await db.from('clientes').select('*').eq('id',saved.clientId).eq('empresa_id',companyId).single();if(result.error)throw result.error;client=result.data;if(client.cpf!==data.cpf)throw Error('Este cadastro já foi salvo. Não altere o CPF ao repetir os anexos.');}
- else{const match=await db.from('clientes').select('*').eq('empresa_id',companyId).eq('cpf',data.cpf).limit(2);if(match.error)throw match.error;if(match.data?.length>1)throw Error('Há mais de um cadastro com este CPF. Resolva a duplicidade em Clientes.');client=match.data?.[0];}
+ if(saved.clientId){const result=await db.from('clientes').select('*').eq('id',saved.clientId).eq('empresa_id',companyId).single();if(result.error)throw result.error;client=result.data;if(String(client.cpf||'').replace(/\D/g,'')!==data.cpf)throw Error('Este cadastro já foi salvo. Não altere o CPF ao repetir os anexos.');}
+ else{const match=await db.from('clientes').select('*').eq('empresa_id',companyId).in('cpf',[data.cpf,formatCpf(data.cpf)]).limit(2);if(match.error)throw match.error;if(match.data?.length>1)throw Error('Há mais de um cadastro com este CPF. Resolva a duplicidade em Clientes.');client=match.data?.[0];}
  if(!client){const result=await db.from('clientes').insert({...data,empresa_id:companyId,tipo_cadastro:'Cliente',situacao:'Ativo'}).select().single();if(result.error)throw result.error;client=result.data;saved.created=true;}
  saved.clientId=client.id;
  // Complete missing fields only; existing values and old attachments are preserved.

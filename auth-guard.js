@@ -5,7 +5,7 @@ const authenticatedClientReady=new Promise(resolve=>{resolveAuthenticatedClient=
 export function getAuthenticatedClient(){return authenticatedClientReady;}
 export async function requireAuth(client) {
   const {data,error}=await client.auth.getSession();
-  if(error||!data?.session) {location.replace('login.html');await new Promise(()=>{});}
+  if(error||!data?.session) {location.replace('/login');await new Promise(()=>{});}
   let context;
   try {context=await loadAppContext(client);} catch(error) {
     const main=document.querySelector('main')||document.body;
@@ -13,11 +13,11 @@ export async function requireAuth(client) {
     title.textContent='Configuração de acessos pendente';message.textContent=error.message;link.href='login.html';link.textContent='Voltar ao login';main.append(title,message,link);
     await new Promise(()=>{});
   }
-  if(context.accessDenied) {await client.auth.signOut();location.replace('login.html');await new Promise(()=>{});}
+  if(context.accessDenied) {await client.auth.signOut();location.replace('/login');await new Promise(()=>{});}
   window.alquilerContext=context;
   window.bgCacheIdentity=data.session.user.id;
   try{if(context.company?.id)sessionStorage.setItem('bgsys:menu-user:'+data.session.user.id+':'+context.company.id,JSON.stringify({nome:context.user.nome||''}));}catch{}
-  if(!canOpen(context,location.pathname)) {location.replace('modulos.html?acesso=negado');await new Promise(()=>{});}
+  if(!canOpen(context,location.pathname)) {location.replace('/modulos?acesso=negado');await new Promise(()=>{});}
   scopeClient(client,context.company.id);
   renderAppContext(context);
   window.dispatchEvent(new CustomEvent('app-context-ready',{detail:context}));
@@ -41,6 +41,6 @@ export async function requireAuth(client) {
 export function bindLogout(client) {
   document.querySelectorAll('.global-logout').forEach(button=>button.addEventListener('click',async()=>{
     button.disabled=true;window.bgClearListCache?.();try{Object.keys(sessionStorage).filter(k=>(k.startsWith('bgsys:brand:')||k.startsWith('bgsys:menu-user:'))).forEach(k=>sessionStorage.removeItem(k));}catch{}await client.auth.signOut();sessionStorage.removeItem('bgsys:empresa-id');
-    localStorage.removeItem('bgsys:empresa-cache');localStorage.removeItem('bgsys:usuario-cache');location.replace('login.html');
+    localStorage.removeItem('bgsys:empresa-cache');localStorage.removeItem('bgsys:usuario-cache');location.replace('/login');
   }));
 }

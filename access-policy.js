@@ -1,7 +1,7 @@
 export const TENANT_TABLES = new Set(['cliente_documentos','cliente_debitos','cliente_debito_parcelas','cliente_debito_recebimentos','vistoriadores','frota_periodos','frota_recebimentos','clientes','fornecedores','carros','contratos','locacoes','documentos_locacao','documento_signatarios','documento_eventos','anexos_locacao','vistorias_locacao','certificados_digitais','modelos_contrato','campos_modelo_contrato','contratos_gerados','assinaturas_contrato','pagamentos_locacao','filiais','funcoes_empresa']);
 export function pageModule(path) {
   const page=path.split('/').pop().replace(/\.html$/,'');
-  if(['perfil','login','modulos','controle','acessos','usuarios','index',''].includes(page)) return null;
+  if(['app','perfil','login','modulos','controle','acessos','usuarios','index',''].includes(page)) return null;
   return 'locacao';
 }
 export function canOpen(context,path) {

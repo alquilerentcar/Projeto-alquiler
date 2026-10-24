@@ -1,9 +1,11 @@
 import {applyCompanyTheme} from './empresa-branding.js';
 export const CURRENT_COMPANY={nome_fantasia:'Grupo Alquiler',logo_url:'/app-192.png',cnpj:''};
 export async function loadAppContext(client) {
-  const {data,error}=await client.rpc('acessos_contexto',{p_empresa:sessionStorage.getItem('bgsys:empresa-id')||null});
+  const selected=sessionStorage.getItem('bgsys:empresa-id')||null;
+  const menuPending=selected?Promise.resolve(client.rpc('modelos_documentos_menu',{p_empresa:selected})).catch(()=>null):null;
+  const {data,error}=await client.rpc('acessos_contexto',{p_empresa:selected});
   if(error||data?.schemaVersion!==2) throw new Error('Não foi possível validar o acesso. Verifique a conexão e aplique etapa1_acessos.sql no Supabase.');
-  let documentModels=[];if(data.company?.id){const result=await client.rpc('modelos_documentos_menu',{p_empresa:data.company.id});if(!result.error)documentModels=result.data||[];}
+  let documentModels=[];if(data.company?.id){const result=selected===data.company.id&&menuPending?await menuPending:await client.rpc('modelos_documentos_menu',{p_empresa:data.company.id});if(result&&!result.error)documentModels=result.data||[];}
   return {...data,documentModels,company:data.company||{...CURRENT_COMPANY},modules:data.modules||[]};
 }
 export function renderAppContext(context) {

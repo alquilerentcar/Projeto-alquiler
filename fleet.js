@@ -109,3 +109,5 @@ async function saveCar(event) {
 
 function updateDescriptionArea(status){const maintenance=['Manutenção','Revisão'].includes(status);$('#car-description-title').textContent=maintenance?(status==='Revisão'?'Descrição da revisão':'Descrição da manutenção'):'Observações do veículo';$('#car-description-label').textContent=maintenance?'Problema, diagnóstico e serviços necessários':'Observações';$('#car-description-help').textContent=maintenance?'Registre o problema identificado, o que será feito e as orientações da oficina. A descrição será exibida na Frota e no histórico do carro.':'Informações adicionais do veículo.';}
 $('#car-form').elements.namedItem('situacao').addEventListener('change',e=>updateDescriptionArea(e.target.value));
+
+window.addEventListener('bg-page-resume',()=>loadCars(false));

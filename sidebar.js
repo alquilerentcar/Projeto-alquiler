@@ -1,5 +1,5 @@
-const currentPage=location.pathname.split('/').pop()||'dashboard.html'; const page=currentPage.includes('.')?currentPage:currentPage+'.html';
-const section=new URLSearchParams(location.search).get('secao')||'';
+const currentPage=location.pathname.split('/').pop()||'dashboard.html'; let page=currentPage.includes('.')?currentPage:currentPage+'.html';
+let section=new URLSearchParams(location.search).get('secao')||'';
 let cachedCompany={nome_fantasia:'Grupo Alquiler',logo_url:'/app-192.png'},cachedUser={nome:''};
 // Display-only identity, isolated by the signed-in account and selected company.
 try{const session=JSON.parse(localStorage.getItem('sb-xtelzwclrzzlsqjecscl-auth-token')||'null');const account=session?.user?.id,company=sessionStorage.getItem('bgsys:empresa-id');if(account&&company){const user=JSON.parse(sessionStorage.getItem('bgsys:menu-user:'+account+':'+company)||'null');if(typeof user?.nome==='string')cachedUser={nome:user.nome};}}catch{}
@@ -66,3 +66,5 @@ function closeMobile(){document.body.classList.remove('mobile-menu-open');mobile
 mobileToggle.onclick=()=>{const open=document.body.classList.toggle('mobile-menu-open');mobileToggle.setAttribute('aria-expanded',String(open));};
 veil.onclick=closeMobile;document.addEventListener('keydown',event=>{if(event.key==='Escape')closeMobile();});
 document.body.prepend(mobileToggle,veil);applyBrand(page==='controle.html'?{nome_fantasia:'Grupo Alquiler',logo_url:'/app-192.png'}:window.alquilerContext?.company||cachedCompany);if(window.alquilerContext?.user)document.querySelectorAll('.global-user').forEach(n=>n.textContent=window.alquilerContext.user.nome);mobileSidebar.querySelectorAll('a').forEach(link=>link.addEventListener('click',closeMobile));}
+
+window.addEventListener('shell-route-ready',event=>{const url=new URL(event.detail.route,location.origin);page=(url.pathname.split('/').pop()||'dashboard').replace(/\.html$/,'')+'.html';section=url.searchParams.get('secao')||'';if(window.alquilerContext){applyAccess(window.alquilerContext);}});

@@ -1,0 +1,17 @@
+{
+  "name": "grupo-alquiler",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build:runtime": "tsc -p tsconfig.json",
+    "check:runtime": "tsc -p tsconfig.json --noEmit",
+    "test:runtime": "node runtime.test.cjs",
+    "test:http": "node tests/http-cache.test.cjs",
+    "test:browser": "node tests/navigation.browser.cjs && node tests/cache.browser.cjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0",
+    "prettier": "^3.9.10",
+    "typescript": "7.0.2"
+  }
+}

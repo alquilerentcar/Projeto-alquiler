@@ -55,6 +55,7 @@ for(const [name,route] of Object.entries(cleanRoutes))files[route]=files['/'+nam
 files['/usuarios.html'] = ['usuarios.html','text/html; charset=utf-8'];
 files['/usuarios.js'] = ['usuarios.js','text/javascript; charset=utf-8'];
 files['/'] = files['/index.html'];
+for(const [name,type]of [['app.html','text/html'],['app-shell.js','text/javascript'],['app-shell.css','text/css'],['runtime/navigation.js','text/javascript'],['runtime/shell-navigation.js','text/javascript'],['runtime/navigation.js.map','application/json'],['runtime/shell-navigation.js.map','application/json']])files['/'+name]=[name,type+'; charset=utf-8'];files['/app']=files['/app.html'];
 const draftFields = ['nome_completo','cpf','data_nascimento','rg','cnh','nacionalidade','profissao','estado_civil','email','cep','uf','endereco','numero','complemento','bairro','cidade','nome_pai','nome_mae',...Array.from({length:4},(_,i)=>`contato_${i+1}_numero`),...Array.from({length:4},(_,i)=>`contato_${i+1}_responsavel`)];
 const schema = properties => ({type:'OBJECT',properties,required:Object.keys(properties)});
 const optionalString = () => ({type:'STRING',nullable:true});
@@ -292,7 +293,10 @@ async function handler(request,response) {
   }
   if(request.method!=='GET'&&request.method!=='HEAD') return json(response,405,{error:'Método não permitido.'});
   const file=files[route]; if(!file) return json(response,404,{error:'Página não encontrada.'});
-  response.writeHead(200,{'Content-Type':file[1],'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'});
+  const publicAsset=/\.(?:m?js|css|svg|png|ico|webmanifest|woff2?)$/i.test(file[0]);
+  const headers={'Content-Type':file[1],'Cache-Control':publicAsset?'public, max-age=0, must-revalidate':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'};
+  if(publicAsset){try{const stat=await fs.promises.stat(path.join(__dirname,file[0]));const tag='W/"'+stat.size+'-'+stat.mtimeMs+'"';headers.ETag=tag;if(request.headers['if-none-match']===tag){response.writeHead(304,headers);return response.end();}}catch{return json(response,404,{error:'Arquivo não encontrado.'});}}
+  response.writeHead(200,headers);
   if(request.method==='HEAD') return response.end();
   const stream=fs.createReadStream(path.join(__dirname,file[0]));
   stream.on('error',()=>{if(!response.headersSent){response.writeHead(500,{'Content-Type':'application/json'});response.end(JSON.stringify({error:'Não foi possível carregar o arquivo.'}));}else response.destroy();});

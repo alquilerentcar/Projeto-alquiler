@@ -7,9 +7,11 @@
     "check:runtime": "tsc -p tsconfig.json --noEmit",
     "test:runtime": "node runtime.test.cjs",
     "test:http": "node tests/http-cache.test.cjs",
-    "test:browser": "node tests/navigation.browser.cjs && node tests/cache.browser.cjs"
+    "test:browser": "node tests/navigation.browser.cjs && node tests/cache.browser.cjs",
+    "test:payments": "node tests/payments.sql.cjs && node tests/payments.browser.cjs"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.12",
     "playwright": "^1.63.0",
     "prettier": "^3.9.10",
     "typescript": "7.0.2"

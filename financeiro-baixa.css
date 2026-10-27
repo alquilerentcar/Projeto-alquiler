@@ -1,0 +1,16 @@
+.finance-payment-dialog{width:min(880px,calc(100vw - 24px))}
+.finance-payment-dialog .dialog-body{display:flex;flex-direction:column;gap:16px;padding-block:20px;min-height:0}
+.finance-payment-dialog .dialog-body>*{flex-shrink:0}
+.finance-payment-dialog .dialog-body p{margin:0;line-height:1.55}
+.finance-payment-dialog .dialog-body h3{margin:8px 0 0;font-size:16px}
+.finance-payment-dialog .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.finance-payment-dialog label{display:grid;gap:7px;min-width:0}
+.finance-payment-dialog label:has(input[type=checkbox]){display:flex;flex-direction:row;align-items:flex-start;gap:10px;line-height:1.5;font-size:13px}
+.finance-payment-dialog input[type=checkbox]{width:18px;height:18px;min-height:0;padding:0;flex:0 0 18px;margin:2px 0 0;accent-color:var(--company-primary,#2864da)}
+.finance-payment-dialog fieldset{display:grid;gap:14px;min-width:0;margin:0;padding:18px;border:1px solid var(--ui-border,#dfe6f0);border-radius:12px}
+.finance-payment-dialog fieldset[hidden],.finance-payment-dialog label[hidden]{display:none}
+.finance-payment-dialog legend{font-weight:700;font-size:14px;padding:0 6px}
+.finance-payment-dialog .form-section{padding:14px;margin:10px 0;border:1px solid var(--ui-border,#dfe6f0);border-radius:12px}
+.finance-payment-dialog .form-section p{margin-bottom:12px}
+.finance-payment-dialog .section-note{font-size:13px}
+@media(max-width:600px){.finance-payment-dialog .form-grid{grid-template-columns:1fr}.finance-payment-dialog .dialog-body{padding:18px 16px}.finance-payment-dialog .dialog-header h2{font-size:18px}.finance-payment-dialog .dialog-footer{padding:14px;gap:8px}.finance-payment-dialog .dialog-footer .btn{padding-inline:12px;font-size:12px}}

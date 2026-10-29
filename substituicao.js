@@ -1,7 +1,7 @@
 import {requireAuth,bindLogout} from './auth-guard.js';
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
 import {fieldsIn} from './document-model-core.js';
-import {addSubstitutionPhotos,DEFAULT_PHOTO_LIMIT,MAX_PHOTO_LIMIT} from './substituicao-fotos.mjs';
+import {addPhotosToGroup,photoGroupMetadata,substitutionPhotoDescriptors,DEFAULT_PHOTO_LIMIT,MAX_PHOTO_LIMIT} from './substituicao-fotos.mjs?v=20261029-grupos';
 import {fillBlocks} from './rich-document.js';
 import {modelPdf} from './document-model-pdf.js?v=20261019-pdf-size';
 import {TERM_STARTERS,substitutionValues,substitutionBlocks} from './termos-locacao.mjs?v=20261019-modelo-solicitado';
@@ -12,11 +12,27 @@ const localMoment=()=>new Date(Date.now()-4*3600000).toISOString().slice(0,16);
 form.elements.data.value=localMoment();
 let cars=[],clients=[],occupations=[],versions=[],prepared=null,busy=false,photos=[];
 const node=(tag,text,cls='')=>{const n=document.createElement(tag);n.textContent=text;n.className=cls;return n;};
-let selectedPhotos=[],photoLimit=DEFAULT_PHOTO_LIMIT;
-const photoList=node('div','','swap-photo-list'),photoCount=node('p','Nenhuma foto selecionada.');
-form.elements.fotos.required=false;form.elements.fotos.closest('label').after(photoCount,photoList);
-function renderPhotos(){photoList.replaceChildren();photoCount.textContent=selectedPhotos.length+' de '+photoLimit+' fotos selecionadas. Você pode adicionar mais em outra seleção.';for(const [index,file]of selectedPhotos.entries()){const row=node('div','','record-document'),label=node('span',file.name+' · '+(file.size/1048576).toFixed(1)+' MB'),remove=node('button','Remover','btn btn-quiet');remove.type='button';remove.disabled=busy||Boolean(prepared);remove.onclick=()=>{if(busy||prepared)return;selectedPhotos.splice(index,1);renderPhotos();};row.append(label,remove);photoList.append(row);}}
-form.elements.fotos.onchange=()=>{if(busy||prepared)return;try{selectedPhotos=addSubstitutionPhotos(selectedPhotos,[...form.elements.fotos.files],photoLimit);renderPhotos();status.textContent='Fotos adicionadas. Confira a lista antes de gerar o termo.';}catch(error){status.textContent=error.message;}finally{form.elements.fotos.value='';}};
+let selectedPhotos={anterior:[],posterior:[]},photoLimit=DEFAULT_PHOTO_LIMIT;
+const photoCount=node('p','Nenhuma foto selecionada.'),photoSections={},previewUrls=[];
+for(const [group,name] of [['anterior','fotos_anterior'],['posterior','fotos']]){
+ const input=form.elements[name],section=input.closest('section'),heading=section.querySelector('h3'),list=node('div','','swap-photo-list');
+ input.required=false;input.closest('label').after(list);photoSections[group]={input,section,heading,list};
+ input.onchange=()=>{if(busy||prepared)return;try{selectedPhotos=addPhotosToGroup(selectedPhotos,group,[...input.files],photoLimit);renderPhotos();status.textContent='Fotos adicionadas ao veículo '+(group==='anterior'?'substituído.':'substituto.');}catch(error){status.textContent=error.message;}finally{input.value='';}};
+}
+photoSections.posterior.section.after(photoCount);
+function renderPhotos(){
+ for(const url of previewUrls)URL.revokeObjectURL(url);previewUrls.length=0;
+ const current=selected(),old=car(current?.carro_id),next=car(form.elements.substituto.value);
+ const total=selectedPhotos.anterior.length+selectedPhotos.posterior.length;photoCount.textContent=total+' de '+photoLimit+' fotos no total dos dois veículos. Adicione mais em outra seleção, se precisar.';
+ for(const [group,info]of Object.entries(photoSections)){
+  const vehicle=group==='anterior'?old:next;info.heading.textContent=(group==='anterior'?'Carro substituído / devolvido':'Carro substituto / entregue')+(vehicle?' · '+vehicle.placa:'');info.list.replaceChildren();
+  for(const [index,file]of selectedPhotos[group].entries()){
+   const row=node('div','','swap-photo-item'),image=document.createElement('img'),url=URL.createObjectURL(file);previewUrls.push(url);image.src=url;image.alt='Foto '+(index+1)+' do '+(group==='anterior'?'carro substituído':'carro substituto');
+   const text=node('span',file.name+' · '+(file.size/1048576).toFixed(1)+' MB'),remove=node('button','Remover','btn btn-quiet');remove.type='button';remove.disabled=busy||Boolean(prepared);remove.onclick=()=>{if(busy||prepared)return;selectedPhotos[group].splice(index,1);renderPhotos();};row.append(image,text,remove);info.list.append(row);
+  }
+ }
+}
+window.addEventListener('pagehide',()=>{for(const url of previewUrls)URL.revokeObjectURL(url);});
 const automatic=new Set(['tipo_substituicao','previsao_retorno','situacao_anterior','diaria_substituto','empresa_razao_social','empresa_cnpj','empresa_endereco','nome_locatario','cpf','cnh','endereco','veiculo_anterior','veiculo_placa','carro_anterior','veiculo_posterior','nova_placa','carro_posterior','dados_veiculo_anterior','dados_veiculo_posterior','data_troca','data_alteracao']);
 const car=id=>cars.find(c=>c.id===id),client=id=>clients.find(c=>c.id===id),label=id=>{const c=car(id);return c?`${c.placa} · ${c.modelo||''}`:'Veículo não cadastrado';};
 async function rpc(name,args){const {data,error}=await db.rpc(name,args);if(error)throw new Error(error.code==='42702'?'Há uma ambiguidade na função do banco. Execute corrigir_substituicao_periodos.sql no Supabase como postgres.':(error.message||'Não foi possível concluir a operação.')+(error.code?' (código '+error.code+')':''));return data;}
@@ -27,7 +43,7 @@ function renderFields(){
  const defaults=substitutionValues(context.company,client(occupation?.cliente_id)||{},old||{},next||{},form.elements.data.value?form.elements.data.value+'-04:00':null);
  $('#swap-current').textContent=occupation?`Ocupação atual: ${client(occupation.cliente_id)?.nome_completo||occupation.responsavel} — ${label(occupation.carro_id)}`:'Escolha o locatário na ocupação atual.';
  $('#swap-vehicle-note').textContent=next?`Substituto: ${label(next.id)}. Confira a diária e a situação do carro anterior.`:'';
- if(!version)return;
+ renderPhotos();if(!version)return;
  for(const key of new Set([...fieldsIn(version.conteudo),'motivo_alteracao','quilometragem_posterior'])){
   if(defaults[key]||automatic.has(key)||key==='data_inicio'&&(occupation?.inicio||occupation?.data_inicio))continue;
   const title=node('label',''),span=node('span',key.replaceAll('_',' ')),input=document.createElement(/motivo|condicoes/.test(key)?'textarea':'input');
@@ -62,7 +78,7 @@ async function load(){
  form.elements.modelo.replaceChildren(new Option('Selecione um modelo publicado',''));for(const v of versions)form.elements.modelo.add(new Option(`${v.nome} · v${v.versao}`,v.id));
  if(versions.length===1)form.elements.modelo.value=versions[0].id;
  if(!versions.length)status.textContent='Publique um modelo de substituição em Modelos de documentos para gerar o termo.';
- renderOccupations();const params=new URLSearchParams(location.search),plate=params.get('placa'),person=params.get('cliente'),docId=params.get('termo');const match=occupations.find(o=>person?o.cliente_id===person:plate&&car(o.carro_id)?.placa===plate);if(match)form.elements.ocupacao.value=match.key;renderFields();await list(person,docId);
+ previousOccupation='';previousSubstitute='';renderOccupations();const params=new URLSearchParams(location.search),plate=params.get('placa'),person=params.get('cliente'),docId=params.get('termo');const match=occupations.find(o=>person?o.cliente_id===person:plate&&car(o.carro_id)?.placa===plate);if(match)form.elements.ocupacao.value=match.key;previousOccupation=form.elements.ocupacao.value;previousSubstitute=form.elements.substituto.value;renderFields();await list(person,docId);
 }
 async function compress(file){
  if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>10*1024*1024)throw new Error(file.name+': use JPG, PNG ou WebP de até 10 MB.');
@@ -75,7 +91,7 @@ async function download(path){const {data,error}=await db.storage.from('substitu
 async function finish(doc,local=[]){
  const root=`${doc.empresa_id}/${doc.id}`;if(doc.valores.conversao_sem_troca_fisica&&!local.length){local=[];for(let i=1;i<=doc.fotos;i++)local.push(await download(doc.empresa_id+'/'+doc.valores.termo_temporario_id+'/foto-'+i+'.jpg'));}
  for(const [i,blob]of local.entries())await upload(`${root}/foto-${i+1}.jpg`,blob,'image/jpeg');
- const images=[];for(let i=1;i<=doc.fotos;i++)images.push({blob:await download(`${root}/foto-${i}.jpg`),title:`Veículo substituto ${doc.snapshot.posterior.placa} — foto ${i}`});
+ const images=[];for(const photo of substitutionPhotoDescriptors(doc))images.push({blob:await download(`${root}/foto-${photo.index}.jpg`),title:photo.title});
  const blocks=doc.snapshot.modelo.formatacao?.length?fillBlocks(doc.snapshot.modelo.formatacao,doc.valores):null;
  if(blocks&&doc.snapshot.complemento){const at=doc.snapshot.modelo.formatacao.findIndex(b=>(b.runs||[]).some(r=>String(r.text||'').includes('{{ cidade_documento }}')));blocks.splice(at<0?blocks.length:at,0,{align:'justify',runs:[{text:doc.snapshot.complemento,size:11}]});}
  const bytes=await modelPdf(db,doc.snapshot.empresa,doc.texto,null,blocks,images,{fontFamily:'Helvetica',paragraphGap:7,bottom:110});
@@ -94,7 +110,16 @@ async function list(person,docId){
 }
 $('#swap-search').oninput=renderOccupations;
 if(context.canManageCompany){const standard=node('button','Usar modelo padrão conforme referência','btn btn-quiet');standard.type='button';form.elements.modelo.closest('label').append(standard);standard.onclick=async()=>{if(busy)return;busy=true;standard.disabled=true;try{const starter=TERM_STARTERS.substituicao;let version=versions.find(v=>v.conteudo===starter.conteudo);if(!version){const saved=await rpc('modelo_documento_salvar_editor',{p_empresa:context.company.id,p_id:null,p_revisao:null,p_nome:starter.nome,p_conteudo:starter.conteudo,p_publicar:true,p_arquivado:false,p_formatacao:substitutionBlocks(starter.conteudo),p_tipo:'outro'});versions=(await rpc('modelos_documentos_publicados',{p_empresa:context.company.id})).filter(v=>/substitui|altera/i.test(v.nome));version=versions.find(v=>v.modelo_id===saved.id)||versions.find(v=>v.conteudo===starter.conteudo);form.elements.modelo.replaceChildren(new Option('Selecione um modelo publicado',''));for(const v of versions)form.elements.modelo.add(new Option(`${v.nome} · v${v.versao}`,v.id));}if(!version)throw Error('Não foi possível selecionar o modelo. Atualize a página.');form.elements.modelo.value=version.id;renderFields();status.textContent='Modelo padrão selecionado. Confira os campos que faltam no cadastro antes de gerar.';}catch(e){status.textContent=e.message;}finally{busy=false;standard.disabled=false;}};}
-for(const name of ['ocupacao','substituto','modelo'])form.elements[name].onchange=()=>{renderFields();if(name==='substituto')form.elements.diaria_substituto.value=car(form.elements.substituto.value)?.valor_diaria??'';};
+let previousOccupation='',previousSubstitute='';
+for(const name of ['ocupacao','substituto','modelo'])form.elements[name].onchange=()=>{
+ const group=name==='ocupacao'?'anterior':name==='substituto'?'posterior':null,previous=name==='ocupacao'?previousOccupation:previousSubstitute;
+ if(group&&form.elements[name].value!==previous&&selectedPhotos[group].length){
+  if(!confirm('Ao mudar o veículo, as fotos desse grupo serão removidas da seleção. Continuar?')){form.elements[name].value=previous;return;}
+  selectedPhotos[group]=[];
+ }
+ if(name==='ocupacao')previousOccupation=form.elements[name].value;if(name==='substituto')previousSubstitute=form.elements[name].value;
+ renderFields();if(name==='substituto')form.elements.diaria_substituto.value=car(form.elements.substituto.value)?.valor_diaria??'';
+};
 function typeFields(){const temporary=form.elements.tipo_substituicao.value==='temporaria';form.elements.previsao_retorno.closest('label').hidden=!temporary;form.elements.previsao_retorno.required=temporary;}
 form.elements.tipo_substituicao.onchange=typeFields;typeFields();
 form.onsubmit=async event=>{event.preventDefault();if(busy)return;busy=true;const button=$('#swap-confirm');button.disabled=true;
@@ -104,18 +129,18 @@ form.onsubmit=async event=>{event.preventDefault();if(busy)return;busy=true;cons
    if(!form.elements.data.value||!Number.isFinite(moment.getTime()))throw new Error('Informe a data e a hora reais da troca, no horário de Manaus.');
    if(moment.getTime()>Date.now())throw new Error('A data e a hora da troca ainda estão no futuro. Informe quando a entrega realmente aconteceu, no horário de Manaus. Agora: '+new Date().toLocaleString('pt-BR',{timeZone:'America/Manaus'})+'.');
    if(form.elements.tipo_substituicao.value==='temporaria'){const returnAt=new Date(form.elements.previsao_retorno.value+'-04:00');if(!form.elements.previsao_retorno.value||!Number.isFinite(returnAt.getTime())||returnAt<=moment)throw new Error('Informe uma previsão de retorno posterior à data da troca.');}
-   const files=[...selectedPhotos];if(!files.length||files.length>photoLimit)throw new Error('Selecione entre 1 e '+photoLimit+' fotos do veículo substituto.');
+   const groups=photoGroupMetadata(selectedPhotos),files=[...selectedPhotos.anterior,...selectedPhotos.posterior];if(files.length>photoLimit)throw new Error('O limite compartilhado é de '+photoLimit+' fotos.');
    if(!confirm('Gerar o termo com as fotos e confirmar a troca '+(form.elements.tipo_substituicao.value==='temporaria'?'temporária':'permanente')+'? A ocupação passará ao substituto. Situação do anterior: '+form.elements.situacao_anterior.value+'.'))return;
-   status.textContent='Preparando as fotos do veículo substituto…';photos=[];for(const [index,file]of files.entries()){status.textContent='Preparando foto '+(index+1)+' de '+files.length+'…';photos.push(await compress(file));}
+   status.textContent='Preparando as fotos da devolução e da entrega…';photos=[];for(const [index,file]of files.entries()){status.textContent='Preparando foto '+(index+1)+' de '+files.length+'…';photos.push(await compress(file));}
    const o=selected();if(!o?.cliente_id||!o?.carro_id)throw new Error('Vincule cliente e veículo no cadastro da ocupação antes de trocar.');
    const values={...substitutionValues(context.company,client(o.cliente_id)||{},car(o.carro_id)||{},car(form.elements.substituto.value)||{},moment.toISOString()),...Object.fromEntries([...$('#swap-fields').querySelectorAll('[name]')].map(el=>[el.name,el.value]))};
-   Object.assign(values,{tipo_substituicao:form.elements.tipo_substituicao.value,previsao_retorno:form.elements.tipo_substituicao.value==='temporaria'?new Date(form.elements.previsao_retorno.value+'-04:00').toISOString():null,situacao_anterior:form.elements.situacao_anterior.value,diaria_substituto:form.elements.diaria_substituto.value});
+   Object.assign(values,{fotos_grupos:groups,tipo_substituicao:form.elements.tipo_substituicao.value,previsao_retorno:form.elements.tipo_substituicao.value==='temporaria'?new Date(form.elements.previsao_retorno.value+'-04:00').toISOString():null,situacao_anterior:form.elements.situacao_anterior.value,diaria_substituto:form.elements.diaria_substituto.value});
    if(JSON.stringify(values).length>45000)throw new Error('Os textos da troca ficaram extensos demais. Reduza as observações antes de enviar.');
    prepared=await rpc('substituicao_preparar',{p_empresa:context.company.id,p_id:crypto.randomUUID(),p_origem:o.tipo,p_ocupacao:o.id,p_carro:form.elements.substituto.value,p_data:new Date(form.elements.data.value+'-04:00').toISOString(),p_versao:form.elements.modelo.value,p_valores:values,p_fotos:photos.length});
    for(const el of form.elements)if(el!==button)el.disabled=true;
   }
   status.textContent='Gerando o PDF com papel timbrado e fotos. A frota será atualizada após o envio completo…';
-  await finish(prepared,photos);prepared=null;photos=[];selectedPhotos=[];renderPhotos();form.reset();for(const el of form.elements)el.disabled=false;
+  await finish(prepared,photos);prepared=null;photos=[];selectedPhotos={anterior:[],posterior:[]};renderPhotos();form.reset();for(const el of form.elements)el.disabled=false;
   form.elements.data.value=localMoment();await load();typeFields();window.bgClearListCache?.();status.textContent='Termo gerado com fotos e salvo no histórico do locatário. Ocupação, diária e situação dos veículos atualizadas.';
  }catch(error){status.textContent=error.message+(prepared?' Preparação preservada. Consulte o histórico ou clique novamente para retomar; o reenvio não duplica a troca.':'');}
  finally{busy=false;button.disabled=false;}

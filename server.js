@@ -296,7 +296,7 @@ async function handler(request,response) {
         activeGeminiKey=candidate;
         return json(response,200,{active:true});
       }
-      if(route==='/api/assistente/classificar-foto')return json(response,200,await require('./foto-classificacao.cjs').classifyPhoto(data,gemini));
+      if(route==='/api/assistente/classificar-foto'||route==='/api/assistente/extrair'&&data.operacao==='classificar_foto')return json(response,200,await require('./foto-classificacao.cjs').classifyPhoto(data,gemini));
       return json(response,200,route.endsWith('/extrair')?await extract(data):await chat(data,request));
     }
     catch(error) { return json(response,error.status||500,{error:error.message||'Falha no assistente.',...(error.retryAfterSeconds?{retryAfterSeconds:error.retryAfterSeconds}:{})}); }

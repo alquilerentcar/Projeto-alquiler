@@ -9,7 +9,8 @@
     "test:http": "node tests/http-cache.test.cjs",
     "test:browser": "node tests/navigation.browser.cjs && node tests/cache.browser.cjs",
     "test:payments": "node tests/payments.sql.cjs && node tests/payments.browser.cjs",
-    "test:ajustes": "node --test tests/ajustes-20261030.test.mjs && node tests/ajustes-20261030.browser.cjs"
+    "test:ajustes": "node --test tests/ajustes-20261030.test.mjs && node tests/ajustes-20261030.browser.cjs",
+    "test:pdf-diarias": "node --test tests/pdf-diarias.test.mjs && node tests/pdf-diarias.sql.cjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.12",

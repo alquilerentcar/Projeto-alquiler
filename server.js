@@ -65,6 +65,7 @@ files['/locacao-veiculos.mjs']=['locacao-veiculos.mjs','text/javascript; charset
 files['/action-colors.css']=['action-colors.css','text/css; charset=utf-8'];
 files['/foto-classificacao-core.mjs']=['foto-classificacao-core.mjs','text/javascript; charset=utf-8'];
 files['/foto-classificacao.mjs']=['foto-classificacao.mjs','text/javascript; charset=utf-8'];
+for(const name of ['contrato-cobranca.mjs','recibo-timbrado.mjs'])files['/'+name]=[name,'text/javascript; charset=utf-8'];
 const draftFields = ['nome_completo','cpf','data_nascimento','rg','cnh','nacionalidade','profissao','estado_civil','email','cep','uf','endereco','numero','complemento','bairro','cidade','nome_pai','nome_mae',...Array.from({length:4},(_,i)=>`contato_${i+1}_numero`),...Array.from({length:4},(_,i)=>`contato_${i+1}_responsavel`)];
 const schema = properties => ({type:'OBJECT',properties,required:Object.keys(properties)});
 const optionalString = () => ({type:'STRING',nullable:true});

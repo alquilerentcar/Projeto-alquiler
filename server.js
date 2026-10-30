@@ -56,6 +56,7 @@ files['/usuarios.html'] = ['usuarios.html','text/html; charset=utf-8'];
 files['/usuarios.js'] = ['usuarios.js','text/javascript; charset=utf-8'];
 files['/'] = files['/index.html'];
 for(const [name,type]of [['app.html','text/html'],['app-shell.js','text/javascript'],['app-shell.css','text/css'],['runtime/navigation.js','text/javascript'],['runtime/shell-navigation.js','text/javascript'],['runtime/navigation.js.map','application/json'],['runtime/shell-navigation.js.map','application/json']])files['/'+name]=[name,type+'; charset=utf-8'];files['/app']=files['/app.html'];
+for(const name of ['entradas-clientes.mjs','entradas-clientes-core.mjs','entradas-clientes.css'])files['/'+name]=[name,name.endsWith('.css')?'text/css; charset=utf-8':'text/javascript; charset=utf-8'];
 files['/financeiro-baixa.mjs']=['financeiro-baixa.mjs','text/javascript; charset=utf-8'];
 files['/pagamento-composicao.mjs']=['pagamento-composicao.mjs','text/javascript; charset=utf-8'];
 files['/financeiro-baixa.css']=['financeiro-baixa.css','text/css; charset=utf-8'];

@@ -59,6 +59,12 @@ for(const [name,type]of [['app.html','text/html'],['app-shell.js','text/javascri
 files['/financeiro-baixa.mjs']=['financeiro-baixa.mjs','text/javascript; charset=utf-8'];
 files['/pagamento-composicao.mjs']=['pagamento-composicao.mjs','text/javascript; charset=utf-8'];
 files['/financeiro-baixa.css']=['financeiro-baixa.css','text/css; charset=utf-8'];
+files['/relatorios-filtros.mjs']=['relatorios-filtros.mjs','text/javascript; charset=utf-8'];
+files['/dialogo-protegido.mjs']=['dialogo-protegido.mjs','text/javascript; charset=utf-8'];
+files['/locacao-veiculos.mjs']=['locacao-veiculos.mjs','text/javascript; charset=utf-8'];
+files['/action-colors.css']=['action-colors.css','text/css; charset=utf-8'];
+files['/foto-classificacao-core.mjs']=['foto-classificacao-core.mjs','text/javascript; charset=utf-8'];
+files['/foto-classificacao.mjs']=['foto-classificacao.mjs','text/javascript; charset=utf-8'];
 const draftFields = ['nome_completo','cpf','data_nascimento','rg','cnh','nacionalidade','profissao','estado_civil','email','cep','uf','endereco','numero','complemento','bairro','cidade','nome_pai','nome_mae',...Array.from({length:4},(_,i)=>`contato_${i+1}_numero`),...Array.from({length:4},(_,i)=>`contato_${i+1}_responsavel`)];
 const schema = properties => ({type:'OBJECT',properties,required:Object.keys(properties)});
 const optionalString = () => ({type:'STRING',nullable:true});
@@ -280,7 +286,7 @@ async function handler(request,response) {
       if(!sameOrigin&&![`http://localhost:${port}`,`http://${host}:${port}`].includes(request.headers.origin)) return json(response,403,{error:'Origem não permitida.'});
     }
     try {
-      const data=await readJson(request,route.endsWith('/extrair')?12*1024*1024:22000);
+      const data=await readJson(request,route.endsWith('/extrair')?12*1024*1024:route.endsWith('/classificar-foto')?1500000:22000);
       if(route==='/api/assistente/configurar') {
         if(activeGeminiKey) return json(response,409,{error:'A IA já está ativa nesta sessão.'});
         const candidate=String(data.key||'').trim();
@@ -290,6 +296,7 @@ async function handler(request,response) {
         activeGeminiKey=candidate;
         return json(response,200,{active:true});
       }
+      if(route==='/api/assistente/classificar-foto')return json(response,200,await require('./foto-classificacao.cjs').classifyPhoto(data,gemini));
       return json(response,200,route.endsWith('/extrair')?await extract(data):await chat(data,request));
     }
     catch(error) { return json(response,error.status||500,{error:error.message||'Falha no assistente.',...(error.retryAfterSeconds?{retryAfterSeconds:error.retryAfterSeconds}:{})}); }

@@ -9,3 +9,5 @@
 .swap-photo-item{display:grid;grid-template-columns:64px minmax(0,1fr);gap:10px;align-items:center;border-top:1px solid var(--ui-border,#dce3ef);padding-block:12px;margin-top:12px}
 .swap-photo-item img{width:64px;height:64px;object-fit:cover;border-radius:8px}.swap-photo-item span{font-size:12px;overflow-wrap:anywhere}.swap-photo-item button{grid-column:2;justify-self:start}
 @media(max-width:700px){.swap-photo-groups{grid-template-columns:1fr}.swap-photo-group{padding:14px}}
+
+.swap-photo-item select{grid-column:2;width:100%;min-width:0;padding:8px;border:1px solid var(--ui-border,#dce3ef);border-radius:8px;background:var(--company-surface,#fff);color:inherit}.swap-ai-photos{display:flex;align-items:center;gap:10px;font-size:13px}.swap-ai-photos input{width:18px;height:18px;accent-color:var(--company-primary,#2864da)}

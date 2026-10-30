@@ -1,3 +1,4 @@
+import {protectDialog} from './dialogo-protegido.mjs';
 import {formatCpf,formatCnpj,normalizeCnpj,upperName,validCpf,validCnpj,normalizePhone,validPhone,validEmail,formatPhone} from './cadastro-core.mjs';
 import {bindClientFields} from './cadastro-fields.mjs';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -276,6 +277,7 @@ async function openDocument(column) {
 }
 
 async function init() {
+  const clientGuard=protectDialog($("#client-dialog"),$("#client-form"),{isBusy:()=>$("#save-button").disabled});
   $("#contacts-grid").innerHTML = Array.from({ length: 4 }, (_, index) => {
     const number = index + 1;
     return `<label><span>${number===1?"Contato 1 · telefone do locatário":"Contato "+number+" · referência / emergência"}</span><input name="contato_${number}_numero" inputmode="tel" placeholder="DDD + telefone" /></label><label><span>${number===1?"Nome do locatário":"Contato "+number+" · responsável"}</span><input name="contato_${number}_responsavel" placeholder="Nome completo" /></label>`;
@@ -287,8 +289,8 @@ async function init() {
   $("#status-filter").addEventListener("change", render);
   $("#person-type").addEventListener("change", refreshPersonType);
   $("#client-form").addEventListener("submit", saveClient);
-  $("#close-dialog").addEventListener("click", () => $("#client-dialog").close());
-  $("#cancel-button").addEventListener("click", () => $("#client-dialog").close());
+  $("#close-dialog").addEventListener("click",clientGuard.requestClose);
+  $("#cancel-button").addEventListener("click",clientGuard.requestClose);
   document.querySelectorAll("[data-open]").forEach((button) => button.addEventListener("click", () => openDocument(button.dataset.open)));
   await loadClients(false);
   const draftText = sessionStorage.getItem('alquiler-assistente-rascunho-cliente:' + window.alquilerContext.company.id);

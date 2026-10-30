@@ -1,0 +1,7 @@
+.interface-v2 :is(.btn,.table-actions button,.photo-actions button)[data-action-tone=success]{background:#167044;color:#fff;border-color:#167044;box-shadow:none}
+.interface-v2 :is(.btn,.table-actions button,.photo-actions button)[data-action-tone=danger]{background:#b32635;color:#fff;border-color:#b32635;box-shadow:none}
+.interface-v2 :is(.btn,.table-actions button,.photo-actions button)[data-action-tone=warning]{background:#865500;color:#fff;border-color:#865500;box-shadow:none}
+.interface-v2 :is(.btn,.table-actions button,.photo-actions button)[data-action-tone=info]{background:#245ca6;color:#fff;border-color:#245ca6;box-shadow:none}
+.interface-v2 :is(.btn,.table-actions button,.photo-actions button)[data-action-tone]:disabled{opacity:.5;cursor:not-allowed}
+.interface-v2 :is(.btn,.table-actions button,.photo-actions button)[data-action-tone]:focus-visible{outline:3px solid var(--company-primary,#2864da);outline-offset:3px}
+.interface-v2 :is(.btn,.table-actions button,.photo-actions button)[data-action-tone]:hover:not(:disabled){filter:brightness(.94)}

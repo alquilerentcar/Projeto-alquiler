@@ -16,7 +16,7 @@ export async function modelPdf(db,company,text,documentNumber=null,formatacao=nu
   }y-=gap;
  }
  for(const photo of photos){
-  await addPage();page.drawText(photo.title||'Veículo substituto',{x:85,y,size:11,font:fonts[1]});y-=24;
+  await addPage();page.drawText(photo.title||'Veículo substituto',{x:85,y,size:11,font:fonts[1]});y-=24;if(photo.subtitle){page.drawText(String(photo.subtitle).slice(0,70),{x:85,y,size:10,font:fonts[0]});y-=18;}
   const optimized=await preparePdfImage(photo.blob),bytes=new Uint8Array(await optimized.arrayBuffer()),image=await pdf.embedJpg(bytes);
   const maxWidth=width-142,maxHeight=y-70,scale=Math.min(maxWidth/image.width,maxHeight/image.height);
   const w=image.width*scale,h=image.height*scale;page.drawImage(image,{x:85+(maxWidth-w)/2,y:y-h,width:w,height:h});

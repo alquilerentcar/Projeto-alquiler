@@ -1,3 +1,4 @@
+import {PHOTO_CATEGORIES} from './foto-classificacao-core.mjs';
 export const DEFAULT_PHOTO_LIMIT=20;
 export const MAX_PHOTO_LIMIT=60;
 export function addSubstitutionPhotos(current,files,limit=DEFAULT_PHOTO_LIMIT){
@@ -35,6 +36,6 @@ export function substitutionPhotoDescriptors(doc){
   anterior=meta.anterior;
  }
  return Array.from({length:total},(_,i)=>{const old=i<anterior,number=old?i+1:i+1-anterior,count=old?anterior:total-anterior;
-  return {index:i+1,grupo:old?'anterior':'posterior',placa:doc.snapshot[old?'anterior':'posterior'].placa,title:(old?'Veículo substituído (devolução)':'Veículo substituto (entrega)')+' '+doc.snapshot[old?'anterior':'posterior'].placa+' — foto '+number+' de '+count};
+  const classification=doc.valores?.fotos_classificacoes?.[i];const subtitle=classification&&Object.hasOwn(PHOTO_CATEGORIES,classification.categoria)?PHOTO_CATEGORIES[classification.categoria]:'';return {subtitle,index:i+1,grupo:old?'anterior':'posterior',placa:doc.snapshot[old?'anterior':'posterior'].placa,title:(old?'Veículo substituído (devolução)':'Veículo substituto (entrega)')+' '+doc.snapshot[old?'anterior':'posterior'].placa+' — foto '+number+' de '+count};
  });
 }

@@ -1,0 +1,4 @@
+const cents=v=>Math.round(Number(v||0)*100);
+export function paymentState(row){if(!row.confirmed)return 'A definir';const due=cents(row.diaria),paid=cents(row.recebido);return paid>=due?'Pago':paid>0?'Parcial':'Não pago';}
+export function matchesPayment(row,filter='todos'){const status=paymentState(row);return filter==='todos'||filter==='pagos'&&status==='Pago'||filter==='nao-pagos'&&['Não pago','Parcial'].includes(status)||filter==='parciais'&&status==='Parcial'||filter==='a-definir'&&status==='A definir';}
+export function matchesVehicle(row,filter='todos'){const status=row[4];return filter==='todos'||filter==='ocupados'&&status==='Locado'||filter==='nao-ocupados'&&!['Locado','Vendido','Inativo'].includes(status)||filter==='manutencao'&&status==='Manutenção'||filter==='disponiveis'&&status==='Disponível';}

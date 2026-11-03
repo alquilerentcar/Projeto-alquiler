@@ -1,7 +1,7 @@
 import {vehicleMileage} from './relatorios-frota.mjs';
 import {editFleetStatus} from './frota-situacao-editor.mjs';
 import {editFleetOccupant} from './frota-locatario-editor.mjs';
-import {closeOccupation} from './encerrar-ocupacao.mjs';
+import {closeOccupation} from './encerrar-ocupacao.mjs?v=20261103';
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
 import {requireAuth,bindLogout} from './auth-guard.js';
 import {openVehicleHistory} from './frota-km.js?v=20261019-tipos';
@@ -21,7 +21,7 @@ function notify(text){$('#toast').textContent=text;$('#toast').classList.add('sh
 async function rpc(name,args){const {data,error}=await db.rpc(name,{p_empresa:company.id,...args});if(error)throw new Error(error.code==='PGRST202'?'Aplique frota_operacao.sql no Supabase para ativar esta área.':error.message);return data;}
 $('#fleet-date').value=localDate();$('#fleet-search').value=new URLSearchParams(location.search).get('placa')||'';
 async function load(){const generation=++loadGeneration;$('#fleet-error').textContent='';$('#fleet-new').disabled=true;try{
- const [panel,old,people,km]=await Promise.all([rpc('frota_painel',{}),db.from('locacoes').select('id,carro_id,cliente_id,data_inicio,data_fim,valor_diaria,status').in('status',['Ativa','Encerrada']),loadClients(),db.from('frota_km').select('carro_id,km,leitura_em').eq('empresa_id',company.id)]);
+ const [panel,old,people,km]=await Promise.all([rpc('frota_painel',{}),db.from('locacoes').select('id,carro_id,cliente_id,data_inicio,data_fim,valor_diaria,status').eq('empresa_id',company.id).in('status',['Ativa','Encerrada']),loadClients(),db.from('frota_km').select('carro_id,km,leitura_em').eq('empresa_id',company.id)]);
  if(old.error)throw new Error(old.error.message);if(generation!==loadGeneration)return;state={...panel,readings:km.data||[],clientes:people};legacy=old.data||[];const occupationResult=await db.from('frota_levantamento').select('*').eq('empresa_id',company.id).eq('ativo',true);if(occupationResult.error)throw new Error('Não foi possível consultar as ocupações informadas. Aplique importar-ocupacoes-atuais.sql se ainda não estiver ativo.');if(generation!==loadGeneration)return;state.levantamento=occupationResult.data||[];render();if($('#fleet-finance-details').open)await dues();$('#fleet-new').disabled=false;
  }catch(e){$('#fleet-error').textContent=e.message;$('#fleet-dues').replaceChildren();$('#fleet-cards').replaceChildren();$('#fleet-money').replaceChildren();}}
 function render(){
@@ -41,8 +41,9 @@ function render(){
   for(const value of [...new Set([status,'Disponível','Indisponível','Manutenção','Revisão'])])select.add(new Option(value,value));select.value=status;
   const occupied=!!p||!!old||!!o||car.ocupado_externo;select.disabled=occupied||car.pendenteCadastro||car.empresa_id!==company.id||['Vendido','Inativo'].includes(car.situacao);select.title=occupied?'Encerre a ocupação ou o período antes de alterar a situação.':'Alterar situação do veículo';select.onchange=()=>editFleetStatus(db,company,car,select.value,load,()=>select.value=status);statusCell.append(select);if(['Manutenção','Revisão'].includes(status))statusCell.append(node('small',car.observacoes||p?.observacoes||'Descrição a informar'));
   const actionsCell=node('td'),actions=node('div','','fleet-row-actions'),history=node('button','Histórico / KM','btn btn-quiet');history.disabled=!!car.pendenteCadastro;history.onclick=()=>timeline(car);actions.append(history);const full=node('a','Histórico completo','btn btn-quiet');full.href='/historico?carro='+encodeURIComponent(car.id);actions.append(full);
-  const currentOccupation=p?.tipo==='locacao'?p:!p&&!old?o:null;
+  const currentOccupation=!old&&(p?.tipo==='locacao'?p:!p?o:null);
   if(currentOccupation){const edit=node('button','Alterar locatário','btn btn-quiet');edit.onclick=()=>editFleetOccupant(db,company,p?'periodo':'levantamento',currentOccupation,state.clientes,car,load);actions.append(edit);const end=node('button','Encerrar ocupação','btn btn-quiet');end.onclick=()=>closeOccupation(db,company,p?'periodo':'levantamento',currentOccupation,load);actions.append(end);const swap=node('a','Substituir veículo','btn btn-quiet');swap.href='/locacao/substituicao?placa='+encodeURIComponent(car.placa);actions.append(swap);}
+  else if(old){const end=node('a','Encerrar ocupação','btn btn-quiet');end.href='/locacao/locacoes?encerrar='+encodeURIComponent(old.id);end.title='Conferir devolução e encerramento da locação vinculada';actions.append(end);const rental=node('a','Gerenciar locação','btn btn-quiet');rental.href='/locacao/locacoes';actions.append(rental);}
   else if(p){if(p.tipo==='manutencao'){const finish=node('a','Concluir manutenção','btn btn-quiet');finish.href='/historico?carro='+encodeURIComponent(car.id)+'&manutencao='+encodeURIComponent(p.id);actions.append(finish);}else{const finish=node('button','Concluir período','btn btn-quiet');finish.onclick=()=>open('encerrar',p);actions.append(finish);}}
   else if(old){const rental=node('a','Gerenciar locação','btn btn-quiet');rental.href='/locacao/locacoes';actions.append(rental);}
   else if(!occupied&&car.situacao==='Disponível'){const add=node('button','Registrar ocupação','btn btn-primary');add.onclick=()=>open('iniciar',null,car.id);actions.append(add);}

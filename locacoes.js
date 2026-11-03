@@ -83,3 +83,13 @@ async function operationalRentals(){const node=(tag,text='',cls='')=>{const n=do
 }await operationalRentals();
 
 await bindVistoriadores(db,window.alquilerContext.company,document.querySelector('#operation-form'),'responsavel');
+
+// A Frota abre a etapa atual sem executar nenhuma movimentação automaticamente.
+const encerramentoSolicitado=new URLSearchParams(location.search).get('encerrar');
+if(encerramentoSolicitado){
+ const row=state.rows.find(r=>r.id===encerramentoSolicitado&&r.empresa_id===window.alquilerContext.company.id);
+ if(!row)toast('Locação não encontrada nesta empresa. Atualize a Frota e confira a empresa selecionada.',true);
+ else if(row.status!=='Ativa')toast('Esta locação não está ativa. Confira o histórico antes de encerrar.',true);
+ else if(state.eventsError)toast('Não foi possível conferir as etapas. Atualize antes de encerrar a locação.',true);
+ else openOperation(row);
+}

@@ -1,0 +1,10 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {addContractDays,contractDays,matchesSearch,rentalSummary} from '../locacao-rapida.mjs';
+
+test('tempo de contrato soma dias mantendo a hora e vira o mês e o ano',()=>{assert.equal(addContractDays('2026-11-05T20:00',30),'2026-12-05T20:00');assert.equal(addContractDays('2026-12-20T08:30',15),'2027-01-04T08:30');});
+test('tempo inválido não gera data final',()=>{for(const days of [0,-1,1.5,''])assert.equal(addContractDays('2026-11-05T20:00',days),'');assert.equal(addContractDays('',30),'');});
+test('fim previsto volta a ser dias, arredondando dia começado para cima',()=>{assert.equal(contractDays('2026-11-05T20:00','2026-12-05T20:00'),30);assert.equal(contractDays('2026-11-05T20:00','2026-11-06T21:00'),2);assert.equal(contractDays('2026-11-05T20:00','2026-11-05T20:00'),null);assert.equal(contractDays('2026-11-05T20:00',''),null);});
+test('busca ignora acento e maiúsculas',()=>{assert.ok(matchesSearch('JOÃO DA SILVA','joao'));assert.ok(matchesSearch('AAA1111 · FIAT MOBI','mobi'));assert.ok(!matchesSearch('JOÃO DA SILVA','maria'));assert.ok(matchesSearch('qualquer',''));});
+const base={inicio:'2026-11-05T20:00',fim:'2026-12-05T20:00',diaria:145,caucao:1000,pago:400,parcelas:100,parcela:6};
+test('resumo mostra prazo, total, saldo e valor por dia',()=>{const text=rentalSummary(base).join(' ');assert.match(text,/Contrato de 30 dias, até 05\/12\/2026/);assert.match(text,/4\.350,00/);assert.match(text,/saldo de R\$\s600,00 em 100x de R\$\s6,00/);assert.match(text,/R\$\s151,00 por dia/);});
+test('resumo avisa quando a primeira diária entra, com o mesmo limite da cobrança',()=>{assert.match(rentalSummary({...base,pago:999.99}).join(' '),/entra na data do contrato/);assert.match(rentalSummary({...base,pago:1000}).join(' '),/dia seguinte à entrega/);});
+test('caução quitada não soma parcela e sem data final pede o tempo',()=>{const paid=rentalSummary({...base,pago:1000,parcela:0}).join(' ');assert.match(paid,/paga por inteiro/);assert.match(paid,/R\$\s145,00 por dia/);assert.match(rentalSummary({...base,fim:''}).join(' '),/sem data final/);});

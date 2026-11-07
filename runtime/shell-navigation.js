@@ -1,7 +1,23 @@
 import { resolveRoute, } from "./navigation.js";
+// Telas guardadas voltam sem recarregar. Qualquer gravação descarta todas (bg-cache-invalidated).
+const KEEP_MS = 180000, KEEP_MAX = 5, 
+// Telas de emissão e assinatura sempre abrem do zero.
+NEVER_KEEP = [
+    "/locacao/contrato",
+    "/locacao/assinaturas",
+    "/locacao/substituicao",
+    "/controle",
+];
 export function startNavigation(options) {
-    let current = null, pending = null, generation = 0, dirty = false, activeRoute = "", currentScope = "", currentTime = 0, currentValid = true, invalidation = 0;
-    const saved = new Map(), eligible = (route) => ["/cadastros/clientes", "/cadastros/carros"].includes(route.split("?")[0].split("#")[0]);
+    let current = null, pending = null, generation = 0, edited = new Set(), activeRoute = "", currentScope = "", currentTime = 0, currentValid = true, invalidation = 0;
+    // Só pede confirmação se um formulário alterado ainda estiver aberto na tela.
+    const dirty = () => [...edited].some((form) => {
+        if (!form.isConnected)
+            return false;
+        const dialog = form.closest("dialog");
+        return dialog ? dialog.open : form.getClientRects().length > 0;
+    });
+    const saved = new Map(), eligible = (route) => !NEVER_KEEP.includes(route.split("?")[0].split("#")[0]);
     window.bgNavigationMetrics = [];
     const record = (m) => {
         window.bgNavigationMetrics.push(m);
@@ -37,10 +53,10 @@ export function startNavigation(options) {
     };
     function activate(frame, route, replace, stamp, scope) {
         if (current && current !== frame) {
-            if (!dirty &&
+            if (!dirty() &&
                 currentValid &&
                 eligible(activeRoute) &&
-                Date.now() - currentTime < 30000) {
+                Date.now() - currentTime < KEEP_MS) {
                 current.classList.add("shell-cached");
                 current.style.pointerEvents = "none";
                 if (saved.get(activeRoute)?.frame !== current)
@@ -54,7 +70,7 @@ export function startNavigation(options) {
             else
                 current.remove();
         }
-        while (saved.size > 1) {
+        while (saved.size > KEEP_MAX) {
             const oldest = saved.keys().next().value;
             saved.get(oldest)?.frame.remove();
             saved.delete(oldest);
@@ -62,7 +78,7 @@ export function startNavigation(options) {
         current = frame;
         pending = null;
         activeRoute = route;
-        dirty = false;
+        edited = new Set();
         currentTime = stamp;
         currentScope = scope;
         currentValid = true;
@@ -84,7 +100,7 @@ export function startNavigation(options) {
         }
         if (route === activeRoute && !pending)
             return;
-        if (dirty &&
+        if (dirty() &&
             !confirm("Você alterou um formulário nesta tela. Confirme que salvou antes de sair. Deseja continuar?")) {
             record({
                 route: route.split("?")[0],
@@ -106,7 +122,7 @@ export function startNavigation(options) {
         const memo = saved.get(route);
         if (memo) {
             saved.delete(route);
-            if (Date.now() - memo.time < 30000 && memo.frame.isConnected) {
+            if (Date.now() - memo.time < KEEP_MS && memo.frame.isConnected) {
                 let allowed = false;
                 try {
                     allowed = await options.validate(route);
@@ -177,16 +193,15 @@ export function startNavigation(options) {
                     });
                 const doc = frame.contentDocument;
                 doc?.addEventListener("input", (event) => {
-                    const input = event.target;
+                    const input = event.target, form = input?.nodeType === 1 ? input.closest("form") : null;
                     if (event.isTrusted &&
-                        input?.nodeType === 1 &&
-                        input.closest("form") &&
+                        form &&
                         !(input.tagName === "INPUT" &&
                             input.type === "search"))
-                        dirty = true;
+                        edited.add(form);
                 }, true);
-                doc?.addEventListener("reset", () => {
-                    dirty = false;
+                doc?.addEventListener("reset", (event) => {
+                    edited.delete(event.target);
                 }, true);
             }
             catch {
@@ -205,7 +220,7 @@ export function startNavigation(options) {
         options.host.append(frame);
     };
     window.bgShellDispose = () => {
-        dirty = false;
+        edited = new Set();
         generation++;
         pending?.remove();
         current?.remove();
@@ -216,7 +231,7 @@ export function startNavigation(options) {
     window.bgShellNavigate = navigate;
     window.bgShellContext = options.onContext;
     window.addEventListener("beforeunload", (event) => {
-        if (dirty) {
+        if (dirty()) {
             event.preventDefault();
             event.returnValue = "";
         }

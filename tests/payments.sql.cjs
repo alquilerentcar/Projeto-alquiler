@@ -3,7 +3,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
 const root=require('node:path').resolve(__dirname,'..');
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
 const empresa=id(1),cliente=id(2),grupo=id(3),other=id(4),user=id(5);
-const extract=(file,name)=>{const s=fs.readFileSync(root+'/'+file,'utf8'),start=s.indexOf('create or replace function public.'+name+'('),end=s.indexOf('end $$;',start);assert(start>=0&&end>=0,name);return s.slice(start,end+7);};
+const extract=(file,name)=>{const s=fs.readFileSync(root+'/sql/'+file,'utf8'),start=s.indexOf('create or replace function public.'+name+'('),end=s.indexOf('end $$;',start);assert(start>=0&&end>=0,name);return s.slice(start,end+7);};
 (async()=>{const db=new PGlite();await db.exec(`
 create role anon;create role authenticated;create schema auth;
 create function auth.uid() returns uuid language sql as $$select nullif(current_setting('test.uid',true),'')::uuid$$;
@@ -21,7 +21,7 @@ set test.uid='${user}';`);
 await db.exec(extract('clientes_operacao_complementos.sql','cliente_debito_criar'));
 await db.exec(extract('clientes_operacao_complementos.sql','cliente_debito_receber'));
 await db.exec(extract('diarias_ocupacoes.sql','frota_confirmar_diaria'));
-await db.exec(fs.readFileSync(root+'/pagamentos_compostos.sql','utf8'));
+await db.exec(fs.readFileSync(root+'/sql/pagamentos_compostos.sql','utf8'));
 const day=(await db.query("select (now() at time zone 'America/Manaus')::date::text d")).rows[0].d;
 const date=new Date(Date.now()-60000).toISOString();
 async function createDebt(debt,category='caucao',owner=cliente,company=empresa){await db.query('select cliente_debito_criar($1,$2,$3,$4,$5,50,0,2,$6,\'diaria\')',[company,owner,debt,category,'Teste isolado',day]);return(await db.query('select id from cliente_debito_parcelas where debito_id=$1 order by numero',[debt])).rows.map(x=>x.id);}

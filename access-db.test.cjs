@@ -13,13 +13,13 @@ test('database: tenant isolation, licenses, user grants and developer-only manag
  create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text);alter table storage.objects enable row level security;grant all on storage.objects to authenticated,anon;
  create table storage.buckets(id text primary key,public boolean);
  insert into auth.users values('${dev}','alquilerentcar@gmail.com',now()),('${user}','client@example.com',now());`);
- let base=fs.readFileSync(__dirname+'/multiempresa_setup.sql','utf8').split('-- Acrescenta empresa_id')[0].replace('create extension if not exists pgcrypto;','');
+ let base=fs.readFileSync(__dirname+'/sql/multiempresa_setup.sql','utf8').split('-- Acrescenta empresa_id')[0].replace('create extension if not exists pgcrypto;','');
  await db.exec(base);
  await db.exec(`create table public.clientes(id uuid primary key default gen_random_uuid(),nome text,empresa_id uuid references public.empresas(id));
  create table public.locacoes(id uuid primary key default gen_random_uuid(),cliente_id uuid references public.clientes(id),empresa_id uuid references public.empresas(id));
  create table public.pagamentos_locacao(id uuid primary key default gen_random_uuid(),locacao_id uuid references public.locacoes(id),empresa_id uuid references public.empresas(id));
  create table public.certificados_digitais(id uuid primary key default gen_random_uuid(),arquivo_path text,empresa_id uuid references public.empresas(id));`);
- const migration=fs.readFileSync(__dirname+'/acessos_setup.sql','utf8');await db.exec(migration);await db.exec(migration);
+ const migration=fs.readFileSync(__dirname+'/sql/acessos_setup.sql','utf8');await db.exec(migration);await db.exec(migration);
  const owner=async id=>{await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[id]);await db.exec('set role authenticated');};
  const scalar=async(sql,args=[])=>Object.values((await db.query(sql,args)).rows[0])[0];
  await owner(dev);assert.equal(await scalar('select public.acesso_desenvolvedor()'),true);

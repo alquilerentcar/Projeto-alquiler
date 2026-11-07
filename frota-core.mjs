@@ -1,5 +1,7 @@
 export function money(value){return Number(value||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
 export function localDate(date=new Date()){return new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Manaus',year:'numeric',month:'2-digit',day:'2-digit'}).format(date);}
+// Valor de campo datetime-local no horário de Manaus, qualquer que seja o fuso do computador.
+export function localDateTime(date=new Date()){return new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Manaus',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(date).replace(' ','T');}
 export function fleetStatus(car,period,legacy){
  if(legacy||car.ocupado_externo)return 'Locado';
  if(period)return period.tipo==='locacao'?'Locado':period.tipo==='manutencao'?'Manutenção':'Indisponível';

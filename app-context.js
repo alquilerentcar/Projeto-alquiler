@@ -6,15 +6,18 @@ export async function loadAppContext(client) {
   const {data,error}=await client.rpc('acessos_contexto',{p_empresa:selected});
   if(error||data?.schemaVersion!==2) throw new Error('Não foi possível validar o acesso. Verifique a conexão e aplique etapa1_acessos.sql no Supabase.');
   let documentModels=[];if(data.company?.id){const result=selected===data.company.id&&menuPending?await menuPending:await client.rpc('modelos_documentos_menu',{p_empresa:data.company.id});if(result&&!result.error)documentModels=result.data||[];}
-  return {...data,documentModels,company:data.company||{...CURRENT_COMPANY},modules:data.modules||[]};
+  return {...data,documentModels,company:data.company||{...CURRENT_COMPANY},modules:data.modules||[],__loadedAt:Date.now()};
 }
+// Acesso conferido há pouco é reaproveitado; as regras do banco continuam valendo em cada consulta.
+export const CONTEXT_REUSE_MS=300000;
+export const freshContext=context=>Boolean(context)&&Date.now()-context.__loadedAt<CONTEXT_REUSE_MS;
 export function renderAppContext(context) {
   const company=location.pathname.replace(/\.html$/,'').endsWith('/controle')?{nome_fantasia:'Grupo Alquiler',cnpj:''}:context.company;
   applyCompanyTheme(company);
   try {
     if(context.company?.id){
       sessionStorage.setItem('bgsys:empresa-id',context.company.id);
-      if(!location.pathname.replace(/\.html$/,'').endsWith('/controle'))sessionStorage.setItem('bgsys:brand:'+context.company.id,JSON.stringify({id:company.id,nome_fantasia:company.nome_fantasia,logo_url:company.logo_url||'',cor_primaria:company.cor_primaria||'#2864da',cor_sidebar:company.cor_sidebar||'#111e32',cor_fundo:company.cor_fundo||'#f5f7fb',cor_paineis:company.cor_paineis||'#ffffff',on_primary:document.documentElement.style.getPropertyValue('--company-on-primary')}));
+      if(!location.pathname.replace(/\.html$/,'').endsWith('/controle'))sessionStorage.setItem('bgsys:brand:'+context.company.id,JSON.stringify({id:company.id,nome_fantasia:company.nome_fantasia,logo_url:company.logo_url||'',cor_primaria:company.cor_primaria||'#1d3fa8',cor_sidebar:company.cor_sidebar||'#16191f',cor_fundo:company.cor_fundo||'#f4f5f7',cor_paineis:company.cor_paineis||'#ffffff',on_primary:document.documentElement.style.getPropertyValue('--company-on-primary')}));
     }
   }catch{};
   document.querySelectorAll('[data-company-admin]').forEach(node=>{node.hidden=!context.canManageCompany;});

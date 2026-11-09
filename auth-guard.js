@@ -1,13 +1,15 @@
-import {loadAppContext,renderAppContext} from './app-context.js';
+import {loadAppContext,renderAppContext,freshContext} from './app-context.js';
 import {canOpen,scopeClient} from './access-policy.js';
 let resolveAuthenticatedClient;
 const authenticatedClientReady=new Promise(resolve=>{resolveAuthenticatedClient=resolve;});
 export function getAuthenticatedClient(){return authenticatedClientReady;}
+// Dentro do sistema, a tela usa o acesso que a moldura acabou de conferir para a mesma conta.
+function shellContext(user){try{const shell=window.parent!==window&&window.parent.__grupoShell?window.parent:null;if(!shell||shell.bgCacheIdentity!==user||!freshContext(shell.alquilerContext))return null;return JSON.parse(JSON.stringify(shell.alquilerContext));}catch{return null;}}
 export async function requireAuth(client) {
   const {data,error}=await client.auth.getSession();
   if(error||!data?.session) {location.replace('/login');await new Promise(()=>{});}
-  let context;
-  try {context=await loadAppContext(client);} catch(error) {
+  let context=shellContext(data.session.user.id);
+  if(!context) try {context=await loadAppContext(client);} catch(error) {
     const main=document.querySelector('main')||document.body;
     main.replaceChildren();const title=document.createElement('h1'),message=document.createElement('p'),link=document.createElement('a');
     title.textContent='Configuração de acessos pendente';message.textContent=error.message;link.href='login.html';link.textContent='Voltar ao login';main.append(title,message,link);

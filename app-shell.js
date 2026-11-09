@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireAuth, bindLogout } from "./auth-guard.js";
-import { renderAppContext, loadAppContext } from "./app-context.js";
+import { renderAppContext, loadAppContext, freshContext } from "./app-context.js";
 import { canOpen } from "./access-policy.js";
 import { startNavigation } from "./runtime/shell-navigation.js";
 import { resolveRoute } from "./runtime/navigation.js";
@@ -38,7 +38,9 @@ startNavigation({
       location.replace("/login");
       return false;
     }
-    const c = await loadAppContext(db);
+    const c = freshContext(window.alquilerContext)
+      ? window.alquilerContext
+      : await loadAppContext(db);
     if (
       c.accessDenied ||
       c.company?.id !== window.alquilerContext.company?.id ||

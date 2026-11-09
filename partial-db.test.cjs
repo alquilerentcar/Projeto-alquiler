@@ -18,7 +18,7 @@ test('partial database: recovery preserves existing names and passes access isol
  create table public.locacoes(id uuid primary key default gen_random_uuid(),cliente_id uuid references public.clientes(id),empresa_id uuid references public.empresas(id));
  create table public.pagamentos_locacao(id uuid primary key default gen_random_uuid(),locacao_id uuid references public.locacoes(id),empresa_id uuid references public.empresas(id));
  create table public.certificados_digitais(id uuid primary key default gen_random_uuid(),arquivo_path text,empresa_id uuid references public.empresas(id));`);
- const migration=fs.readFileSync(__dirname+'/ativar_acessos_base_parcial.sql','utf8');await db.exec(migration);await db.exec(migration);
+ const migration=fs.readFileSync(__dirname+'/sql/ativar_acessos_base_parcial.sql','utf8');await db.exec(migration);await db.exec(migration);
  assert.equal((await db.query("select nome_fantasia from public.empresas where cnpj='54135275000161'")).rows[0].nome_fantasia,'NOME EXISTENTE');
  assert.equal((await db.query("select nome from public.usuarios_empresa where usuario='SAUGUSTO'")).rows[0].nome,'NOME DO USUÁRIO EXISTENTE');
  const owner=async id=>{await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[id]);await db.exec('set role authenticated');};

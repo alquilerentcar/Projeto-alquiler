@@ -7,6 +7,7 @@ export const routes = Object.freeze({
     certificados: "/cadastros/certificados",
     frota: "/locacao/frota",
     locacoes: "/locacao/locacoes",
+    "locacao-painel": "/locacao/painel",
     contratos: "/locacao/contratos",
     contrato: "/locacao/contrato",
     assinaturas: "/locacao/assinaturas",

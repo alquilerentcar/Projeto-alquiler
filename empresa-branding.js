@@ -1,5 +1,5 @@
 export const BRANDING_BUCKET='identidade-empresas';
-export const DEFAULT_COLOR='#2864da';
+export const DEFAULT_COLOR='#1d3fa8';
 const stationeryPages=new WeakMap();
 // O formulário PDF do timbrado é incorporado uma única vez por documento.
 export async function addStationeryPage(output,stationery){
@@ -19,7 +19,7 @@ export function applyCompanyTheme(company){
  const surface=themeColors(company?.cor_paineis||'#ffffff');
  document.documentElement.style.setProperty('--company-surface',surface.primary);
  document.documentElement.style.setProperty('--company-on-surface',surface.foreground);
- const sidebar=themeColors(company?.cor_sidebar||'#111e32'),background=themeColors(company?.cor_fundo||'#f5f7fb');
+ const sidebar=themeColors(company?.cor_sidebar||'#16191f'),background=themeColors(company?.cor_fundo||'#f4f5f7');
  for(const [name,value] of Object.entries({'--company-sidebar':sidebar.primary,'--company-on-sidebar':sidebar.foreground,'--company-background':background.primary,'--company-on-background':background.foreground}))document.documentElement.style.setProperty(name,value);
  document.documentElement.style.setProperty('--company-primary',primary);
  document.documentElement.style.setProperty('--company-on-primary',foreground);

@@ -1,0 +1,16 @@
+# Arquivos internos que não vão para o site publicado.
+# src/, tsconfig.json e os arquivos .cjs ficam: a publicação compila src/ e as funções da API usam os .cjs.
+*.sql
+*.md
+*.bpmn
+*.py
+*.ps1
+*.bat
+*.test.cjs
+tests/
+tmp/
+backup-*/
+_backups/
+_backupsmove/
+etapa1-*.png
+zapsign-test.js

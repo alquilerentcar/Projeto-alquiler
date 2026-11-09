@@ -19,7 +19,7 @@ create table locacao_eventos(id uuid primary key default gen_random_uuid(),empre
 create table vistorias_locacao(id uuid primary key,locacao_id uuid,tipo text,data_hora timestamptz,responsavel text,quilometragem bigint,combustivel text,condicao_geral text);
 create function public.frota_previsto(uuid,date) returns jsonb language sql as $$select '[]'::jsonb$$;
 set test.uid='${user}';`);
-await db.exec(fs.readFileSync(root+'/diarias_ocupacoes.sql','utf8'));await db.exec(fs.readFileSync(root+'/locacao_pdf_diarias.sql','utf8'));
+await db.exec(fs.readFileSync(root+'/sql/diarias_ocupacoes.sql','utf8'));await db.exec(fs.readFileSync(root+'/sql/locacao_pdf_diarias.sql','utf8'));
 await db.exec('create trigger locacao_status_controlado before insert or update on public.locacoes for each row execute function public.locacao_validar_status();');
 const day=(await db.query("select (now() at time zone 'America/Manaus')::date::text d")).rows[0].d;
 async function rental(n,paid,{car=n+100,storage=true}={}){const rental=id(n),vehicle=id(car),doc=id(n+200);await db.query("insert into carros values($1,$2,$3,'Disponível',145) on conflict do nothing",[vehicle,company,'TEST'+n]);await db.query("insert into locacoes values($1,$2,$3,$4,'Reservada',($5::date)::timestamp at time zone 'America/Manaus',null,$5,145,$6,now(),null)",[rental,company,client,vehicle,day,paid]);await db.query("insert into documentos_locacao values($1,$2,$3,'contrato_locacao',$4)",[doc,rental,company,rental+'/teste.pdf']);if(storage)await db.query("insert into storage.objects values('documentos-contratuais',$1)",[rental+'/teste.pdf']);return {rental,vehicle,doc};}

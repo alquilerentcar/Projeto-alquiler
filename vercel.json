@@ -1,6 +1,78 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
+  "redirects": [
+    {
+      "source": "/server.js",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/access-api.js",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/username-login.js",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/:file*.cjs",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/src/:path*",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/runtime/:file*.ts",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/runtime/:file*.map",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/package.json",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/package-lock.json",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/vercel.json",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/tsconfig.json",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/.gitignore",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/.gitattributes",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/.vercelignore",
+      "destination": "/",
+      "permanent": false
+    }
+  ],
   "buildCommand": "npm run build:runtime",
   "functions": {
     "api/**/*.js": {
@@ -55,6 +127,10 @@
     {
       "source": "/locacao/locacoes",
       "destination": "/locacoes"
+    },
+    {
+      "source": "/locacao/painel",
+      "destination": "/locacao-painel"
     },
     {
       "source": "/locacao/contratos",

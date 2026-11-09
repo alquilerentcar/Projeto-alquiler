@@ -7,8 +7,8 @@
   "start_url": "/login",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f5f7fb",
-  "theme_color": "#2864da",
+  "background_color": "#f4f5f7",
+  "theme_color": "#1d3fa8",
   "icons": [
     {
       "src": "/app-192.png?v=20261021",

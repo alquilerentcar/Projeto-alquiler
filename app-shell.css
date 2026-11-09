@@ -8,14 +8,14 @@
 #shell-content {
   height: 100%;
   position: relative;
-  background: var(--company-background, #f5f7fb);
+  background: var(--company-background, #f4f5f7);
 }
 .shell-frame {
   border: 0;
   width: 100%;
   height: 100%;
   display: block;
-  background: var(--company-background, #f5f7fb);
+  background: var(--company-background, #f4f5f7);
 }
 .shell-pending {
   position: absolute;

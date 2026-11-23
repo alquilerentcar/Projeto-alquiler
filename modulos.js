@@ -7,4 +7,5 @@ select.add(new Option('Selecione uma empresa',''));for(const company of c.compan
 select.value=c.company.id||'';
 select.addEventListener('change',()=>{if(select.value)sessionStorage.setItem('bgsys:empresa-id',select.value);else sessionStorage.removeItem('bgsys:empresa-id');location.replace('modulos.html?entrar=1');});
 if(params.has('entrar')&&!c.developer&&c.company.id&&c.modules.length===1&&c.modules[0]==='locacao')location.replace('dashboard.html');
+if(params.has('entrar')&&!c.developer&&c.company.id&&c.modules.length===1&&c.modules[0]==='oficina')location.replace('oficina.html?secao=manutencoes');
 document.querySelector('#module-message').textContent=!c.company.id?'Selecione uma empresa para consultar seus módulos.':!c.modules.length?'Nenhum módulo disponível: confira a licença da empresa e as permissões do usuário.':params.has('acesso')?'Você não possui permissão para essa área.':'';

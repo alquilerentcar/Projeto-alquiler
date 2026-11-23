@@ -1,4 +1,4 @@
-import {lerQuantidade,lerValor,normalizarCodigo,adicionarItem,conferirItens,itensSaida,fmtQtd,rotuloManutencao,converterEntrada,SITUACOES_SAIDA} from './oficina-core.mjs?v=20261118';
+import {lerQuantidade,lerValor,normalizarCodigo,adicionarItem,conferirItens,itensSaida,fmtQtd,rotuloManutencao,converterEntrada,SITUACOES_SAIDA} from './oficina-core.mjs?v=20261124';
 const brl=v=>(Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 import {paginaEtiquetas,FORMATOS} from './etiqueta-core.mjs?v=20261118b';
 import {imprimirSerial} from './impressora-serial.mjs?v=20261118';
@@ -62,8 +62,8 @@ export async function mountPdv({db,company,host}){
    if(modo==='entrada'){const lt=el('input');lt.className='pdv-lote';lt.placeholder=i.produto.controla_lote?'Lote (obrigatório)':'Lote';lt.value=i.lote||'';lt.setAttribute('aria-label','Lote de '+i.produto.descricao);lt.oninput=()=>{i.lote=lt.value;};row.append(lt);
     const mc=el('input');mc.className='pdv-lote';mc.placeholder='Marca';if(i.marca==null)i.marca=i.produto.marca||'';mc.value=i.marca;mc.setAttribute('aria-label','Marca de '+i.produto.descricao);mc.oninput=()=>{i.marca=mc.value;};row.append(mc);
     if(i.produto.ultimo_custo!=null)row.append(el('small',`Última compra: ${brl(i.produto.ultimo_custo)} por ${i.produto.unidade}${i.produto.ultimo_fornecedor?' · '+i.produto.ultimo_fornecedor:''}`,'pdv-calc'));}
-   if(modo==='retirada'&&destino==='manutencao'){const nat=btn(i.natureza==='preventiva'?'PREVENTIVA':i.natureza==='corretiva'?'CORRETIVA':(carro?.tipo==='preventiva'?'PREVENTIVA':'CORRETIVA'),'pdv-nat');nat.setAttribute('aria-label','Corretiva ou preventiva · '+i.produto.descricao);
-    nat.onclick=()=>{const atual=i.natureza||carro?.tipo||'corretiva';i.natureza=atual==='corretiva'?'preventiva':'corretiva';desenharLista();};row.append(nat);
+   if(modo==='retirada'&&destino==='manutencao'){const NOME={corretiva:'CORRETIVA',preventiva:'PREVENTIVA',avaria:'BATIDA / AVARIA'},nat=btn(NOME[i.natureza||carro?.tipo]||'CORRETIVA','pdv-nat');nat.setAttribute('aria-label','Corretiva, preventiva ou avaria · '+i.produto.descricao);
+    nat.onclick=()=>{const atual=i.natureza||carro?.tipo||'corretiva';i.natureza={corretiva:'preventiva',preventiva:'avaria',avaria:'corretiva'}[atual]||'corretiva';desenharLista();};row.append(nat);
     }
    if(modo==='retirada'&&i.quantidade>Number(i.produto.saldo))row.classList.add('pdv-falta');
    const x=btn('✕','pdv-tirar');x.setAttribute('aria-label','Tirar '+i.produto.descricao);x.onclick=()=>{itens.splice(itens.indexOf(i),1);desenharLista();};row.append(x);
@@ -84,7 +84,7 @@ export async function mountPdv({db,company,host}){
    dir.append(el('h2','Para qual carro?'));
    if(carro){const c=el('div',null,'pdv-carro sel');c.append(el('strong',carro.placa),el('span',rotuloManutencao(carro)),el('small',(carro.responsavel_nome?'Locatário: '+carro.responsavel_nome:'Sem locatário')+' · '+carro.motivo));const tr=btn('Trocar carro','pdv-btn pdv-leve');tr.onclick=()=>{carro=null;desenharDireita();desenharLista();};dir.append(c,tr);}
    else{const ls=abertas(),rap=btn('+ Atendimento rápido (outro carro)','pdv-btn');rap.onclick=()=>atendimento('');dir.append(rap);if(!ls.length)dir.append(el('p','Nenhum carro na oficina agora. Digite a placa no leitor ou use o atendimento rápido.','pdv-vazio'));
-    for(const m of ls){const c=btn('','pdv-carro');c.append(el('strong',m.placa),el('span',(m.veiculo||'')+' · '+(m.tipo==='preventiva'?'Preventiva':'Corretiva')),el('small',m.motivo));c.onclick=()=>escolherCarro(m);dir.append(c);}}
+    for(const m of ls){const c=btn('','pdv-carro');c.append(el('strong',m.placa),el('span',(m.veiculo||'')+' · '+(m.tipo==='preventiva'?'Preventiva':m.tipo==='avaria'?'Batida / avaria':'Corretiva')),el('small',m.motivo));c.onclick=()=>escolherCarro(m);dir.append(c);}}
    dir.append(motivo);
   }else{
    dir.append(el('h2','Entrada de peças'),nf,forn);const sem=btn('Peça sem código de barras','pdv-btn');sem.onclick=()=>cadastro('');dir.append(sem);
@@ -138,7 +138,7 @@ export async function mountPdv({db,company,host}){
   placa.value=placaInicial||'';placa.placeholder='Ex.: QZZ5H15';motivoOs.placeholder='O que vai ser feito? Ex.: troca de lâmpada do farol, troca de óleo';motivoOs.rows=2;km.inputMode='numeric';km.placeholder='KM atual (opcional)';
   const fora=el('div',null,'pdv-linha2');fora.append(campo('Cliente (carro de fora)',cliente),campo('Modelo e ano',modelo));fora.hidden=true;
   let tipo='corretiva';const tipos=el('div',null,'pdv-destinos');
-  const desenharTipos=()=>{tipos.replaceChildren();for(const [k,l] of [['corretiva','CORRETIVA · consertar defeito'],['preventiva','PREVENTIVA · revisão, troca programada']]){const b=btn(l,'pdv-btn pdv-leve');if(k===tipo)b.classList.add('ativo');b.onclick=()=>{tipo=k;desenharTipos();};tipos.append(b);}};desenharTipos();
+  const desenharTipos=()=>{tipos.replaceChildren();for(const [k,l] of [['corretiva','CORRETIVA · consertar defeito'],['preventiva','PREVENTIVA · revisão, troca programada'],['avaria','BATIDA / AVARIA · 100% do locatário']]){const b=btn(l,'pdv-btn pdv-leve');if(k===tipo)b.classList.add('ativo');b.onclick=()=>{tipo=k;desenharTipos();};tipos.append(b);}};desenharTipos();
   const ok=el('button','Abrir ordem de serviço  Enter','pdv-finalizar');ok.type='submit';const cancel=btn('Cancelar  Esc','pdv-btn pdv-leve');cancel.onclick=fechar;
   box.append(el('h2','Atendimento rápido'),el('p','Abre a ordem de serviço sem tirar o carro da locação. Depois é só ler as peças.'),campo('Placa do carro',placa),info,fora,tipos,campo('O que vai ser feito',motivoOs),campo('KM',km),ok,cancel);overlay.append(box);
   if(veiculos==null){info.textContent='Procurando os carros…';try{veiculos=await rpc('oficina_veiculos',{p_empresa:company.id});}catch(err){veiculos=[];info.textContent=err.message;}}

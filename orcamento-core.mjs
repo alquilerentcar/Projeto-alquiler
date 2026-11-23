@@ -3,7 +3,7 @@ export const brl=v=>(Number(v)||0).toLocaleString('pt-BR',{style:'currency',curr
 export const qtd=v=>(Number(v)||0).toLocaleString('pt-BR',{maximumFractionDigits:3});
 const data=v=>v?String(v).slice(0,10).split('-').reverse().join('/'):'';
 const cnpj=v=>{const d=String(v||'').replace(/\D/g,'');return d.length===14?d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5'):d;};
-export const NATUREZA={corretiva:'Corretiva',preventiva:'Preventiva'};
+export const NATUREZA={corretiva:'Corretiva',preventiva:'Preventiva',avaria:'Batida / avaria'};
 export const CATEGORIAS={mecanica:'Mecânica',eletrica:'Elétrica',ar_condicionado:'Ar-condicionado',suspensao:'Suspensão',motor:'Motor',lavagem:'Lavagem',higienizacao:'Higienização',lanternagem:'Lanternagem',pintura:'Pintura',polimento:'Polimento'};
 // O PDF usa fontes padrão: troca caracteres que elas não desenham.
 export const seguro=t=>String(t??'').replace(/[–—]/g,'-').replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[^\x20-\x7e\xa0-\xff]/g,'');
@@ -22,7 +22,7 @@ export function montarOrcamento(o){
   quantidade:qtd(l.quantidade)+' '+(l.tipo==='peca'?l.unidade:'').trim(),
   unitario:brl(l.valor_unitario),total:brl(l.total),natureza:NATUREZA[l.natureza]||l.natureza,
   locatario:r?Number(l.pct_locatario).toLocaleString('pt-BR')+'% · '+brl(l.valor_locatario):'—'}));
- const t=o.totais,regra=`Corretiva: ${o.rateio.corretiva}% locatário e ${100-o.rateio.corretiva}% empresa. Preventiva: ${o.rateio.preventiva?o.rateio.preventiva+'% locatário e '+(100-o.rateio.preventiva)+'% empresa':'100% empresa'}.`;
+ const t=o.totais,regra=`Corretiva: ${o.rateio.corretiva}% locatário e ${100-o.rateio.corretiva}% empresa. Preventiva: ${o.rateio.preventiva?o.rateio.preventiva+'% locatário e '+(100-o.rateio.preventiva)+'% empresa':'100% empresa'}. Batida / avaria: 100% locatário.`;
  const totais=[['Peças',brl(t.pecas)],['Serviços',brl(t.servicos)],['Total da manutenção',brl(t.geral)]];
  if(r)totais.push(['Parte do locatário',brl(t.locatario)],['Parte da empresa',brl(t.empresa)]);
  else if(m.cliente_externo)totais.push(['Total a pagar pelo cliente',brl(t.geral)]);

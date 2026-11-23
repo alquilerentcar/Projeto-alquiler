@@ -37,7 +37,7 @@ export function itensEntrada(itens){return itens.map(i=>({produto_id:i.produto.i
 export function itensSaida(itens,naturezaPadrao){return itens.map(i=>({produto_id:i.produto.id,quantidade:i.quantidade,natureza:i.natureza||naturezaPadrao}));}
 
 export const STATUS={aberta:'Aberta',aguardando_pecas:'Aguardando peças',concluida:'Concluída',cancelada:'Cancelada'};
-export const rotuloManutencao=m=>`#${m.numero} · ${m.placa}${m.veiculo?' · '+m.veiculo:''} · ${m.tipo==='preventiva'?'Preventiva':'Corretiva'}`;
+export const rotuloManutencao=m=>`#${m.numero} · ${m.placa}${m.veiculo?' · '+m.veiculo:''} · ${m.tipo==='preventiva'?'Preventiva':m.tipo==='avaria'?'Batida / avaria':'Corretiva'}`;
 
 // Entrada por embalagem: 2 caixas de 20 por R$ 12,00 a caixa → 40 unidades a R$ 0,60 cada.
 export function converterEntrada({quantidade,porEmbalagem=false,fator=1,custo=null}){

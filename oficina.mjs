@@ -1,7 +1,7 @@
-import {lerQuantidade,lerValor,normalizarCodigo,adicionarItem,situacaoEstoque,conferirItens,itensEntrada,itensSaida,fmtQtd,STATUS,rotuloManutencao,SITUACOES_SAIDA} from './oficina-core.mjs?v=20261118';
+import {lerQuantidade,lerValor,normalizarCodigo,adicionarItem,situacaoEstoque,conferirItens,itensEntrada,itensSaida,fmtQtd,STATUS,rotuloManutencao,SITUACOES_SAIDA} from './oficina-core.mjs?v=20261124';
 import {lerNFe,casarItens} from './nfe-core.mjs?v=20261123b';
-import {ITENS_VISTORIA,COMBUSTIVEL,paginaOrdemServico} from './ordem-servico.mjs?v=20261123';
-import {montarOrcamento,resumoSaidas,CATEGORIAS,NATUREZA} from './orcamento-core.mjs?v=20261117';
+import {ITENS_VISTORIA,COMBUSTIVEL,paginaOrdemServico} from './ordem-servico.mjs?v=20261124';
+import {montarOrcamento,resumoSaidas,CATEGORIAS,NATUREZA} from './orcamento-core.mjs?v=20261124';
 import {paginaEtiquetas,ean13Valido,FORMATOS} from './etiqueta-core.mjs?v=20261118b';
 import {serialSuportado,portaAutorizada,conectarImpressora,imprimirSerial} from './impressora-serial.mjs?v=20261118';
 const FORMATO_USB='usb';
@@ -28,7 +28,7 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
  const status=el('p',null,'flow-note');status.setAttribute('aria-live','polite');const body=el('div');wrap.append(tabs,status,body);
  const rpc=async(name,args)=>{const r=await db.rpc(name,args);if(r.error)throw Error(missing(r.error)?SETUP:r.error.message);return r.data;};
  let painel={produtos:[],servicos:[],manutencoes:[],frota_em_manutencao:[],rateio:{corretiva:50,preventiva:0,margem_corretiva:40},analista:false};
- const regraTexto=()=>{const r=painel.rateio,mg=Number(r.margem_corretiva??0);return `Corretiva: ${mg?'peça pelo custo da nota +'+String(mg).replace('.',',')+'%, ':''}${r.corretiva}% locatário e ${100-r.corretiva}% empresa. Preventiva: ${Number(r.preventiva)?r.preventiva+'% locatário e '+(100-r.preventiva)+'% empresa':'100% empresa'}.`;};
+ const regraTexto=()=>{const r=painel.rateio,mg=Number(r.margem_corretiva??0);return `Corretiva: ${mg?'peça pelo custo da nota +'+String(mg).replace('.',',')+'%, ':''}${r.corretiva}% locatário e ${100-r.corretiva}% empresa. Preventiva: ${Number(r.preventiva)?r.preventiva+'% locatário e '+(100-r.preventiva)+'% empresa':'100% empresa'}. Batida / avaria: 100% locatário.`;};
  async function carregar(){painel=await rpc('oficina_painel',{p_empresa:company.id});try{painel.vistorias=await rpc('oficina_vistorias_resumo',{p_empresa:company.id});}catch{painel.vistorias=null;}}
  try{await carregar();}catch(e){status.textContent=e.message;return;}
  const abertas=()=>painel.manutencoes.filter(m=>['aberta','aguardando_pecas'].includes(m.status));
@@ -91,7 +91,7 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
    for(const i of itens){const r=el('tr'),q=input();q.inputMode='decimal';q.value=fmtQtd(i.quantidade);q.setAttribute('aria-label','Quantidade de '+i.produto.descricao);q.oninput=()=>{i.quantidade=lerQuantidade(q.value);};
     const estoque=el('td',fmtQtd(i.produto.saldo)+' '+i.produto.unidade);if(saida&&Number(i.produto.saldo)<=0)estoque.className='ofi-alerta';
     r.append(el('td',i.produto.descricao+(i.produto.marca?' · '+i.produto.marca:'')),el('td',i.produto.codigo_barras||i.produto.codigo_interno||'—'),estoque);const tq=el('td');tq.append(q);r.append(tq);
-    const extra=el('td');if(saida){const s=el('select');for(const [v,l] of [['','Igual à manutenção'],['corretiva','Corretiva'],['preventiva','Preventiva']]){const o=el('option',l);o.value=v;s.append(o);}s.value=i.natureza||'';s.setAttribute('aria-label','Corretiva ou preventiva · '+i.produto.descricao);s.onchange=()=>{i.natureza=s.value||null;};extra.append(s);}
+    const extra=el('td');if(saida){const s=el('select');for(const [v,l] of [['','Igual à manutenção'],['corretiva','Corretiva'],['preventiva','Preventiva'],['avaria','Batida / avaria (100% locatário)']]){const o=el('option',l);o.value=v;s.append(o);}s.value=i.natureza||'';s.setAttribute('aria-label','Corretiva ou preventiva · '+i.produto.descricao);s.onchange=()=>{i.natureza=s.value||null;};extra.append(s);}
     else{const c=input();c.inputMode='decimal';c.placeholder=Number(i.produto.custo_medio)>0?String(i.produto.custo_medio).replace('.',','):'';c.value=i.custo==null?'':String(i.custo).replace('.',',');c.setAttribute('aria-label','Custo de '+i.produto.descricao);c.oninput=()=>{i.custo=lerValor(c.value);};extra.append(c);}
     const rem=btn('Tirar');rem.onclick=()=>{itens.splice(itens.indexOf(i),1);desenhar();};const tr2=el('td');tr2.append(rem);r.append(extra);
     if(!saida){const mc=input(),tm=el('td');if(i.marca==null)i.marca=i.produto.marca||'';mc.value=i.marca;mc.placeholder='Ex.: Bosch';mc.setAttribute('aria-label','Marca de '+i.produto.descricao);mc.oninput=()=>{i.marca=mc.value;};tm.append(mc);r.append(tm);}
@@ -121,7 +121,7 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
   const t=el('table'),th=el('thead'),hr=el('tr'),tb=el('tbody');for(const h of ['Nº','Veículo','Locatário','Tipo','Motivo','Entrada','Situação','Orçamento','Total',''])hr.append(el('th',h));th.append(hr);t.append(th,tb);const w=el('div',null,'table-scroll');w.append(t);lista.append(w);
   if(!painel.manutencoes.length){const r=el('tr'),d=el('td','Nenhuma manutenção registrada.');d.colSpan=10;r.append(d);tb.append(r);}
   for(const m of painel.manutencoes){const r=el('tr'),acoes=el('td',null,'table-actions'),vs=painel.vistorias?.[m.id]||{},emAberto=['aberta','aguardando_pecas'].includes(m.status);
-   r.append(el('td','#'+m.numero),el('td',m.placa+(m.veiculo?' · '+m.veiculo:'')),el('td',m.responsavel_nome||(m.cliente_externo?m.cliente_externo+' (cliente)':'Empresa')),el('td',m.tipo==='preventiva'?'Preventiva':'Corretiva'),el('td',m.motivo),el('td',quando(m.entrada_em)),el('td',(STATUS[m.status]||m.status)+(m.fotos_pendentes?` · ${m.fotos_pendentes} foto(s) pendente(s)`:'')+(painel.vistorias&&emAberto?(!vs.entrada?' · falta relatório de entrada':!vs.saida?' · falta relatório de saída':''):'')),(()=>{const td=el('td');td.append(badge(m.orcamento_status||'em_elaboracao'));if(m.cobrada_em)td.append(el('small',' · cobrado'));return td;})(),el('td',brl(Number(m.custo_pecas)+Number(m.valor_servicos||0))));
+   r.append(el('td','#'+m.numero),el('td',m.placa+(m.veiculo?' · '+m.veiculo:'')),el('td',m.responsavel_nome||(m.cliente_externo?m.cliente_externo+' (cliente)':'Empresa')),el('td',NATUREZA[m.tipo]||'Corretiva'),el('td',m.motivo),el('td',quando(m.entrada_em)),el('td',(STATUS[m.status]||m.status)+(m.fotos_pendentes?` · ${m.fotos_pendentes} foto(s) pendente(s)`:'')+(painel.vistorias&&emAberto?(!vs.entrada?' · falta relatório de entrada':!vs.saida?' · falta relatório de saída':''):'')),(()=>{const td=el('td');td.append(badge(m.orcamento_status||'em_elaboracao'));if(m.cobrada_em)td.append(el('small',' · cobrado'));return td;})(),el('td',brl(Number(m.custo_pecas)+Number(m.valor_servicos||0))));
    const ver=btn('Orçamento');ver.onclick=()=>orcamento(m);acoes.append(ver);
    if(painel.vistorias){
     if(emAberto){const be=btn(vs.entrada?'Entrada ✓':'Relatório de entrada',vs.entrada?'btn btn-quiet':'btn btn-primary');be.onclick=()=>vistoria(m,'entrada');acoes.append(be);
@@ -141,7 +141,7 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
   const g=el('div',null,'form-grid'),placa=campo(g,'Placa do veículo',input()),lista=el('datalist');lista.id='oficina-placas';placa.setAttribute('list',lista.id);placa.required=true;
   for(const v of veiculos){const o=el('option');o.value=v.placa;o.label=v.veiculo+' · '+v.empresa;lista.append(o);}
   const info=el('p',null,'section-note'),forabox=el('div',null,'form-grid'),cliente=campo(forabox,'Cliente (veículo de fora)',input()),modelo=campo(forabox,'Veículo (modelo e ano)',input());forabox.hidden=true;
-  const tipo=el('select');for(const [v,l] of [['corretiva','Corretiva (consertar defeito)'],['preventiva','Preventiva (revisão, troca programada)']]){const o=el('option',l);o.value=v;tipo.append(o);}campo(g,'Tipo de manutenção',tipo);
+  const tipo=el('select');for(const [v,l] of [['corretiva','Corretiva (consertar defeito)'],['preventiva','Preventiva (revisão, troca programada)'],['avaria','Batida / avaria (100% do locatário)']]){const o=el('option',l);o.value=v;tipo.append(o);}campo(g,'Tipo de manutenção',tipo);
   const km=campo(g,'KM na entrada',input());km.inputMode='numeric';const motivo=el('textarea');motivo.required=true;motivo.placeholder='Por que o carro está em manutenção? Ex.: barulho na suspensão, revisão de 20.000 km';const lm=el('label');lm.append(el('span','Motivo'),motivo);
   const erro=el('p',null,'ofi-erro');box.append(g,lista,info,forabox,lm,erro);
   let escolhido=null;const achar=()=>{const p=placa.value.toUpperCase().replace(/[^A-Z0-9]/g,'');escolhido=veiculos.find(v=>v.placa.replace(/[^A-Z0-9]/g,'')===p)||null;forabox.hidden=Boolean(escolhido)||!p;
@@ -315,9 +315,9 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
   dialog.replaceChildren();const head=el('div',null,'dialog-header'),box=el('div',null,'dialog-body'),fechar=btn('Fechar');fechar.onclick=()=>dialog.close();head.append(el('h2',p.descricao),fechar);dialog.append(head,box);box.append(el('p','Carregando…'));dialog.showModal();
   try{const movs=await rpc('oficina_movimentos_lista',{p_empresa:company.id,p_manutencao:null,p_produto:p.id});box.replaceChildren();
    const res=resumoSaidas(movs);box.append(el('p',`Em estoque: ${fmtQtd(p.saldo)} ${p.unidade} · Saíram ${fmtQtd(res.total)} para ${res.carros.length} carro(s).`));
-   if(res.carros.length){const ul=el('ul');for(const c of res.carros){const li=el('li');li.append(el('strong',c.placa),document.createTextNode(` · ${fmtQtd(c.quantidade)} ${p.unidade} · `+c.usos.map(u=>`manutenção #${u.manutencao} em ${quando(u.criado_em)} (${u.natureza==='preventiva'?'preventiva':'corretiva'}${u.responsavel?', '+u.responsavel:''})`).join('; ')));ul.append(li);}box.append(ul);}
+   if(res.carros.length){const ul=el('ul');for(const c of res.carros){const li=el('li');li.append(el('strong',c.placa),document.createTextNode(` · ${fmtQtd(c.quantidade)} ${p.unidade} · `+c.usos.map(u=>`manutenção #${u.manutencao} em ${quando(u.criado_em)} (${(NATUREZA[u.natureza]||'Corretiva').toLowerCase()}${u.responsavel?', '+u.responsavel:''})`).join('; ')));ul.append(li);}box.append(ul);}
    const t=el('table'),tb=el('tbody'),h=el('tr');for(const x of ['Quando','Movimento','Quantidade','Estoque depois','Carro / documento'])h.append(el('th',x));const th=el('thead');th.append(h);t.append(th,tb);
-   for(const x of movs){const r=el('tr'),tipo=x.tipo==='entrada'?'Entrada':x.tipo==='saida'?'Saída · '+(x.natureza==='preventiva'?'preventiva':'corretiva'):'Ajuste';
+   for(const x of movs){const r=el('tr'),tipo=x.tipo==='entrada'?'Entrada':x.tipo==='saida'?'Saída · '+(NATUREZA[x.natureza]||'Corretiva').toLowerCase():'Ajuste';
     r.append(el('td',quando(x.criado_em)),el('td',tipo),el('td',(x.quantidade>0?'+':'')+fmtQtd(x.quantidade)),el('td',fmtQtd(x.saldo_depois)),el('td',x.tipo==='saida'?x.placa+' · manutenção #'+x.manutencao+(x.observacao?' · '+x.observacao:''):[x.documento,x.fornecedor,x.observacao].filter(Boolean).join(' · ')||'—'));tb.append(r);}
    if(!movs.length){const r=el('tr'),d=el('td','Sem movimentos.');d.colSpan=5;r.append(d);tb.append(r);}const w=el('div',null,'table-scroll');w.append(t);box.append(w);}catch(e){box.textContent=e.message;}
  }
@@ -335,7 +335,7 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
   const w=el('div',null,'table-scroll');w.append(t);sec.append(w);body.append(sec);
   const regra=el('section',null,'panel'),rf=el('div',null,'ofi-linha'),cor=campo(rf,'Corretiva: % do locatário',input()),pre=campo(rf,'Preventiva: % do locatário',input()),mgI=campo(rf,'Corretiva: % sobre o custo da peça',input()),gr=btn('Salvar rateio','btn btn-primary'),re=el('p',null,'ofi-erro');
   cor.value=painel.rateio.corretiva;pre.value=painel.rateio.preventiva;mgI.value=String(painel.rateio.margem_corretiva??0).replace('.',',');cor.inputMode=pre.inputMode=mgI.inputMode='decimal';
-  regra.append(el('h2','Rateio entre locatário e empresa'),el('p','Hoje: '+regraTexto(),'section-note'),el('p','Na corretiva, cada peça entra no orçamento pelo custo da nota fiscal mais a porcentagem acima, e esse valor é dividido entre locatário e empresa. Preventiva e serviços não levam essa porcentagem.','section-note'));
+  regra.append(el('h2','Rateio entre locatário e empresa'),el('p','Hoje: '+regraTexto(),'section-note'),el('p','Na corretiva, cada peça entra no orçamento pelo custo da nota fiscal mais a porcentagem acima, e esse valor é dividido entre locatário e empresa. Na batida / avaria a peça leva a mesma porcentagem e o locatário paga 100%. Preventiva e serviços não levam essa porcentagem.','section-note'));
   if(admin){rf.append(gr);regra.append(rf,re);gr.onclick=async()=>{re.textContent='';try{await rpc('oficina_rateio_salvar',{p_empresa:company.id,p_corretiva:lerQuantidade(cor.value),p_preventiva:lerQuantidade(pre.value)});const mg=lerQuantidade(mgI.value);if(mg!==Number(painel.rateio.margem_corretiva??0))await rpc('oficina_margem_salvar',{p_empresa:company.id,p_margem:mg});await recarregar('Rateio atualizado.');}catch(e){re.textContent=e.message;}};}
   body.append(regra);
   // Impressora de etiquetas: etiqueta de teste para ajustar a impressora de cupom.
@@ -433,7 +433,7 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
   const info=el('p',null,'section-note'),w=el('div',null,'table-scroll'),erro=el('p',null,'ofi-erro');sec.append(el('h2','Movimentos do estoque'),el('p','Todas as entradas e saídas ficam registradas e não podem ser apagadas. Correção é feita com um novo lançamento ou ajuste.','section-note'),f,erro,info,w);body.append(sec);
   let rows=[];const visiveis=()=>{const q=busca.value.toLocaleLowerCase('pt-BR').trim();return rows.filter(r=>(!tipo.value||(tipo.value.startsWith('d:')?r.tipo==='saida'&&r.destino===tipo.value.slice(2):r.tipo===tipo.value))&&(!q||[r.produto,r.placa,r.lote,r.operador,r.usuario,r.destino_descricao,r.documento,r.fornecedor,r.codigo].join(' ').toLocaleLowerCase('pt-BR').includes(q)));};
   const texto=r=>({quando:quando(r.criado_em),movimento:r.tipo==='entrada'?'Entrada':r.tipo==='ajuste'?'Ajuste':'Saída · '+(DESTINO[r.destino]||'—'),item:r.produto,categoria:CAT_ITEM[r.categoria]||r.categoria,quantidade:(r.quantidade>0?'+':'')+fmtQtd(r.quantidade)+' '+r.unidade,lote:r.lote||'',
-   custo:brl(r.valor),para:r.tipo==='saida'?(r.placa?r.placa+' · manutenção #'+r.manutencao+(r.natureza?' · '+(r.natureza==='preventiva'?'preventiva':'corretiva'):''):r.destino_descricao||''):[r.documento,r.fornecedor].filter(Boolean).join(' · '),
+   custo:brl(r.valor),para:r.tipo==='saida'?(r.placa?r.placa+' · manutenção #'+r.manutencao+(r.natureza?' · '+(NATUREZA[r.natureza]||'Corretiva').toLowerCase():''):r.destino_descricao||''):[r.documento,r.fornecedor].filter(Boolean).join(' · '),
    quem:r.operador||r.usuario||'',estoque:fmtQtd(r.saldo_depois)});
   const COLS=[['quando','Quando'],['movimento','Movimento'],['item','Item'],['categoria','Categoria'],['quantidade','Quantidade'],['lote','Lote'],['custo','Custo'],['para','Para onde / documento'],['quem','Quem fez'],['estoque','Estoque depois']];
   const desenharMov=()=>{const v=visiveis(),t=el('table'),th=el('thead'),hr=el('tr'),tb=el('tbody');for(const [,l] of COLS)hr.append(el('th',l));th.append(hr);t.append(th,tb);
@@ -527,7 +527,7 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
    const f=el('div',null,'ofi-linha'),sv=el('select'),desc=campo(f,'Descrição do serviço',input()),cat=el('select'),nat=el('select'),q=campo(f,'Qtd',input()),val=campo(f,'Valor (R$)',input()),fora=input('checkbox'),forn=campo(f,'Quem fez (serviço de fora)',input()),add=btn('Lançar serviço','btn btn-primary');
    const o0=el('option','Serviço avulso');o0.value='';sv.append(o0);for(const s of painel.servicos){const op=el('option',s.descricao+' · '+brl(s.valor_padrao));op.value=s.id;sv.append(op);}f.prepend((()=>{const l=el('label');l.append(el('span','Catálogo'),sv);return l;})());
    for(const [k,l] of Object.entries(CATEGORIAS)){const op=el('option',l);op.value=k;cat.append(op);}campo(f,'Categoria',cat);
-   for(const [k,l] of [['',`Igual à manutenção (${NATUREZA[mm.tipo]})`],['corretiva','Corretiva'],['preventiva','Preventiva']]){const op=el('option',l);op.value=k;nat.append(op);}campo(f,'Corretiva / preventiva',nat);
+   for(const [k,l] of [['',`Igual à manutenção (${NATUREZA[mm.tipo]})`],['corretiva','Corretiva'],['preventiva','Preventiva'],['avaria','Batida / avaria (100% locatário)']]){const op=el('option',l);op.value=k;nat.append(op);}campo(f,'Corretiva / preventiva',nat);
    const lf=el('label');lf.style.flexDirection='row';lf.style.alignItems='center';lf.append(fora,document.createTextNode(' Serviço de fora'));f.append(lf);q.value='1';q.inputMode=val.inputMode='decimal';forn.parentElement.hidden=true;fora.onchange=()=>{forn.parentElement.hidden=!fora.checked;};
    sv.onchange=()=>{const s=painel.servicos.find(x=>x.id===sv.value);if(s){desc.value=s.descricao;cat.value=s.categoria;val.value=String(s.valor_padrao).replace('.',',');}};
    f.append(add);const op=()=>crypto.randomUUID();let operacao=op();
@@ -545,7 +545,7 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
    if(!pend.length&&!lista.length)fotos.append(el('p','Nenhuma peça retirada.','section-note'));}).catch(e=>fotos.append(el('p',e.message,'ofi-erro')));
   box.append(erro);
   const acoes=el('div',null,'dialog-footer'),pdf=btn('Gerar orçamento (papel timbrado)','btn btn-primary');
-  pdf.onclick=async()=>{erro.textContent='';pdf.disabled=true;try{const {gerarOrcamentoPdf}=await import('./orcamento-pdf.mjs?v=20261117');const bytes=await gerarOrcamentoPdf({db,company,orcamento:o});
+  pdf.onclick=async()=>{erro.textContent='';pdf.disabled=true;try{const {gerarOrcamentoPdf}=await import('./orcamento-pdf.mjs?v=20261124');const bytes=await gerarOrcamentoPdf({db,company,orcamento:o});
    const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})),a=el('a');a.href=url;a.download=`orcamento-${String(mm.numero).padStart(5,'0')}-${mm.placa}.pdf`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
    catch(e){erro.textContent='Não foi possível gerar o PDF: '+e.message;}finally{pdf.disabled=false;}};
   acoes.append(pdf);

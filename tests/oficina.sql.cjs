@@ -346,6 +346,23 @@ assert.ok(Number(om.totais.custo_pecas)>=Math.round(3*custo*100)/100);assert.equ
 await assert.rejects(()=>db.query('select oficina_margem_salvar($1,$2)',[tempo,600]),/entre 0 e 500/);
 await db.query('select oficina_margem_salvar($1,$2)',[tempo,0]);
 assert.equal(Number((await one('select oficina_orcamento($1,$2) p',[tempo,mMg.id])).p.linhas.find(l=>l.motivo==='Troca da correia').valor_unitario),custo,'margem zerada: preço de custo');
+await db.query('select oficina_margem_salvar($1,$2)',[tempo,40]);
+
+// Batida / avaria: 100% do locatário, peça com a mesma margem, serviço sem margem.
+await assert.rejects(()=>db.query("select oficina_saida($1,$2,$3,$4::jsonb,'x')",[tempo,id(984),mMg.id,JSON.stringify([{produto_id:filtro.id,quantidade:1,natureza:'batida'}])]));
+await db.exec(fs.readFileSync(root+'/sql/oficina_avaria.sql','utf8'));
+await db.exec(fs.readFileSync(root+'/sql/oficina_avaria.sql','utf8')); // rodar de novo não quebra
+assert.equal(Number((await one('select oficina_rateio($1) r',[tempo])).r.avaria),100);
+await db.query("select oficina_saida($1,$2,$3,$4::jsonb,'Para-choque da batida')",[tempo,id(985),mMg.id,JSON.stringify([{produto_id:filtro.id,quantidade:1,natureza:'avaria'}])]);
+await db.query("select oficina_servico_lancar($1,$2,$3,$4)",[tempo,id(986),mMg.id,JSON.stringify({descricao:'Funilaria da batida',quantidade:1,valor_unitario:300,natureza:'avaria'})]);
+const oa=(await one('select oficina_orcamento($1,$2) p',[tempo,mMg.id])).p;
+const la=oa.linhas.find(l=>l.motivo==='Para-choque da batida'),sa=oa.linhas.find(l=>l.descricao==='Funilaria da batida');
+assert.equal(Number(la.valor_unitario),Math.round(Number(la.custo_unitario)*1.4*100)/100,'avaria com margem');
+assert.equal(Number(la.valor_locatario),Number(la.total));assert.equal(Number(la.valor_empresa),0);
+assert.equal(Number(sa.valor_locatario),300);assert.equal(Number(sa.valor_empresa),0);
+assert.equal(Number(oa.linhas.find(l=>l.motivo==='Troca da correia').valor_locatario),Number(lc.valor_locatario),'corretiva não muda');
+const mAv=(await one("select oficina_manutencao_abrir($1,$2,$3::jsonb) r",[tempo,id(987),JSON.stringify({carro_id:id(41),tipo:'avaria',motivo:'Bateu a traseira'})]).catch(e=>({erro:e.message})));
+if(mAv.erro)assert.doesNotMatch(mAv.erro,/corretiva|preventiva|tipo/i,'abrir manutenção de avaria');
 
 // Sem login, nada.
 await db.exec("set test.uid='';");await assert.rejects(()=>db.query('select oficina_painel($1)',[tempo]),/Sem acesso/);

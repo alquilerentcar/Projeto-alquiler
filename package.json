@@ -11,6 +11,7 @@
     "test:payments": "node tests/payments.sql.cjs && node tests/payments.browser.cjs",
     "test:ajustes": "node --test tests/ajustes-20261030.test.mjs && node tests/ajustes-20261030.browser.cjs",
     "test:locacao": "node --test tests/locacao-fluxo.test.mjs tests/locacao-rapida.test.mjs && node tests/locacao-painel.browser.cjs && node tests/encerramento-rapido.sql.cjs",
+    "test:contas-receber": "node --test tests/contas-receber.test.mjs && node tests/contas-receber.browser.cjs && node tests/caucao-contas-receber.sql.cjs",
     "test:pdf-diarias": "node --test tests/pdf-diarias.test.mjs && node tests/pdf-diarias.sql.cjs"
   },
   "devDependencies": {

@@ -1,0 +1,47 @@
+/* Balcão do estoque: tela única, letras grandes, pensada para leitor de código de barras e teclado. */
+body.pdv-pagina{margin:0;background:#16191f;color:#f4f5f7;font-family:Inter,Arial,sans-serif;min-height:100vh}
+#pdv-host{min-height:100vh}
+.pdv{display:flex;flex-direction:column;min-height:100vh}
+.pdv-topo{display:flex;align-items:center;gap:16px;padding:12px 20px;background:#0f1115;border-bottom:1px solid #2a2f39}
+.pdv-modos{display:flex;gap:10px;flex:1}
+.pdv-modo{font-size:1.25rem;font-weight:800;padding:14px 28px;border-radius:12px;border:2px solid #3b4252;background:#22262e;color:#c9ced8;cursor:pointer}
+.pdv-modo.ativo{background:#1d3fa8;border-color:#3b63e0;color:#fff}
+.pdv[data-modo=entrada] .pdv-modo.ativo{background:#067647;border-color:#12b76a}
+.pdv-relogio{font-size:1.1rem;color:#9aa1ad}
+.pdv-corpo{flex:1;display:grid;grid-template-columns:1fr 380px;gap:16px;padding:16px 20px}
+.pdv-esq,.pdv-dir{background:#1e2229;border:1px solid #2a2f39;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.pdv-scan{font-size:1.9rem;padding:18px 20px;border-radius:12px;border:3px solid #3b63e0;background:#0f1115;color:#fff;width:100%;box-sizing:border-box}
+.pdv[data-modo=entrada] .pdv-scan{border-color:#12b76a}
+.pdv-aviso{font-size:1.15rem;min-height:1.6em;margin:0;padding:8px 12px;border-radius:8px}
+.pdv-aviso.ok{background:#073b25;color:#a6f4c5}.pdv-aviso.erro{background:#55160c;color:#fecdca}
+.pdv-lista{display:flex;flex-direction:column;gap:8px;overflow:auto}
+.pdv-vazio{color:#9aa1ad;font-size:1.2rem;text-align:center;padding:40px 10px}
+.pdv-item{display:flex;align-items:center;gap:12px;background:#272c35;border-radius:10px;padding:10px 12px}
+.pdv-item.pdv-falta{outline:2px solid #f04438}
+.pdv-info{flex:1;display:flex;flex-direction:column;min-width:0}.pdv-info strong{font-size:1.2rem}.pdv-info small{color:#9aa1ad}
+.pdv-qtdbox{display:flex;align-items:center;gap:6px}.pdv-qtdbox input{width:80px;font-size:1.3rem;text-align:center;padding:8px;border-radius:8px;border:1px solid #3b4252;background:#0f1115;color:#fff}
+.pdv-qtd{width:44px;height:44px;font-size:1.5rem;border-radius:8px;border:1px solid #3b4252;background:#22262e;color:#fff;cursor:pointer}
+.pdv-nat{padding:10px 12px;border-radius:8px;border:1px solid #f79009;background:#4e1d09;color:#fedf89;font-weight:700;cursor:pointer}
+.pdv-tirar{width:40px;height:40px;border-radius:8px;border:1px solid #55160c;background:#2a1512;color:#fda29b;cursor:pointer}
+.pdv-dir h2{margin:0 0 4px;font-size:1.2rem}
+.pdv-dir input,.pdv-dir select,.pdv-modal input{font-size:1.1rem;padding:12px;border-radius:8px;border:1px solid #3b4252;background:#0f1115;color:#fff}
+.pdv-carro{display:flex;flex-direction:column;gap:2px;text-align:left;padding:12px;border-radius:10px;border:2px solid #3b4252;background:#272c35;color:#f4f5f7;cursor:pointer}
+.pdv-carro strong{font-size:1.4rem}.pdv-carro small{color:#9aa1ad}.pdv-carro.sel{border-color:#3b63e0;background:#1b2a5c}
+.pdv-total{font-size:1.2rem;margin:auto 0 0}
+.pdv-finalizar{font-size:1.4rem;font-weight:800;padding:18px;border-radius:12px;border:0;background:#12b76a;color:#062b1a;cursor:pointer}
+.pdv-finalizar:disabled{background:#2a2f39;color:#6b7280;cursor:not-allowed}
+.pdv-btn{padding:12px 16px;border-radius:10px;border:1px solid #3b63e0;background:#1d3fa8;color:#fff;font-size:1rem;cursor:pointer;text-align:center}
+.pdv-leve{background:transparent;border-color:#3b4252;color:#c9ced8}
+.pdv-overlay{position:fixed;inset:0;background:rgba(5,6,8,.78);display:flex;align-items:center;justify-content:center;padding:20px;z-index:20}
+.pdv-modal{background:#1e2229;border:1px solid #3b4252;border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:12px;width:min(620px,100%);max-height:90vh;overflow:auto}
+.pdv-fotos{width:min(900px,100%)}.pdv-foto{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #2a2f39}.pdv-foto strong{flex:1 1 220px}
+.pdv-ok{color:#75e0a7;font-weight:700}
+.pdv-destinos{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pdv-destinos button.ativo{background:#1d3fa8;border-color:#3b63e0;color:#fff}
+@media (max-width:900px){.pdv-corpo{grid-template-columns:1fr}}
+.pdv-lote{width:130px;font-size:1rem;padding:8px;border-radius:8px;border:1px solid #3b4252;background:#0f1115;color:#fff}
+.pdv-cx{width:auto;padding:0 10px;font-size:.95rem}
+.pdv-campo{display:flex;flex-direction:column;gap:4px;flex:1}.pdv-campo span{color:#9aa1ad;font-size:.9rem}
+.pdv-modal select{font-size:1.1rem;padding:12px;border-radius:8px;border:1px solid #3b4252;background:#0f1115;color:#fff}
+.pdv-linha2{display:flex;gap:10px;flex-wrap:wrap}.pdv-check{display:flex;align-items:center;gap:8px}
+.pdv input::placeholder,.pdv-modal input::placeholder{color:#8a93a3;opacity:1}
+.pdv-calc{color:#a6f4c5;font-size:.95rem;flex:1 1 180px}.pdv-un{font-size:1rem;padding:8px;border-radius:8px;border:1px solid #3b4252;background:#0f1115;color:#fff}.pdv-item{flex-wrap:wrap}

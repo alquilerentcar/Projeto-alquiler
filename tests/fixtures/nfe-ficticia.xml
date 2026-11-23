@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- NF-e FICTÍCIA para testes: emitente, chave e valores inventados. -->
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+ <NFe>
+  <infNFe Id="NFe13261111222333000181550010000012341000012345" versao="4.00">
+   <ide><cUF>13</cUF><natOp>VENDA</natOp><mod>55</mod><serie>1</serie><nNF>1234</nNF><dhEmi>2026-11-10T09:30:00-04:00</dhEmi></ide>
+   <emit><CNPJ>11222333000181</CNPJ><xNome>AUTOPEÇAS FICTÍCIA &amp; CIA LTDA</xNome></emit>
+   <det nItem="1"><prod><cProd>SC-445</cProd><cEAN>7891234567895</cEAN><xProd>SENSOR DE COMBUSTIVEL</xProd><NCM>90262090</NCM><uCom>un</uCom><qCom>4.0000</qCom><vUnCom>150.0000000000</vUnCom><vProd>600.00</vProd><cEANTrib>7891234567895</cEANTrib></prod></det>
+   <det nItem="2"><prod><cProd>OL-530</cProd><cEAN>SEM GTIN</cEAN><xProd>OLEO 5W30 SINTETICO</xProd><NCM>27101932</NCM><uCom>LT</uCom><qCom>12.0000</qCom><vUnCom>35.5000000000</vUnCom><vProd>426.00</vProd><cEANTrib>SEM GTIN</cEANTrib></prod></det>
+   <det nItem="3"><prod><cProd>FL-01</cProd><cEAN>7890000000017</cEAN><xProd><![CDATA[FILTRO DE AR "PREMIUM"]]></xProd><NCM>84213100</NCM><uCom>PC</uCom><qCom>2.5000</qCom><vUnCom>40.0000000000</vUnCom><vProd>100.00</vProd></prod></det>
+   <total><ICMSTot><vProd>1126.00</vProd><vNF>1126.00</vNF></ICMSTot></total>
+  </infNFe>
+ </NFe>
+ <protNFe versao="4.00"><infProt><chNFe>13261111222333000181550010000012341000012345</chNFe></infProt></protNFe>
+</nfeProc>

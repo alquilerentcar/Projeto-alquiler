@@ -2,6 +2,8 @@ export const TENANT_TABLES = new Set(['cliente_documentos','cliente_debitos','cl
 export function pageModule(path) {
   const page=path.split('/').pop().replace(/\.html$/,'');
   if(['app','perfil','login','modulos','controle','acessos','usuarios','index',''].includes(page)) return null;
+  // Área de Mecânica: páginas do módulo Oficina (separado da Locação).
+  if(['oficina','pdv-estoque','balcao'].includes(page)) return 'oficina';
   return 'locacao';
 }
 export function canOpen(context,path) {

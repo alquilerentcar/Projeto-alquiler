@@ -51,6 +51,11 @@ const seed=()=>{
   if(name==='oficina_cobrar_locatario'){cobrada=true;return {data:{debito_id:'d1',valor:75,locatario:'LOCATÁRIO FICTÍCIO'},error:null};}
   if(name==='oficina_servico_salvar'){servicos.push({id:'s2',...args.p_dados});return {data:{id:'s2'},error:null};}
   if(name==='oficina_movimentos_lista')return {data:[{tipo:'entrada',quantidade:4,saldo_depois:4,criado_em:'2026-11-10T12:00:00Z',documento:'NF 1234'},{tipo:'saida',quantidade:-1,saldo_depois:3,placa:'XAA1A11',manutencao:1,natureza:'corretiva',responsavel:'ANA',criado_em:'2026-11-11T12:00:00Z'},{tipo:'saida',quantidade:-1,saldo_depois:2,placa:'YBB2B22',manutencao:2,natureza:'preventiva',criado_em:'2026-11-12T12:00:00Z'},{tipo:'saida',quantidade:-1,saldo_depois:1,placa:'ZCC3C33',manutencao:3,natureza:'corretiva',criado_em:'2026-11-13T12:00:00Z'}],error:null};
+  if(name==='oficina_saida_avulsa')return {data:args.p_itens.map(i=>({descricao:produtos.find(p=>p.id===i.produto_id).descricao,quantidade:i.quantidade})),error:null};
+  if(name==='oficina_movimentos_relatorio')return {data:[{id:'e1',tipo:'entrada',criado_em:'2026-11-20T12:00:00Z',produto:'Sensor de combustível',unidade:'UN',quantidade:2,valor:300,saldo_depois:2,documento:'NF 9'},
+   {id:'s1',tipo:'saida',destino:'manutencao',criado_em:'2026-11-21T12:00:00Z',produto:'Sensor de combustível',unidade:'UN',quantidade:-1,valor:150,saldo_depois:1,placa:'QZA3C46',manutencao:1,natureza:'corretiva'},
+   {id:'s2',tipo:'saida',destino:'uso_consumo',destino_descricao:'Limpeza da oficina',criado_em:'2026-11-22T12:00:00Z',produto:'Estopa',unidade:'UN',quantidade:-3,valor:6,saldo_depois:7}],error:null};
+  if(name==='oficina_movimentos_cobranca')return {data:[{id:'s1',natureza:'avaria',total:210,pct_locatario:100,valor_locatario:210,valor_empresa:0,responsavel:'LOCATÁRIO FICTÍCIO',situacao:'aprovado'}],error:null};
   return {data:null,error:null};}};
 };
 const routes=page=>page.route('https://qa.test/**',route=>{
@@ -233,6 +238,29 @@ const routes=page=>page.route('https://qa.test/**',route=>{
   assert.match(fin,/Parte da empresa\s*R\$\s235,00/);assert.match(fin,/Total das manutenções\s*R\$\s530,00/);assert.match(fin,/Parte dos locatários\s*R\$\s215,00/);assert.match(fin,/Já lançado na locação\s*R\$\s175,00/);assert.match(fin,/Falta cobrar do locatário\s*R\$\s40,00/);assert.match(fin,/Clientes de fora\s*R\$\s80,00/);
   assert.match(fin,/JOÃO \(cliente de fora\)/);assert.match(fin,/QZA3C46 · 1 manutenção\(ões\) · total R\$\s350,00/);
   await page.screenshot({path:path.join(qa,'oficina-financeiro.png'),fullPage:true});
+  assert.deepEqual(page.errors,[]);
+  // Mudar o tipo da manutenção aberta (corretiva → batida), com motivo.
+  page=await open('secao=manutencoes');await page.locator('#oficina button',{hasText:'Mudar tipo'}).first().click();
+  await page.getByLabel('Novo tipo').selectOption('avaria');await page.locator('#oficina-dialog button',{hasText:'Mudar tipo'}).click();
+  assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.name==='oficina_manutencao_tipo').length),0,'motivo obrigatório');
+  await page.getByLabel('Por que mudou').fill('Na verdade bateu o carro');await page.locator('#oficina-dialog button',{hasText:'Mudar tipo'}).click();
+  await page.waitForFunction(()=>window.calls.some(c=>c.name==='oficina_manutencao_tipo'));
+  assert.deepEqual(await page.evaluate(()=>{const a=window.calls.find(c=>c.name==='oficina_manutencao_tipo').args;return [a.p_manutencao,a.p_tipo,a.p_motivo];}),['m1','avaria','Na verdade bateu o carro']);
+  // Retirar peça para uso e consumo: sem carro, com descrição.
+  page=await open('secao=saida');await page.getByLabel('Para onde vai').selectOption('uso_consumo');
+  assert.equal(await page.getByLabel('Manutenção').isVisible(),false);
+  await ler(page,'7890000000099');await page.getByLabel('Quantidade de Pastilha de freio').waitFor();
+  await page.locator('#oficina button',{hasText:'Registrar saída'}).click();assert.match(await page.locator('#oficina .ofi-erro').last().innerText(),/setor ou uso/i);
+  await page.getByLabel('Descrição do destino').fill('Ferramenta do box 2');await page.locator('#oficina button',{hasText:'Registrar saída'}).click();
+  await page.waitForFunction(()=>window.calls.some(c=>c.name==='oficina_saida_avulsa'));
+  const av=await page.evaluate(()=>window.calls.find(c=>c.name==='oficina_saida_avulsa').args);assert.equal(av.p_destino,'uso_consumo');assert.equal(av.p_descricao,'Ferramenta do box 2');assert.deepEqual(av.p_itens,[{produto_id:'p2',quantidade:1}]);
+  assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.name==='oficina_saida'&&!c.args.p_manutencao).length),0);
+  // Relatório do período: marcar entradas e/ou saídas e ver o que será cobrado.
+  page=await open('secao=movimentos');await page.getByText('Será cobrado').waitFor();
+  let txt=await page.locator('#oficina').innerText();assert.match(txt,/R\$\s?210,00 de LOCATÁRIO FICTÍCIO \(100% de R\$\s?210,00\)/);assert.match(txt,/Batida \/ avaria/);assert.match(txt,/Aprovado, falta cobrar/);assert.match(txt,/R\$\s?210,00 a cobrar/);assert.match(txt,/Limpeza da oficina/);
+  await page.getByLabel('Saídas',{exact:true}).uncheck();txt=await page.locator('#oficina table').innerText();assert.doesNotMatch(txt,/Limpeza da oficina/);assert.match(txt,/NF 9/);
+  await page.getByLabel('Saídas',{exact:true}).check();await page.getByLabel('Entradas',{exact:true}).uncheck();txt=await page.locator('#oficina table').innerText();assert.doesNotMatch(txt,/NF 9/);assert.match(txt,/QZA3C46/);
+  await page.screenshot({path:path.join(qa,'oficina-relatorio-periodo.png'),fullPage:true});
   assert.deepEqual(page.errors,[]);
   console.log('oficina.browser ok');
  }finally{await browser.close();}

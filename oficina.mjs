@@ -127,6 +127,7 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
     if(emAberto){const be=btn(vs.entrada?'Entrada ✓':'Relatório de entrada',vs.entrada?'btn btn-quiet':'btn btn-primary');be.onclick=()=>vistoria(m,'entrada');acoes.append(be);
      if(vs.entrada){const bs=btn(vs.saida?'Saída ✓':'Relatório de saída');bs.onclick=()=>vistoria(m,'saida');acoes.append(bs);}}
     const bo=btn('Imprimir OS');bo.onclick=()=>imprimirOS(m);acoes.append(bo);}
+   if(emAberto&&!m.cobranca_debito_id){const bt=btn('Mudar tipo');bt.onclick=()=>mudarTipo(m);acoes.append(bt);}
    if(['aberta','aguardando_pecas'].includes(m.status)){const lan=el('a','Lançar peça','btn btn-quiet');lan.href='oficina.html?secao=saida&manutencao='+m.id;acoes.append(lan);
     const st=el('select');st.setAttribute('aria-label','Situação da manutenção '+m.numero);for(const [v,l] of [['','Mudar situação…'],['aberta','Aberta'],['aguardando_pecas','Aguardando peças'],['concluida','Concluir'],['cancelada','Cancelar']]){if(v===m.status)continue;const o=el('option',l);o.value=v;st.append(o);}
     st.onchange=async()=>{const v=st.value;if(!v)return;if(['concluida','cancelada'].includes(v)&&!confirm((v==='concluida'?'Concluir':'Cancelar')+' a manutenção #'+m.numero+' do '+m.placa+'?')){st.value='';return;}
@@ -135,6 +136,20 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
   body.append(frota,lista);
  }
  const dialog=el('dialog',null,'client-dialog');dialog.id='oficina-dialog';document.body.append(dialog);
+ // Muda corretiva / preventiva / batida da manutenção aberta. Peças e serviços já lançados acompanham.
+ function mudarTipo(m){
+  dialog.replaceChildren();const form=el('form',null,'client-form'),head=el('div',null,'dialog-header'),box=el('div',null,'dialog-body'),foot=el('div',null,'dialog-footer');
+  head.append(el('h2','Mudar tipo · '+rotuloManutencao(m)));
+  const g=el('div',null,'form-grid'),tipo=el('select');for(const [v,l] of [['corretiva','Corretiva (consertar defeito)'],['preventiva','Preventiva (revisão, troca programada)'],['avaria','Batida / avaria (100% do locatário)']]){const op=el('option',l);op.value=v;tipo.append(op);}tipo.value=m.tipo||'corretiva';campo(g,'Novo tipo',tipo);
+  const mot=input();mot.required=true;mot.placeholder='Ex.: na verdade foi batida, não defeito';campo(g,'Por que mudou',mot);
+  const aviso=el('p','Todas as peças e serviços já lançados nesta manutenção passam para o novo tipo, e a divisão entre locatário e empresa é recalculada.'+(['aguardando_aprovacao','aprovado'].includes(m.orcamento_status)?' O orçamento volta para elaboração e precisa ser enviado de novo ao analista.':''),'section-note');
+  const erro=el('p',null,'ofi-erro');box.append(g,aviso,el('p',regraTexto(),'section-note'),erro);
+  const cancel=btn('Cancelar'),ok=el('button','Mudar tipo','btn btn-primary');ok.type='submit';cancel.onclick=()=>dialog.close();foot.append(cancel,ok);form.append(head,box,foot);dialog.append(form);
+  form.onsubmit=async e=>{e.preventDefault();erro.textContent='';if(tipo.value===m.tipo){dialog.close();return;}ok.disabled=true;
+   try{await rpc('oficina_manutencao_tipo',{p_empresa:company.id,p_manutencao:m.id,p_tipo:tipo.value,p_motivo:mot.value});dialog.close();await recarregar('Manutenção #'+m.numero+' agora é '+NATUREZA[tipo.value].toLowerCase()+'.');}
+   catch(err){erro.textContent=err.message;}finally{ok.disabled=false;}};
+  dialog.showModal();tipo.focus();
+ }
  async function formulario(pre){
   dialog.replaceChildren();const form=el('form',null,'client-form'),head=el('div',null,'dialog-header'),box=el('div',null,'dialog-body'),foot=el('div',null,'dialog-footer');head.append(el('h2','Nova manutenção'));
   let veiculos=[];try{veiculos=await rpc('oficina_veiculos',{p_empresa:company.id});}catch(e){alert(e.message);return;}
@@ -243,13 +258,21 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
   const itens=[],sec=el('section',null,'panel');sec.append(el('h2','Retirar peça'),el('p','1) Escolha o carro. 2) Passe o leitor em cada peça, como no caixa do supermercado. 3) Informe o motivo e registre. 4) Envie a foto da peça nova funcionando e da peça antiga: só então a operação fica concluída.','section-note'));
   const linha=el('div',null,'ofi-linha'),sel=el('select');sel.setAttribute('aria-label','Manutenção');const o0=el('option','Escolha a manutenção…');o0.value='';sel.append(o0);
   for(const m of abertas()){const o=el('option',rotuloManutencao(m)+' · '+m.motivo.slice(0,40));o.value=m.id;sel.append(o);}
-  sel.value=params.get('manutencao')||'';campo(linha,'Para qual carro',sel);
-  const quemPaga=el('p',null,'section-note');const info=()=>{const m=abertas().find(x=>x.id===sel.value);quemPaga.textContent=!m?'':m.responsavel_nome?`Locatário responsável: ${m.responsavel_nome}. ${regraTexto()}`:'Sem locatário responsável: o custo fica com a empresa.';};sel.addEventListener('change',info);info();
-  if(!abertas().length)linha.append(el('p','Nenhuma manutenção aberta. Abra uma na aba Manutenções.','ofi-alerta'));
+  const DEST_OF={manutencao:'Carro (manutenção)',uso_consumo:'Uso e consumo',obra:'Construção em andamento',perda:'Perda / descarte'},PED={uso_consumo:'Setor ou uso (ex.: limpeza da oficina, ferramenta do box 2)',obra:'Qual obra ou construção',perda:'O que aconteceu (ex.: vazou, quebrou)'};
+  const dest=el('select');dest.setAttribute('aria-label','Para onde vai');for(const [k,l] of Object.entries(DEST_OF)){const op=el('option',l);op.value=k;dest.append(op);}campo(linha,'Para onde vai',dest);
+  sel.value=params.get('manutencao')||'';const lCarro=campo(linha,'Para qual carro',sel).closest('label')||sel.parentElement;
+  const dd=input();dd.setAttribute('aria-label','Descrição do destino');const lDest=campo(linha,'Descrição',dd).closest('label')||dd.parentElement;lDest.hidden=true;
+  const quemPaga=el('p',null,'section-note');const info=()=>{const m=abertas().find(x=>x.id===sel.value);if(dest.value!=='manutencao'){quemPaga.textContent='Sai do estoque como '+DEST_OF[dest.value].toLowerCase()+': não entra em orçamento nem é cobrado de locatário.';return;}quemPaga.textContent=!m?'':m.responsavel_nome?`Locatário responsável: ${m.responsavel_nome}. ${regraTexto()}`:'Sem locatário responsável: o custo fica com a empresa.';};sel.addEventListener('change',info);dest.onchange=()=>{const carro=dest.value==='manutencao';lCarro.hidden=!carro;lDest.hidden=carro;dd.placeholder=PED[dest.value]||'';info();};info();
+  if(!abertas().length)linha.append(el('p','Nenhuma manutenção aberta. Para carro, abra uma na aba Manutenções; para uso e consumo, escolha acima.','ofi-alerta'));
   const tabela=listaPecas(itens,{saida:true});
   const {box,scan,msg}=leitor(async(p,codigo)=>{if(!p){msg.textContent='Peça '+codigo+' não cadastrada. Cadastre na Entrada de peças.';return;}if(Number(p.saldo)<=0){msg.textContent=p.descricao+' está sem estoque.';return;}adicionarItem(itens,p);tabela.desenhar();msg.textContent=p.descricao+' · em estoque: '+fmtQtd(p.saldo)+' '+p.unidade;});
   const obs=el('div',null,'ofi-linha'),ob=campo(obs,'Motivo da retirada (por que a peça saiu)',input()),erro=el('p',null,'ofi-erro'),salvar=btn('Registrar saída','btn btn-primary');ob.style.minWidth='min(460px,100%)';ob.placeholder='Ex.: sensor de combustível com defeito, troca na revisão';let operacao=crypto.randomUUID();
-  salvar.onclick=async()=>{erro.textContent='';const m=abertas().find(x=>x.id===sel.value);const erros=m?conferirItens(itens,{saida:true}):['Escolha para qual carro as peças vão.'];if(m&&ob.value.trim().length<3)erros.push('Informe o motivo da retirada.');if(erros.length){erro.textContent=erros.join(' ');return;}salvar.disabled=true;
+  salvar.onclick=async()=>{erro.textContent='';
+   if(dest.value!=='manutencao'){const erros=conferirItens(itens,{saida:true});if(dd.value.trim().length<3)erros.push('Informe '+(PED[dest.value]||'o destino').split(' (')[0].toLowerCase()+'.');if(erros.length){erro.textContent=erros.join(' ');return;}salvar.disabled=true;
+    try{const r=await rpc('oficina_saida_avulsa',{p_empresa:company.id,p_operacao:operacao,p_destino:dest.value,p_descricao:[dd.value.trim(),ob.value.trim()].filter(Boolean).join(' · ').slice(0,300),p_itens:itens.map(i=>({produto_id:i.produto.id,quantidade:i.quantidade}))});
+     operacao=crypto.randomUUID();itens.length=0;tabela.desenhar();ob.value='';dd.value='';await carregar();status.textContent='Saída para '+DEST_OF[dest.value].toLowerCase()+' registrada'+(Array.isArray(r)?': '+r.map(x=>x.descricao+' −'+fmtQtd(x.quantidade)).join(' · '):'')+'.';}
+    catch(e){erro.textContent=e.message;}finally{salvar.disabled=false;scan.focus();}return;}
+   const m=abertas().find(x=>x.id===sel.value);const erros=m?conferirItens(itens,{saida:true}):['Escolha para qual carro as peças vão.'];if(m&&ob.value.trim().length<3)erros.push('Informe o motivo da retirada.');if(erros.length){erro.textContent=erros.join(' ');return;}salvar.disabled=true;
    try{const r=await rpc('oficina_saida',{p_empresa:company.id,p_operacao:operacao,p_manutencao:m.id,p_itens:itensSaida(itens,m.tipo),p_observacao:ob.value||null});
     operacao=crypto.randomUUID();itens.length=0;tabela.desenhar();ob.value='';await carregar();status.textContent='Saída registrada para '+m.placa+': '+r.map(x=>x.descricao+' −'+fmtQtd(x.quantidade)+' (restam '+fmtQtd(x.saldo)+')').join(' · ')+'. Agora envie as fotos.';
     fotosHost.replaceChildren(el('h3','Fotos desta retirada'),...r.map(x=>fotoPeca({movimento_id:x.movimento_id,produto:x.descricao,quantidade:x.quantidade,placa:m.placa,manutencao:m.numero})));}
@@ -426,22 +449,28 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
  }
  // ---------- Movimentos: registro completo de entradas e saídas ----------
  async function abaMovimentos(){
-  const sec=el('section',null,'panel'),f=el('div',null,'ofi-linha'),de=campo(f,'De',input('date')),ate=campo(f,'Até',input('date')),tipo=el('select'),busca=input('search'),ver=btn('Atualizar','btn btn-primary'),csv=btn('Baixar planilha');
-  for(const [k,l] of [['','Entradas e saídas'],['entrada','Só entradas'],['saida','Só saídas'],['ajuste','Ajustes'],...Object.entries(DESTINO).map(([k,l])=>['d:'+k,'Saída · '+l])]){const o=el('option',l);o.value=k;tipo.append(o);}
-  campo(f,'Mostrar',tipo);busca.placeholder='Item, placa, lote, funcionário…';busca.setAttribute('aria-label','Buscar movimento');f.append(busca,ver,csv);
+  const sec=el('section',null,'panel'),f=el('div',null,'ofi-linha'),de=campo(f,'De',input('date')),ate=campo(f,'Até',input('date')),tipo=el('select'),busca=input('search'),ver=btn('Atualizar','btn btn-primary'),csv=btn('Baixar planilha'),marcas={};
+  const chk=el('fieldset',null,'ofi-checks');chk.append(el('legend','Mostrar'));for(const [k,l] of [['entrada','Entradas'],['saida','Saídas'],['ajuste','Ajustes']]){const c=input('checkbox');c.checked=k!=='ajuste';c.setAttribute('aria-label',l);marcas[k]=c;const lb=el('label');lb.style.flexDirection='row';lb.style.alignItems='center';lb.append(c,document.createTextNode(' '+l));chk.append(lb);c.onchange=()=>desenharMov();}f.append(chk);
+  for(const [k,l] of [['','Qualquer destino'],...Object.entries(DESTINO).map(([k,l])=>['d:'+k,l])]){const o=el('option',l);o.value=k;tipo.append(o);}
+  campo(f,'Saídas para',tipo);busca.placeholder='Item, placa, lote, funcionário…';busca.setAttribute('aria-label','Buscar movimento');f.append(busca,ver,csv);
   const hoje=new Date(Date.now()-4*3600000);ate.value=hoje.toISOString().slice(0,10);de.value=new Date(hoje.getTime()-30*86400000).toISOString().slice(0,10);
   const info=el('p',null,'section-note'),w=el('div',null,'table-scroll'),erro=el('p',null,'ofi-erro');sec.append(el('h2','Movimentos do estoque'),el('p','Todas as entradas e saídas ficam registradas e não podem ser apagadas. Correção é feita com um novo lançamento ou ajuste.','section-note'),f,erro,info,w);body.append(sec);
-  let rows=[];const visiveis=()=>{const q=busca.value.toLocaleLowerCase('pt-BR').trim();return rows.filter(r=>(!tipo.value||(tipo.value.startsWith('d:')?r.tipo==='saida'&&r.destino===tipo.value.slice(2):r.tipo===tipo.value))&&(!q||[r.produto,r.placa,r.lote,r.operador,r.usuario,r.destino_descricao,r.documento,r.fornecedor,r.codigo].join(' ').toLocaleLowerCase('pt-BR').includes(q)));};
+  let rows=[],cob=new Map();const SIT={cobrado:'Já cobrado',aprovado:'Aprovado, falta cobrar',aguardando_aprovacao:'Com o analista',em_elaboracao:'Orçamento em elaboração',empresa:'Custo da empresa',cancelada:'Cancelada'};
+  const visiveis=()=>{const q=busca.value.toLocaleLowerCase('pt-BR').trim();return rows.filter(r=>marcas[r.tipo]?.checked&&(!tipo.value||r.tipo!=='saida'||r.destino===tipo.value.slice(2))&&(!q||[r.produto,r.placa,r.lote,r.operador,r.usuario,r.destino_descricao,r.documento,r.fornecedor,r.codigo].join(' ').toLocaleLowerCase('pt-BR').includes(q)));};
   const texto=r=>({quando:quando(r.criado_em),movimento:r.tipo==='entrada'?'Entrada':r.tipo==='ajuste'?'Ajuste':'Saída · '+(DESTINO[r.destino]||'—'),item:r.produto,categoria:CAT_ITEM[r.categoria]||r.categoria,quantidade:(r.quantidade>0?'+':'')+fmtQtd(r.quantidade)+' '+r.unidade,lote:r.lote||'',
-   custo:brl(r.valor),para:r.tipo==='saida'?(r.placa?r.placa+' · manutenção #'+r.manutencao+(r.natureza?' · '+(NATUREZA[r.natureza]||'Corretiva').toLowerCase():''):r.destino_descricao||''):[r.documento,r.fornecedor].filter(Boolean).join(' · '),
+   custo:brl(r.valor),para:r.tipo==='saida'?(r.placa?r.placa+' · manutenção #'+r.manutencao:r.destino_descricao||''):[r.documento,r.fornecedor].filter(Boolean).join(' · '),
+   como:r.tipo!=='saida'?'':cob.get(r.id)?NATUREZA[cob.get(r.id).natureza]||'':r.destino==='revenda'?'Venda':DESTINO[r.destino]||'',
+   cobrado:r.tipo!=='saida'?'':cob.get(r.id)?(cob.get(r.id).responsavel?brl(cob.get(r.id).valor_locatario)+' de '+cob.get(r.id).responsavel+' ('+Number(cob.get(r.id).pct_locatario).toLocaleString('pt-BR')+'% de '+brl(cob.get(r.id).total)+')':'Empresa paga '+brl(cob.get(r.id).total)):r.valor_venda!=null?'Venda '+brl(Math.abs(Number(r.quantidade))*Number(r.valor_venda)):'—',
+   situacao:cob.get(r.id)?SIT[cob.get(r.id).situacao]||'':'',
    quem:r.operador||r.usuario||'',estoque:fmtQtd(r.saldo_depois)});
-  const COLS=[['quando','Quando'],['movimento','Movimento'],['item','Item'],['categoria','Categoria'],['quantidade','Quantidade'],['lote','Lote'],['custo','Custo'],['para','Para onde / documento'],['quem','Quem fez'],['estoque','Estoque depois']];
+  const COLS=[['quando','Quando'],['movimento','Movimento'],['item','Item'],['categoria','Categoria'],['quantidade','Quantidade'],['lote','Lote'],['custo','Custo'],['para','Para onde / documento'],['como','Como saiu'],['cobrado','Será cobrado'],['situacao','Cobrança'],['quem','Quem fez'],['estoque','Estoque depois']];
   const desenharMov=()=>{const v=visiveis(),t=el('table'),th=el('thead'),hr=el('tr'),tb=el('tbody');for(const [,l] of COLS)hr.append(el('th',l));th.append(hr);t.append(th,tb);
    for(const r of v){const x=texto(r),tr=el('tr');for(const [k] of COLS)tr.append(el('td',x[k]));tb.append(tr);}
    if(!v.length){const tr=el('tr'),td=el('td','Nenhum movimento no período.');td.colSpan=COLS.length;tr.append(td);tb.append(tr);}
    const ent=v.filter(r=>r.tipo==='entrada').reduce((s,r)=>s+Number(r.valor),0),sai=v.filter(r=>r.tipo==='saida').reduce((s,r)=>s+Number(r.valor),0);
-   info.textContent=`${v.length} movimento(s) · entradas ${brl(ent)} · saídas ${brl(sai)}`;w.replaceChildren(t);};
-  async function carregarMov(){erro.textContent='';ver.disabled=true;try{rows=await rpc('oficina_movimentos_relatorio',{p_empresa:company.id,p_de:de.value,p_ate:ate.value});desenharMov();}catch(e){erro.textContent=e.message;}finally{ver.disabled=false;}}
+   const aCobrar=v.filter(r=>r.tipo==='saida'&&cob.get(r.id)&&cob.get(r.id).situacao!=='cobrado'&&cob.get(r.id).situacao!=='cancelada').reduce((s,r)=>s+Number(cob.get(r.id).valor_locatario||0),0),cobrado=v.filter(r=>cob.get(r.id)?.situacao==='cobrado').reduce((s,r)=>s+Number(cob.get(r.id).valor_locatario||0),0);
+   info.textContent=`${v.length} movimento(s) · entradas ${brl(ent)} · saídas ${brl(sai)} (custo) · locatários: ${brl(aCobrar)} a cobrar e ${brl(cobrado)} já cobrado`;w.replaceChildren(t);};
+  async function carregarMov(){erro.textContent='';ver.disabled=true;try{const [m1,m2]=await Promise.all([rpc('oficina_movimentos_relatorio',{p_empresa:company.id,p_de:de.value,p_ate:ate.value}),rpc('oficina_movimentos_cobranca',{p_empresa:company.id,p_de:de.value,p_ate:ate.value}).catch(()=>[])]);rows=m1;cob=new Map((m2||[]).map(x=>[x.id,x]));desenharMov();}catch(e){erro.textContent=e.message;}finally{ver.disabled=false;}}
   csv.onclick=()=>{const v=visiveis(),cel=x=>{const t=String(x??'');return /[;"\n]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t;};
    const linhas=[COLS.map(c=>c[1]).join(';'),...v.map(r=>{const x=texto(r);return COLS.map(([k])=>cel(x[k])).join(';');})].join('\r\n');
    const a=el('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+linhas+'\r\n'],{type:'text/csv;charset=utf-8'}));a.download=`movimentos-estoque-${de.value}-a-${ate.value}.csv`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
@@ -467,8 +496,8 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
   dialog.replaceChildren();const form=el('form',null,'client-form'),head=el('div',null,'dialog-header'),box=el('div',null,'dialog-body'),foot=el('div',null,'dialog-footer');
   head.append(el('h2',(tipo==='entrada'?'Relatório de entrada':'Relatório de saída')+' · '+rotuloManutencao(m)));
   const atual=lista.find(v=>v.tipo===tipo),ent=lista.find(v=>v.tipo==='entrada'),erro=el('p',null,'ofi-erro');
-  const g=el('div',null,'form-grid'),kmI=campo(g,'KM',input());kmI.inputMode='numeric';kmI.value=atual?String(atual.km):'';
-  kmI.placeholder=tipo==='saida'&&ent?'Na entrada: '+Number(ent.km).toLocaleString('pt-BR'):(m.km?String(m.km):'KM do painel');
+  const g=el('div',null,'form-grid'),kmI=campo(g,'KM',input());kmI.inputMode='numeric';
+  kmI.value=atual?.km==null?'':String(atual.km);kmI.placeholder=tipo==='saida'&&ent?.km!=null?'Na entrada: '+Number(ent.km).toLocaleString('pt-BR'):(m.km?String(m.km):'KM do painel (opcional)');
   const comb=el('select');const o0=el('option','Escolha…');o0.value='';comb.append(o0);COMBUSTIVEL.forEach((l,i)=>{const op=el('option',l);op.value=String(i);comb.append(op);});comb.value=atual?String(atual.combustivel):'';campo(g,'Combustível',comb);
   const itensBox=el('fieldset',null,'ofi-checks');itensBox.append(el('legend','Itens conferidos'));const marc={};
   for(const [k,l] of Object.entries(ITENS_VISTORIA)){const c=input('checkbox');c.checked=Boolean(atual?atual.itens?.[k]:ent?.itens?.[k]);marc[k]=c;const lb=el('label');lb.style.flexDirection='row';lb.style.alignItems='center';lb.append(c,document.createTextNode(' '+l));itensBox.append(lb);}

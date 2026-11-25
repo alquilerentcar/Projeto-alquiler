@@ -8,11 +8,11 @@ form.addEventListener('submit',async event=>{
   const usuario=form.elements.usuario.value.trim().toLowerCase();
   let error;
   if(usuario.includes('@'))({error}=await db.auth.signInWithPassword({email:usuario,password:form.elements.password.value}));
-  else {const response=await fetch('/api/login/usuario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({usuario,password:form.elements.password.value})});const result=await response.json().catch(()=>{throw new Error('O serviço de login não respondeu corretamente. Atualize a página ou entre pelo e-mail enquanto a publicação é corrigida.');});if(!response.ok)throw new Error(result.error||'Usuário ou senha incorretos.');({error}=await db.auth.setSession(result));}
+  else {const response=await fetch('/api/login/usuario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({usuario,password:form.elements.password.value})});const result=await response.json().catch(()=>{throw new Error('Não foi possível entrar agora. Tente novamente em instantes.');});if(!response.ok)throw new Error(result.error||'Usuário ou senha incorretos.');({error}=await db.auth.setSession(result));}
   if(error)throw new Error('E-mail/usuário ou senha incorretos.');
   sessionStorage.removeItem('bgsys:empresa-id');
   const {data:context,error:contextError}=await db.rpc('acessos_contexto',{p_empresa:null});
-  if(contextError||context?.schemaVersion!==2)throw new Error('Atualização pendente: aplique etapa1_acessos.sql no Supabase.');
+  if(contextError||context?.schemaVersion!==2)throw new Error('Não foi possível carregar seu acesso. Tente novamente; se continuar, fale com o administrador.');
   if(context.accessDenied)throw new Error('Esta conta não possui vínculo ativo com uma empresa.');
   if(context.company?.id&&context.companies.length===1)sessionStorage.setItem('bgsys:empresa-id',context.company.id);
   localStorage.removeItem('bgsys:empresa-cache');localStorage.removeItem('bgsys:usuario-cache');localStorage.removeItem('bgsys:empresa-cnpj');

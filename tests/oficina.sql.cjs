@@ -364,6 +364,33 @@ assert.equal(Number(oa.linhas.find(l=>l.motivo==='Troca da correia').valor_locat
 const mAv=(await one("select oficina_manutencao_abrir($1,$2,$3::jsonb) r",[tempo,id(987),JSON.stringify({carro_id:id(41),tipo:'avaria',motivo:'Bateu a traseira'})]).catch(e=>({erro:e.message})));
 if(mAv.erro)assert.doesNotMatch(mAv.erro,/corretiva|preventiva|tipo/i,'abrir manutenção de avaria');
 
+// Mudar o tipo da manutenção aberta: peças e serviços acompanham, saídas continuam imutáveis.
+await db.exec(fs.readFileSync(root+'/sql/oficina_tipo_relatorio.sql','utf8'));
+await db.exec(fs.readFileSync(root+'/sql/oficina_tipo_relatorio.sql','utf8')); // rodar de novo não quebra
+await assert.rejects(()=>db.query('select oficina_manutencao_tipo($1,$2,$3,$4)',[tempo,mMg.id,'preventiva','']),/Explique/);
+await assert.rejects(()=>db.query('select oficina_manutencao_tipo($1,$2,$3,$4)',[tempo,mMg.id,'outra','x motivo']),/Escolha/);
+await assert.rejects(()=>db.query('select oficina_manutencao_tipo($1,$2,$3,$4)',[tempo,m.id,'preventiva','motivo qualquer']),/já foi cobrada|encerrada/,'já cobrada não muda');
+const antesTipo=(await one('select oficina_orcamento($1,$2) p',[tempo,mMg.id])).p;
+assert.ok(Number(antesTipo.totais.locatario)>0);
+await db.query('select oficina_manutencao_tipo($1,$2,$3,$4)',[tempo,mMg.id,'preventiva','Era revisão programada']);
+const depoisTipo=(await one('select oficina_orcamento($1,$2) p',[tempo,mMg.id])).p;
+assert.equal(depoisTipo.manutencao.tipo,'preventiva');
+assert.ok(depoisTipo.linhas.every(l=>l.natureza==='preventiva'),'todas as linhas viram preventiva');
+assert.equal(Number(depoisTipo.totais.locatario),0,'preventiva: empresa paga');
+assert.ok(depoisTipo.linhas.filter(l=>l.tipo==='peca').every(l=>Number(l.valor_unitario)===Number(l.custo_unitario)),'preventiva sem margem');
+assert.equal((await one("select count(*)::int n from oficina_movimentos where manutencao_id=$1 and natureza='preventiva'",[mMg.id])).n<depoisTipo.linhas.filter(l=>l.tipo==='peca').length,true,'saída original não foi alterada');
+await db.query('select oficina_manutencao_tipo($1,$2,$3,$4)',[tempo,mMg.id,'avaria','Na verdade bateu o carro']);
+const av2=(await one('select oficina_orcamento($1,$2) p',[tempo,mMg.id])).p;
+assert.equal(Number(av2.totais.empresa),0,'avaria: 100% locatário');assert.equal(Number(av2.totais.locatario),Number(av2.totais.geral));
+assert.equal((await one('select count(*)::int n from oficina_manutencao_tipo_historico where manutencao_id=$1',[mMg.id])).n,2);
+// Relatório: o que cada saída vai custar ao locatário.
+const rc=(await one("select oficina_movimentos_cobranca($1,current_date-30,current_date) r",[tempo])).r;
+const daMg=rc.filter(x=>x.tipo_manutencao==='avaria');assert.ok(daMg.length>=3);assert.ok(daMg.every(x=>x.natureza==='avaria'&&Number(x.valor_empresa)===0));
+assert.ok(rc.some(x=>x.situacao==='cobrado'),'manutenção já cobrada aparece como cobrada');
+// KM opcional no relatório do carro.
+const vOs=await one("select oficina_vistoria_salvar($1,$2,'entrada',$3) v",[tempo,mMg.id,JSON.stringify({combustivel:4,fotos:[`${tempo}/vistoria/${mMg.id}/entrada-1.jpg`]})]).catch(e=>({erro:e.message}));
+assert.ok(!vOs.erro||!/KM/.test(vOs.erro),'sem KM não bloqueia: '+(vOs.erro||''));
+
 // Sem login, nada.
 await db.exec("set test.uid='';");await assert.rejects(()=>db.query('select oficina_painel($1)',[tempo]),/Sem acesso/);
 await db.close();console.log('PASS SQL: Oficina com peças por código de barras, entradas com custo médio, saídas por carro corretiva/preventiva sem estoque negativo, manutenções ligadas à Frota, responsável, rateio, serviços, nota fiscal, fotos da peça, aprovação do analista, cobrança parcelada, responsável com substituição, módulo separado, trava de saída da manutenção, financeiro, código de barras gerado, cadastro completo com lote, saídas sem carro, registro imutável, funcionário pelo CPF, fluxo do estoque (caixa, venda, devolução e resumo) compra com marca, preço e fornecedor, entrada automática na oficina quando o carro entra em manutenção e ordem de serviço com relatórios de entrada e saída.');

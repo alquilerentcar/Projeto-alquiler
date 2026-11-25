@@ -16,7 +16,7 @@ const autentiqueSandbox = !/^(0|false|nao|não)$/i.test(process.env.AUTENTIQUE_S
 
 const files = Object.fromEntries([
   ['index.html','text/html'],['login.html','text/html'],['modulos.html','text/html'],['sidebar.html','text/html'],['dashboard.html','text/html'],['notificacoes.html','text/html'],['alteracoes.html','text/html'],['recibos.html','text/html'],['distratos.html','text/html'],['financeiro.html','text/html'],['oficina.html','text/html'],['empresa.html','text/html'],['clientes.html','text/html'],['fornecedores.html','text/html'],['carros.html','text/html'],['contratos.html','text/html'],['contrato.html','text/html'],['registros.html','text/html'],['modelos-contrato.html','text/html'],['locacoes.html','text/html'],['certificados.html','text/html'],
-  ['ui-theme.css','text/css'],['forge.min.js','text/javascript'],['certificado-reader.worker.js','text/javascript'],['forge-LICENSE.txt','text/plain'],['styles.css','text/css'],['assistente.css','text/css'],['sidebar.js','text/javascript'],['section-page.js','text/javascript'],['financeiro.js','text/javascript'],['oficina.js','text/javascript'],['oficina.mjs','text/javascript'],['oficina-core.mjs','text/javascript'],['nfe-core.mjs','text/javascript'],['orcamento-core.mjs','text/javascript'],['orcamento-pdf.mjs','text/javascript'],['etiqueta-core.mjs','text/javascript'],['impressora-serial.mjs','text/javascript'],['ordem-servico.mjs','text/javascript'],['pdv-estoque.html','text/html'],['pdv-estoque.js','text/javascript'],['pdv-estoque.mjs','text/javascript'],['pdv-estoque.css','text/css'],['app.js','text/javascript'],['pages.js','text/javascript'],['fleet.js','text/javascript'],['empresa.js','text/javascript'],['locacoes.js','text/javascript'],['contratos.js','text/javascript'],['contrato.js','text/javascript'],['registros.js','text/javascript'],['modelos-contrato.js','text/javascript'],['certificados.js','text/javascript'],['assistente.js','text/javascript'],['auth-guard.js','text/javascript'],['app-context.js','text/javascript'],['login.js','text/javascript'],['modelo_contrato.docx','application/vnd.openxmlformats-officedocument.wordprocessingml.document'],['modelo_contrato_texto.txt','text/plain'],['papel_timbrado_preview.png','image/png'],['papel_timbrado_alquiler.pdf','application/pdf'],['fluxo-login-locacao.bpmn','application/xml'],
+  ['ui-theme.css','text/css'],['forge.min.js','text/javascript'],['certificado-reader.worker.js','text/javascript'],['forge-LICENSE.txt','text/plain'],['styles.css','text/css'],['assistente.css','text/css'],['sidebar.js','text/javascript'],['section-page.js','text/javascript'],['financeiro.js','text/javascript'],['oficina.js','text/javascript'],['oficina.mjs','text/javascript'],['oficina-core.mjs','text/javascript'],['nfe-core.mjs','text/javascript'],['orcamento-core.mjs','text/javascript'],['orcamento-pdf.mjs','text/javascript'],['etiqueta-core.mjs','text/javascript'],['impressora-serial.mjs','text/javascript'],['ordem-servico.mjs','text/javascript'],['pdv-estoque.html','text/html'],['pdv-estoque.js','text/javascript'],['pdv-estoque.mjs','text/javascript'],['pdv-estoque.css','text/css'],['app.js','text/javascript'],['pages.js','text/javascript'],['fleet.js','text/javascript'],['empresa.js','text/javascript'],['locacoes.js','text/javascript'],['contratos.js','text/javascript'],['contrato.js','text/javascript'],['registros.js','text/javascript'],['modelos-contrato.js','text/javascript'],['certificados.js','text/javascript'],['assistente.js','text/javascript'],['auth-guard.js','text/javascript'],['app-context.js','text/javascript'],['login.js','text/javascript'],['fluxo-login-locacao.bpmn','application/xml'],
 ].map(([name,type]) => [`/${name}`, [name, `${type}; charset=utf-8`]]));
 for (const [name,type] of [['perfil.html','text/html'],['perfil.js','text/javascript'],['conta.css','text/css'],['esqueci-senha.html','text/html'],['esqueci-senha.js','text/javascript'],['assinaturas.html','text/html'],['assinaturas.js','text/javascript'],['redefinir-senha.html','text/html'],['redefinir-senha.js','text/javascript'],['pdf-preview.js','text/javascript'],['pdfjs/pdf.mjs','text/javascript'],['pdfjs/pdf.worker.mjs','text/javascript'],['rich-document.js','text/javascript'],['documentos-modelo.html','text/html'],['documentos-modelo.js','text/javascript'],['document-model-core.js','text/javascript'],['document-model-pdf.js','text/javascript'],['document-model-records.js','text/javascript'],['empresa-branding.js','text/javascript'],['controle.html','text/html'],['acessos.html','text/html'],['acessos.js','text/javascript'],['acessos.css','text/css'],['access-policy.js','text/javascript'],['modulos.js','text/javascript']]) files['/'+name]=[name,type+'; charset=utf-8'];
 files['/ocupacoes-pendencias.js']=['ocupacoes-pendencias.js','text/javascript; charset=utf-8'];
@@ -79,16 +79,7 @@ async function readJson(request,maxBytes) {
   for await (const chunk of request) { size+=chunk.length; if(size>maxBytes) throw Object.assign(new Error('Arquivo ou mensagem grande demais.'),{status:413}); chunks.push(chunk); }
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw Object.assign(new Error('Dados inválidos.'),{status:400}); }
 }
-async function requireSupabaseUser(request) {
-  const authorization=String(request.headers.authorization||'');
-  if(!authorization.startsWith('Bearer ')) throw Object.assign(new Error('Entre no sistema novamente.'),{status:401});
-  const response=await fetch(`${supabaseUrl}/auth/v1/user`,{headers:{apikey:supabaseKey,Authorization:authorization},signal:AbortSignal.timeout(10000)});
-  if(!response.ok) throw Object.assign(new Error('Sessão inválida ou expirada.'),{status:401});
-  const user=await response.json();
-  if(String(user.email||'').toLowerCase()!=='alquilerentcar@gmail.com') throw Object.assign(new Error('Usuário sem permissão para enviar contratos.'),{status:403});
-  return user;
-}
-async function sendToAutentique(data) {
+async function sendToAutentique(data,request) {
   const configuredTimeout=Number(process.env.AUTENTIQUE_UPLOAD_TIMEOUT_MS||180000);
   const uploadTimeout=Number.isFinite(configuredTimeout)?Math.min(300000,Math.max(60000,configuredTimeout)):180000;
   if(!autentiqueToken) throw Object.assign(new Error('A integração Autentique ainda não foi configurada no servidor.'),{status:503});
@@ -100,8 +91,12 @@ async function sendToAutentique(data) {
   const clientEmail=String(data.clientEmail||'').trim().toLowerCase(), clientName=String(data.clientName||'').trim().slice(0,150);
   if(!/^\S+@\S+\.\S+$/.test(clientEmail)||!clientName) throw Object.assign(new Error('Informe nome e e-mail válidos do locatário.'),{status:400});
   const query=`mutation CreateDocumentMutation($document: DocumentInput!, $signers: [SignerInput!]!, $file: Upload!) { createDocument(sandbox: ${autentiqueSandbox?'true':'false'}, document: $document, signers: $signers, file: $file) { id name created_at signatures { public_id name email action { name } link { short_link } } } }`;
+  // Quem assina pela empresa: o e-mail cadastrado em Administração → Empresa.
+  const context=await rpcUser(request,'acessos_contexto',{p_empresa:request.headers['x-empresa-id']});
+  const companyEmail=String(context?.company?.id===request.headers['x-empresa-id']&&context.company.email||'').trim().toLowerCase();
+  if(!/^\S+@\S+\.\S+$/.test(companyEmail)) throw Object.assign(new Error('Cadastre o e-mail da empresa em Administração → Empresa antes de enviar para assinatura.'),{status:400});
   const signers=[
-    {email:'alquilerentcar@gmail.com',action:'SIGN'},
+    {email:companyEmail,action:'SIGN'},
     {email:clientEmail,name:clientName,action:'SIGN',security_verifications:[{type:process.env.AUTENTIQUE_CLIENT_VERIFICATION||'MANUAL'}]}
   ];
   const operations={query,variables:{document:{name:String(data.documentName||'Contrato de locação').slice(0,180)},signers,file:null}};
@@ -257,8 +252,12 @@ async function handler(request,response) {
   if(route==='/api/assinaturas/status'&&request.method==='GET') return json(response,200,{active:Boolean(autentiqueToken),provider:'autentique',sandbox:autentiqueSandbox});
   if(route==='/api/assinaturas/enviar') {
     if(request.method!=='POST') return json(response,405,{error:'Método não permitido.'});
-    try { const body=await readJson(request,70*1024*1024);if(body?.tipo==='teste_zapsign'){if(!await rpcUser(request,'acesso_desenvolvedor',{}))return json(response,403,{error:'Somente o desenvolvedor pode executar o teste.'});return json(response,200,await zapSignTest.createTest({body,scope:request.headers['x-empresa-id']}));}return json(response,200,await sendToAutentique(body)); }
+    try { const body=await readJson(request,70*1024*1024);if(body?.tipo==='teste_zapsign'){if(!await rpcUser(request,'acesso_desenvolvedor',{}))return json(response,403,{error:'Somente o desenvolvedor pode executar o teste.'});return json(response,200,await zapSignTest.createTest({body,scope:request.headers['x-empresa-id']}));}return json(response,200,await sendToAutentique(body,request)); }
     catch(error) { return json(response,error.status||500,{error:error.message||'Falha ao enviar para assinatura.',uncertain:Boolean(error.uncertain)}); }
+  }
+  if(route==='/api/modelos/contrato-texto'&&request.method==='GET') {
+    try { const text=fs.readFileSync(path.join(__dirname,'modelo_contrato_texto.txt'),'utf8'); response.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}); return response.end(text); }
+    catch { return json(response,500,{error:'Não foi possível carregar o contrato atual.'}); }
   }
   if(route==='/api/contratos/preview') {
     if(request.method!=='POST') return json(response,405,{error:'Método não permitido.'});

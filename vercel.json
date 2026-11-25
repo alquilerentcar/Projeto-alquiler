@@ -3,6 +3,26 @@
   "cleanUrls": true,
   "redirects": [
     {
+      "source": "/modelo_contrato.docx",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/modelo_contrato_texto.txt",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/papel_timbrado_alquiler.pdf",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/papel_timbrado_preview.png",
+      "destination": "/",
+      "permanent": false
+    },
+    {
       "source": "/server.js",
       "destination": "/",
       "permanent": false

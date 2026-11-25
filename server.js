@@ -255,7 +255,7 @@ async function handler(request,response) {
     try { const body=await readJson(request,70*1024*1024);if(body?.tipo==='teste_zapsign'){if(!await rpcUser(request,'acesso_desenvolvedor',{}))return json(response,403,{error:'Somente o desenvolvedor pode executar o teste.'});return json(response,200,await zapSignTest.createTest({body,scope:request.headers['x-empresa-id']}));}return json(response,200,await sendToAutentique(body,request)); }
     catch(error) { return json(response,error.status||500,{error:error.message||'Falha ao enviar para assinatura.',uncertain:Boolean(error.uncertain)}); }
   }
-  if(route==='/api/modelos/contrato-texto'&&request.method==='GET') {
+  if(route==='/api/modelo-contrato-texto'&&request.method==='GET') {
     try { const text=fs.readFileSync(path.join(__dirname,'modelo_contrato_texto.txt'),'utf8'); response.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}); return response.end(text); }
     catch { return json(response,500,{error:'Não foi possível carregar o contrato atual.'}); }
   }

@@ -218,6 +218,21 @@ const routes=page=>page.route('https://qa.test/**',route=>{
   page=await open('secao=estoque');await page.getByText('Patrimônio por categoria').waitFor();const resumo=await page.locator('#oficina').innerText();
   assert.match(resumo,/Patrimônio em estoque \(a custo\)\s*R\$\s692,00/);assert.match(resumo,/Lucro da revenda\s*R\$\s6,00/);assert.match(resumo,/Devolução ao fornecedor/);assert.match(resumo,/Paçoca[\s\S]*40%/);
   await page.screenshot({path:path.join(qa,'oficina-resumo-estoque.png'),fullPage:true});
+  // Estoque: depois de ajustar a contagem, a busca, o filtro e a rolagem continuam onde estavam.
+  page=await open('secao=estoque');await page.getByText('Patrimônio por categoria').waitFor();await page.setViewportSize({width:1366,height:500});
+  await page.getByLabel('Buscar peça').fill('pastilha');await page.getByLabel('Filtro do estoque').selectOption('cat:pecas');
+  const linhaP=page.locator('#oficina tbody tr',{hasText:'Pastilha de freio'});await linhaP.scrollIntoViewIfNeeded();
+  const topoAntes=await page.evaluate(()=>{for(let n=document.querySelector('#oficina');n;n=n.parentElement){const o=getComputedStyle(n).overflowY;if(n.scrollHeight>n.clientHeight&&/(auto|scroll)/.test(o))return n.scrollTop;}return document.scrollingElement.scrollTop;});
+  assert.ok(topoAntes>0,'tela rolada antes do ajuste');
+  const respostas=['3','Contagem de inventário'];page.on('dialog',d=>{if(d.type()==='prompt')d.accept(respostas.shift());else d.dismiss();});
+  await linhaP.locator('button',{hasText:'Ajustar contagem'}).click();await page.getByText('Estoque de Pastilha de freio ajustado',{exact:false}).waitFor();
+  assert.deepEqual(await page.evaluate(()=>{const a=window.calls.findLast(c=>c.name==='oficina_ajuste').args;return [a.p_contado,a.p_motivo];}),[3,'Contagem de inventário']);
+  await page.waitForTimeout(500);
+  assert.equal(await page.getByLabel('Buscar peça').inputValue(),'pastilha','busca continua');assert.equal(await page.getByLabel('Filtro do estoque').inputValue(),'cat:pecas','filtro continua');
+  assert.equal(await page.locator('#oficina tbody tr',{hasText:'Sensor de combustível'}).count(),0,'lista continua filtrada');
+  const topoDepois=await page.evaluate(()=>{for(let n=document.querySelector('#oficina');n;n=n.parentElement){const o=getComputedStyle(n).overflowY;if(n.scrollHeight>n.clientHeight&&/(auto|scroll)/.test(o))return n.scrollTop;}return document.scrollingElement.scrollTop;});
+  assert.ok(Math.abs(topoDepois-topoAntes)<40,`rolagem mantida (${topoAntes} → ${topoDepois})`);
+  page.removeAllListeners('dialog');await page.setViewportSize({width:1366,height:900});
   // Estoque: histórico mostra cada carro que usou o sensor e quanto resta.
   page=await open('secao=estoque');await page.locator('#oficina tbody tr',{hasText:'Sensor de combustível'}).locator('button',{hasText:'Histórico'}).click();
   await page.locator('#oficina-dialog').getByText('Saíram 3 para 3 carro(s)',{exact:false}).waitFor();const hist=await page.locator('#oficina-dialog').innerText();

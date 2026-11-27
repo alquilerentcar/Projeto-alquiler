@@ -154,6 +154,12 @@ const routes=page=>page.route('https://qa.test/**',route=>{
 
   // Orçamento: responsável, serviço de fora, totais com rateio, PDF e cobrança.
   page=await open('secao=manutencoes');assert.match(await page.locator('#oficina tbody').innerText(),/LOCATÁRIO FICTÍCIO/);
+  // Busca nas manutenções.
+  await page.getByLabel('Buscar manutenção').fill('qza 3c46');assert.equal(await page.locator('#oficina tbody tr:not([hidden])',{hasText:'QZA3C46'}).count(),1);
+  await page.getByLabel('Buscar manutenção').fill('placa que não existe');await page.getByText('Nenhuma manutenção encontrada.').waitFor();
+  await page.getByLabel('Buscar manutenção').fill('suspensão');assert.equal(await page.locator('#oficina tbody tr:not([hidden])',{hasText:'QZA3C46'}).count(),1,'busca pelo motivo');
+  await page.getByLabel('Situação',{exact:true}).selectOption('concluida');await page.getByText('Nenhuma manutenção encontrada.').waitFor();
+  await page.getByLabel('Situação',{exact:true}).selectOption('');await page.getByLabel('Buscar manutenção').fill('');
   await page.locator('#oficina button',{hasText:'Orçamento'}).click();const dlg=page.locator('#oficina-dialog[open]');await dlg.getByText('Sensor com defeito',{exact:false}).waitFor();
   // Tela baixa: o conteúdo do orçamento rola e o cabeçalho continua visível.
   {await page.setViewportSize({width:1366,height:480});const r=await page.evaluate(()=>{const d=document.querySelector('#oficina-dialog'),b=d.querySelector(':scope>.dialog-body');b.scrollTop=10000;
@@ -165,6 +171,20 @@ const routes=page=>page.route('https://qa.test/**',route=>{
   await dlg.getByLabel('Valor (R$)').fill('200');await dlg.getByRole('checkbox',{name:'Serviço de fora'}).check();await dlg.getByLabel('Quem fez (serviço de fora)').fill('CARECA AR');
   await dlg.locator('button',{hasText:'Lançar serviço'}).click();await dlg.getByText('Carga de gás do ar (CARECA AR)',{exact:false}).waitFor();
   call=await page.evaluate(()=>window.calls.find(c=>c.name==='oficina_servico_lancar').args.p_dados);assert.deepEqual([call.externo,call.fornecedor,call.natureza,call.valor_unitario],[true,'CARECA AR','preventiva',200]);
+  // Valor da peça: digitado (grava no cadastro se estava zerado) ou buscado do cadastro; tirar peça devolve ao estoque.
+  await dlg.locator('tr',{hasText:'Sensor de combustível'}).locator('button',{hasText:'Valor'}).click();
+  await dlg.getByLabel('Custo por unidade de Sensor de combustível (R$)').fill('12,50');await dlg.locator('button',{hasText:'Salvar valor'}).click();
+  await page.waitForFunction(()=>window.calls.some(c=>c.name==='oficina_peca_preco'));
+  let pp=await page.evaluate(()=>window.calls.find(c=>c.name==='oficina_peca_preco').args);assert.deepEqual([pp.p_movimento,pp.p_custo,pp.p_atualizar_cadastro],['x1',12.5,true]);
+  await dlg.getByText('Sensor com defeito',{exact:false}).waitFor();await dlg.locator('tr',{hasText:'Sensor de combustível'}).locator('button',{hasText:'Valor'}).click();await dlg.locator('button',{hasText:'Buscar do cadastro'}).click();
+  await page.waitForFunction(()=>window.calls.filter(c=>c.name==='oficina_peca_preco').length===2);pp=await page.evaluate(()=>window.calls.filter(c=>c.name==='oficina_peca_preco')[1].args);assert.equal(pp.p_custo,null);
+  await dlg.getByText('Sensor com defeito',{exact:false}).waitFor();await dlg.locator('tr',{hasText:'Sensor de combustível'}).locator('button',{hasText:'Tirar'}).click();
+  await dlg.locator('button',{hasText:'Tirar e devolver ao estoque'}).click();assert.match(await dlg.innerText(),/Explique por que a peça sai do orçamento/);
+  assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.name==='oficina_peca_remover').length),0);
+  await dlg.getByLabel('Por que Sensor de combustível sai do orçamento').fill('Peça não foi usada');await dlg.locator('button',{hasText:'Tirar e devolver ao estoque'}).click();
+  await page.waitForFunction(()=>window.calls.some(c=>c.name==='oficina_peca_remover'));
+  assert.deepEqual(await page.evaluate(()=>{const a=window.calls.find(c=>c.name==='oficina_peca_remover').args;return [a.p_movimento,a.p_motivo];}),['x1','Peça não foi usada']);
+  await dlg.getByText('Sensor com defeito',{exact:false}).waitFor();
   await page.screenshot({path:path.join(qa,'oficina-orcamento.png'),fullPage:true});
   // PDF no papel timbrado (biblioteca de PDF baixada da internet; sem internet o teste avisa e segue).
   const [down]=await Promise.all([page.waitForEvent('download',{timeout:20000}).catch(()=>null),dlg.locator('button',{hasText:'Gerar orçamento'}).click()]);
@@ -182,23 +202,13 @@ const routes=page=>page.route('https://qa.test/**',route=>{
   assert.deepEqual(page.errors,[]);
 
   // Fotos pendentes e aprovações.
-  // Ordem de serviço: relatório de entrada (KM, combustível, itens, avarias, fotos), saída e impressão.
-  page=await open('secao=manutencoes');assert.match(await page.locator('#oficina tbody').innerText(),/falta relatório de entrada/);
-  await page.locator('#oficina button',{hasText:'Relatório de entrada'}).click();let dv=page.locator('#oficina-dialog[open]');
-  await dv.getByLabel('KM').fill('15.020');await dv.getByLabel('Combustível').selectOption({label:'1/2'});await dv.getByLabel('Estepe').check();await dv.getByLabel('Documento (CRLV)').check();
-  await dv.getByLabel('Avarias').fill('Risco no para-choque');await dv.getByLabel('Fotos do carro').setInputFiles(foto);await dv.getByText('1 foto(s) do carro enviada(s).').waitFor();
-  await dv.locator('button',{hasText:'Salvar relatório'}).click();await page.getByText('Relatório de entrada da manutenção #1 salvo.').waitFor();
-  let vc=await page.evaluate(()=>window.calls.find(c=>c.name==='oficina_vistoria_salvar').args);
-  assert.deepEqual([vc.p_tipo,vc.p_dados.km,vc.p_dados.combustivel,vc.p_dados.itens.estepe,vc.p_dados.itens.macaco,vc.p_dados.avarias],['entrada','15.020',4,true,false,'Risco no para-choque']);
-  assert.match(vc.p_dados.fotos[0],/^tempo\/vistoria\/m1\/entrada-/);assert.match(await page.locator('#oficina tbody').innerText(),/falta relatório de saída/);
-  await page.locator('#oficina button',{hasText:'Relatório de saída'}).click();dv=page.locator('#oficina-dialog[open]');
-  assert.equal(await dv.getByLabel('KM').getAttribute('placeholder'),'Na entrada: 15.020');assert.equal(await dv.getByLabel('Estepe').isChecked(),true,'itens da entrada já vêm marcados');
-  await dv.getByLabel('KM').fill('15032');await dv.getByLabel('Combustível').selectOption({label:'1/2'});await dv.getByLabel('Observação').fill('Trocado o sensor; voltar em 10 mil km');
-  await dv.getByLabel('Fotos do carro').setInputFiles(foto);await dv.getByText('1 foto(s) do carro enviada(s).').waitFor();await dv.locator('button',{hasText:'Salvar relatório'}).click();
-  await page.getByText('Relatório de saída da manutenção #1 salvo.').waitFor();assert.doesNotMatch(await page.locator('#oficina tbody').innerText(),/falta relatório/);
+  // Relatórios de entrada/saída do carro desligados por enquanto: não aparecem nem travam; a OS continua imprimindo.
+  page=await open('secao=manutencoes');const tbTxt=await page.locator('#oficina tbody').innerText();assert.doesNotMatch(tbTxt,/relatório/i);
+  assert.equal(await page.locator('#oficina button',{hasText:'Relatório de entrada'}).count(),0);
+  assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.name==='oficina_vistorias_resumo').length),0);
   const [osPag]=await Promise.all([page.waitForEvent('popup'),page.locator('#oficina button',{hasText:'Imprimir OS'}).click()]);
   await osPag.getByText('ORDEM DE SERVIÇO').waitFor();const osTxt=await osPag.locator('body').innerText();
-  for(const t of [/Nº 00001/,/Relatório de entrada/,/15\.020/,/Risco no para-choque/,/Sensor de combustível/,/Relatório de saída/,/voltar em 10 mil km/,/Mecânico responsável/])assert.match(osTxt,t);
+  for(const t of [/Nº 00001/,/Sensor de combustível/,/Mecânico responsável/])assert.match(osTxt,t);
   await osPag.screenshot({path:path.join(qa,'ordem-servico.png'),fullPage:true});await osPag.close();assert.deepEqual(page.errors,[]);
 
   page=await open('secao=fotos');await page.getByText('Sensor de combustível · 1 UN · XAA1A11 · manutenção #4').waitFor();assert.match(await page.locator('#oficina').innerText(),/Foto da peça nova funcionando: enviada/);

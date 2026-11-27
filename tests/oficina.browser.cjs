@@ -171,6 +171,11 @@ const routes=page=>page.route('https://qa.test/**',route=>{
   await dlg.getByLabel('Valor (R$)').fill('200');await dlg.getByRole('checkbox',{name:'Serviço de fora'}).check();await dlg.getByLabel('Quem fez (serviço de fora)').fill('CARECA AR');
   await dlg.locator('button',{hasText:'Lançar serviço'}).click();await dlg.getByText('Carga de gás do ar (CARECA AR)',{exact:false}).waitFor();
   call=await page.evaluate(()=>window.calls.find(c=>c.name==='oficina_servico_lancar').args.p_dados);assert.deepEqual([call.externo,call.fornecedor,call.natureza,call.valor_unitario],[true,'CARECA AR','preventiva',200]);
+  // Tipo de cada linha: troca no próprio orçamento.
+  await dlg.getByLabel('Tipo de Sensor de combustível').selectOption('avaria');
+  await page.waitForFunction(()=>window.calls.some(c=>c.name==='oficina_linha_natureza'));
+  const tn=await page.evaluate(()=>window.calls.find(c=>c.name==='oficina_linha_natureza').args);assert.deepEqual([tn.p_tipo,tn.p_id,tn.p_natureza],['peca','x1','avaria']);
+  await dlg.getByText('Sensor com defeito',{exact:false}).waitFor();
   // Valor da peça: digitado (grava no cadastro se estava zerado) ou buscado do cadastro; tirar peça devolve ao estoque.
   await dlg.locator('tr',{hasText:'Sensor de combustível'}).locator('button',{hasText:'Valor'}).click();
   await dlg.getByLabel('Custo por unidade de Sensor de combustível (R$)').fill('12,50');await dlg.locator('button',{hasText:'Salvar valor'}).click();
@@ -218,6 +223,8 @@ const routes=page=>page.route('https://qa.test/**',route=>{
   page=await open('secao=estoque');await page.getByText('Patrimônio por categoria').waitFor();const resumo=await page.locator('#oficina').innerText();
   assert.match(resumo,/Patrimônio em estoque \(a custo\)\s*R\$\s692,00/);assert.match(resumo,/Lucro da revenda\s*R\$\s6,00/);assert.match(resumo,/Devolução ao fornecedor/);assert.match(resumo,/Paçoca[\s\S]*40%/);
   await page.screenshot({path:path.join(qa,'oficina-resumo-estoque.png'),fullPage:true});
+  // Relatório do estoque em PDF: tenta o papel timbrado (o mock não tem arquivo) e avisa sem quebrar a tela.
+  await page.locator('button',{hasText:'Relatório em PDF'}).click();await page.getByText(/Relatório do estoque gerado|Não foi possível gerar o relatório/).waitFor();
   // Estoque: depois de ajustar a contagem, a busca, o filtro e a rolagem continuam onde estavam.
   page=await open('secao=estoque');await page.getByText('Patrimônio por categoria').waitFor();await page.setViewportSize({width:1366,height:500});
   await page.getByLabel('Buscar peça').fill('pastilha');await page.getByLabel('Filtro do estoque').selectOption('cat:pecas');

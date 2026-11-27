@@ -27,11 +27,16 @@ const orc={empresa:{razao_social:'TEMPO DA MECANICA LTDA',cnpj:'11222333000181'}
 
 test('orçamento: cabeçalho, linhas com rateio e totais',()=>{
  const o=JSON.parse(JSON.stringify(montarOrcamento(orc)).replace(/ /g,' '));
- assert.equal(o.cabecalho[0][1],'Nº 00007 · 13/11/2026');assert.equal(o.cabecalho[1][1],'QZA3C46 · VW TERA 2025 · BRANCO');assert.equal(o.cabecalho[2][1],'LOCATÁRIO FICTÍCIO');
+ assert.deepEqual(o.cabecalho.map(c=>c[0]),['Orçamento','Oficina','Veículo','Manutenção','Motivo','Locatário']);assert.equal(o.cabecalho[0][1],'Nº 00007 · 13/11/2026');assert.equal(o.cabecalho[2][1],'QZA3C46 · VW TERA 2025 · BRANCO');assert.equal(o.cabecalho[5][1],'LOCATÁRIO FICTÍCIO');assert.equal(o.locadora,'');
  assert.equal(o.linhas[0].locatario,'50% · R$ 75,00');assert.equal(o.linhas[1].tipo,'Serviço de fora');assert.equal(o.linhas[1].descricao,'Carga de gás (CARECA AR) · Ar-condicionado');
  assert.deepEqual(o.totais.map(t=>t[0]),['Peças','Serviços','Total da manutenção','Parte do locatário','Parte da empresa']);assert.equal(o.totais[3][1],'R$ 275,00');
  assert.match(o.regra,/Corretiva: 50% locatário e 50% empresa\. Preventiva: 100% locatário/);assert.equal(o.empresa,'TEMPO DA MECANICA LTDA · CNPJ 11.222.333/0001-81');
- const sem=montarOrcamento({...orc,responsavel:null,manutencao:{...orc.manutencao,cliente_externo:'JOÃO'}});assert.equal(sem.totais.length,4);assert.equal(sem.totais[3][0],'Total a pagar pelo cliente');assert.match(sem.regra,/Cliente de fora/);assert.equal(sem.cabecalho[2][1],'JOÃO (cliente)');
+ const sem=montarOrcamento({...orc,responsavel:null,manutencao:{...orc.manutencao,cliente_externo:'JOÃO'}});assert.equal(sem.totais.length,4);assert.equal(sem.totais[3][0],'Total a pagar pelo cliente');assert.match(sem.regra,/Cliente de fora/);assert.equal(sem.cabecalho.at(-1)[1],'JOÃO (cliente)');
+ // Carro da locadora: Alquiler sai como cliente, entre a oficina e o carro, e na parte que ela paga.
+ const alq=JSON.parse(JSON.stringify(montarOrcamento({...orc,empresa:{razao_social:'TEMPO DA MECANICA LTDA',nome_fantasia:'Tempo da Mecânica',cnpj:'11222333000181'},locadora:{nome_fantasia:'Alquiler Rent a Car',razao_social:'ALQUILER LTDA',cnpj:'44555666000199'}})).replace(/ /g,' '));
+ assert.deepEqual(alq.cabecalho.map(c=>c[0]),['Orçamento','Oficina','Cliente','Veículo','Manutenção','Motivo','Locatário']);
+ assert.equal(alq.cabecalho[1][1],'Tempo da Mecânica · TEMPO DA MECANICA LTDA · CNPJ 11.222.333/0001-81');assert.equal(alq.cabecalho[2][1],'Alquiler Rent a Car · ALQUILER LTDA · CNPJ 44.555.666/0001-99');
+ assert.equal(alq.locadora,'Alquiler Rent a Car');assert.equal(alq.totais[4][0],'Parte da Alquiler Rent a Car');
  assert.equal(seguro('A — B “x” ok'),'A - B "x" ok');
 });
 
@@ -48,4 +53,11 @@ test('NF-e com nItem como tag e protocolo antes da nota (formato de alguns distr
  const n=lerNFe(xml);
  assert.equal(n.itens.length,2);assert.deepEqual(n.itens.map(i=>[i.n,i.codigo,i.ean,i.quantidade,i.valor_unitario]),[[1,'A-1','7891234567895',3,198.93],[2,'B-2',null,2,34.14]]);
  assert.equal(n.numero,'99');assert.equal(n.serie,'221');assert.equal(n.emissao,'2026-11-23');assert.equal(n.valor_total,665.07);assert.equal(n.emitente_cnpj,'11222333000181');
+});
+
+test('relatório do estoque: só o que tem saldo, por categoria, com total a custo',async()=>{
+ const {montarRelatorioEstoque}=await import('../estoque-pdf.mjs');
+ const r=montarRelatorioEstoque([{descricao:'Óleo 5W30',categoria:'fluidos',saldo:4,unidade:'L',custo_medio:30},{descricao:'Bucha',categoria:'pecas',saldo:2,unidade:'UN',custo_medio:0},{descricao:'Filtro',categoria:'pecas',saldo:0,unidade:'UN',custo_medio:20},{descricao:'Amortecedor',categoria:'pecas',saldo:1,unidade:'UN',custo_medio:250}],{pecas:'Peças',fluidos:'Fluidos'});
+ assert.deepEqual(r.grupos.map(g=>g.categoria),['Fluidos','Peças']);assert.deepEqual(r.grupos[1].itens.map(i=>i.descricao),['Amortecedor','Bucha']);
+ assert.equal(r.itens,3);assert.equal(r.total,370);assert.equal(r.semCusto,1);
 });

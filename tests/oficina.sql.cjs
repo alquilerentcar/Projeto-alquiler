@@ -419,6 +419,22 @@ assert.doesNotMatch((await one("select pg_get_functiondef('public.oficina_manute
 const movCobrado=(await one("select x.id from oficina_movimentos x where x.manutencao_id=$1 and x.tipo='saida' limit 1",[m.id])).id;
 await assert.rejects(()=>db.query('select oficina_peca_preco($1,$2,$3,false)',[tempo,movCobrado,10]),/cobrada|encerrada|aprovado/);
 
+// Orçamento de carro da locadora: empresa dona do carro no cabeçalho; tipo de cada linha trocável.
+await db.exec(fs.readFileSync(root+'/sql/oficina_orcamento_alquiler.sql','utf8'));
+await db.exec(fs.readFileSync(root+'/sql/oficina_orcamento_alquiler.sql','utf8')); // rodar de novo não quebra
+let ol=(await one('select oficina_orcamento($1,$2) p',[tempo,mMg.id])).p;
+assert.equal(mMg.carro_id,carroAlq);assert.ok(ol.locadora,'carro da Alquiler traz a locadora');assert.equal(ol.locadora.razao_social,(await one('select razao_social from empresas where id=$1',[alquiler])).razao_social);
+const pecaN=ol.linhas.find(l=>l.tipo==='peca');assert.ok(pecaN);
+await assert.rejects(()=>db.query('select oficina_linha_natureza($1,$2,$3,$4)',[tempo,'peca',pecaN.id,'outra']),/Escolha corretiva/);
+await db.query('select oficina_linha_natureza($1,$2,$3,$4)',[tempo,'peca',pecaN.id,'avaria']);
+ol=(await one('select oficina_orcamento($1,$2) p',[tempo,mMg.id])).p;let ln=ol.linhas.find(l=>l.id===pecaN.id);assert.equal(ln.natureza,'avaria');assert.equal(Number(ln.pct_locatario),100);
+await db.query('select oficina_linha_natureza($1,$2,$3,$4)',[tempo,'peca',pecaN.id,'preventiva']);
+ln=(await one('select oficina_orcamento($1,$2) p',[tempo,mMg.id])).p.linhas.find(l=>l.id===pecaN.id);assert.equal(ln.natureza,'preventiva');
+const servN=ol.linhas.find(l=>l.tipo==='servico');
+if(servN){await db.query('select oficina_linha_natureza($1,$2,$3,$4)',[tempo,'servico',servN.id,'avaria']);assert.equal((await one('select oficina_orcamento($1,$2) p',[tempo,mMg.id])).p.linhas.find(l=>l.id===servN.id).natureza,'avaria');}
+await assert.rejects(()=>db.query('select oficina_linha_natureza($1,$2,$3,$4)',[tempo,'peca',pecaJ.id,'avaria']),/já foi tirada/);
+await assert.rejects(()=>db.query('select oficina_linha_natureza($1,$2,$3,$4)',[tempo,'peca',movCobrado,'avaria']),/cobrada|encerrada|aprovado/);
+
 // Sem login, nada.
 await db.exec("set test.uid='';");await assert.rejects(()=>db.query('select oficina_painel($1)',[tempo]),/Sem acesso/);
 await db.close();console.log('PASS SQL: Oficina com peças por código de barras, entradas com custo médio, saídas por carro corretiva/preventiva sem estoque negativo, manutenções ligadas à Frota, responsável, rateio, serviços, nota fiscal, fotos da peça, aprovação do analista, cobrança parcelada, responsável com substituição, módulo separado, trava de saída da manutenção, financeiro, código de barras gerado, cadastro completo com lote, saídas sem carro, registro imutável, funcionário pelo CPF, fluxo do estoque (caixa, venda, devolução e resumo) compra com marca, preço e fornecedor, entrada automática na oficina quando o carro entra em manutenção e ordem de serviço com relatórios de entrada e saída.');

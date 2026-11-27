@@ -391,6 +391,34 @@ assert.ok(rc.some(x=>x.situacao==='cobrado'),'manutenção já cobrada aparece c
 const vOs=await one("select oficina_vistoria_salvar($1,$2,'entrada',$3) v",[tempo,mMg.id,JSON.stringify({combustivel:4,fotos:[`${tempo}/vistoria/${mMg.id}/entrada-1.jpg`]})]).catch(e=>({erro:e.message}));
 assert.ok(!vOs.erro||!/KM/.test(vOs.erro),'sem KM não bloqueia: '+(vOs.erro||''));
 
+// Valor da peça no orçamento (digitado ou do cadastro) e tirar peça (volta ao estoque).
+await db.exec(fs.readFileSync(root+'/sql/oficina_orcamento_ajustes.sql','utf8'));
+await db.exec(fs.readFileSync(root+'/sql/oficina_orcamento_ajustes.sql','utf8')); // rodar de novo não quebra
+let oj=(await one('select oficina_orcamento($1,$2) p',[tempo,mMg.id])).p;
+const pecaJ=oj.linhas.find(l=>l.motivo==='Para-choque da batida');assert.ok(pecaJ);
+await assert.rejects(()=>db.query('select oficina_peca_preco($1,$2,$3,false)',[tempo,pecaJ.id,-1]),/entre R\$ 0/);
+await db.query('select oficina_peca_preco($1,$2,$3,true)',[tempo,pecaJ.id,50]);
+oj=(await one('select oficina_orcamento($1,$2) p',[tempo,mMg.id])).p;let lj=oj.linhas.find(l=>l.id===pecaJ.id);
+assert.equal(Number(lj.custo_unitario),50);assert.equal(Number(lj.valor_unitario),70,'batida: 50 + 40%');assert.equal(lj.preco_origem,'manual');
+assert.equal(Number((await one('select custo_medio from oficina_produtos where id=$1',[filtro.id])).custo_medio)>0,true);
+const cadastro=Number((await one('select custo_medio from oficina_produtos where id=$1',[filtro.id])).custo_medio);
+await db.query('select oficina_peca_preco($1,$2,null,false)',[tempo,pecaJ.id]);
+lj=(await one('select oficina_orcamento($1,$2) p',[tempo,mMg.id])).p.linhas.find(l=>l.id===pecaJ.id);assert.equal(Number(lj.custo_unitario),cadastro);assert.equal(lj.preco_origem,'cadastro');
+const saldoAntes=Number((await one('select saldo from oficina_produtos where id=$1',[filtro.id])).saldo);
+await assert.rejects(()=>db.query('select oficina_peca_remover($1,$2,$3)',[tempo,pecaJ.id,'']),/Explique/);
+const rem=(await one('select oficina_peca_remover($1,$2,$3) r',[tempo,pecaJ.id,'Peça não foi usada'])).r;
+assert.equal(Number((await one('select saldo from oficina_produtos where id=$1',[filtro.id])).saldo),saldoAntes+1,'volta ao estoque');assert.equal(Number(rem.saldo),saldoAntes+1);
+oj=(await one('select oficina_orcamento($1,$2) p',[tempo,mMg.id])).p;assert.ok(!oj.linhas.some(l=>l.id===pecaJ.id),'sai do orçamento');
+assert.equal((await one('select oficina_fotos_ok($1) ok',[pecaJ.id])).ok,true,'não pede mais foto');
+assert.ok(!(await one('select oficina_fotos_pendentes($1,$2) f',[tempo,mMg.id])).f.some(f=>f.movimento_id===pecaJ.id));
+assert.equal((await one("select count(*)::int n from oficina_movimentos where manutencao_id=$1 and tipo='ajuste' and observacao like 'Devolvida ao estoque%'",[mMg.id])).n,1);
+await assert.rejects(()=>db.query('select oficina_peca_remover($1,$2,$3)',[tempo,pecaJ.id,'de novo']),/já foi tirada/);
+await assert.rejects(()=>db.query('select oficina_peca_preco($1,$2,$3,false)',[tempo,pecaJ.id,10]),/já foi tirada/);
+assert.doesNotMatch((await one("select pg_get_functiondef('public.oficina_manutencao_status(uuid,uuid,text,text)'::regprocedure) d")).d,/oficina_vistorias/,'concluir sem relatórios');
+// Manutenção já cobrada não aceita mudança de valor.
+const movCobrado=(await one("select x.id from oficina_movimentos x where x.manutencao_id=$1 and x.tipo='saida' limit 1",[m.id])).id;
+await assert.rejects(()=>db.query('select oficina_peca_preco($1,$2,$3,false)',[tempo,movCobrado,10]),/cobrada|encerrada|aprovado/);
+
 // Sem login, nada.
 await db.exec("set test.uid='';");await assert.rejects(()=>db.query('select oficina_painel($1)',[tempo]),/Sem acesso/);
 await db.close();console.log('PASS SQL: Oficina com peças por código de barras, entradas com custo médio, saídas por carro corretiva/preventiva sem estoque negativo, manutenções ligadas à Frota, responsável, rateio, serviços, nota fiscal, fotos da peça, aprovação do analista, cobrança parcelada, responsável com substituição, módulo separado, trava de saída da manutenção, financeiro, código de barras gerado, cadastro completo com lote, saídas sem carro, registro imutável, funcionário pelo CPF, fluxo do estoque (caixa, venda, devolução e resumo) compra com marca, preço e fornecedor, entrada automática na oficina quando o carro entra em manutenção e ordem de serviço com relatórios de entrada e saída.');

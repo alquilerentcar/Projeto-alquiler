@@ -1,7 +1,7 @@
 import {lerQuantidade,lerValor,normalizarCodigo,adicionarItem,situacaoEstoque,conferirItens,itensEntrada,itensSaida,fmtQtd,STATUS,rotuloManutencao,SITUACOES_SAIDA} from './oficina-core.mjs?v=20261124';
 import {lerNFe,casarItens} from './nfe-core.mjs?v=20261123b';
-import {ITENS_VISTORIA,COMBUSTIVEL,paginaOrdemServico} from './ordem-servico.mjs?v=20261124';
-import {montarOrcamento,resumoSaidas,CATEGORIAS,NATUREZA} from './orcamento-core.mjs?v=20261124';
+import {ITENS_VISTORIA,COMBUSTIVEL,paginaOrdemServico} from './ordem-servico.mjs?v=20261128';
+import {montarOrcamento,resumoSaidas,CATEGORIAS,NATUREZA} from './orcamento-core.mjs?v=20261128';
 import {paginaEtiquetas,ean13Valido,FORMATOS} from './etiqueta-core.mjs?v=20261118b';
 import {serialSuportado,portaAutorizada,conectarImpressora,imprimirSerial} from './impressora-serial.mjs?v=20261118';
 const FORMATO_USB='usb';
@@ -290,13 +290,20 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
  // ---------- Estoque ----------
  const ultimaCompra=p=>p.ultima_compra_em?[p.ultimo_custo==null?null:brl(p.ultimo_custo),p.ultimo_fornecedor,p.ultimo_documento,new Date(p.ultima_compra_em).toLocaleDateString('pt-BR',{timeZone:'America/Manaus'})].filter(Boolean).join(' · '):'—';
  function abaEstoque(){
-  const sec=el('section',null,'panel'),top=el('div',null,'ofi-linha'),busca=input('search'),filtro=el('select'),nova=btn('Nova peça','btn btn-primary');busca.placeholder='Buscar peça, código ou local';busca.setAttribute('aria-label','Buscar peça');
-  for(const [v,l] of [['','Todos os itens'],['repor','Precisa repor'],...Object.entries(CAT_ITEM).map(([k,l])=>['cat:'+k,l])]){const o=el('option',l);o.value=v;filtro.append(o);}filtro.setAttribute('aria-label','Filtro do estoque');top.append(busca,filtro,nova);
+  const sec=el('section',null,'panel'),top=el('div',null,'ofi-linha'),busca=input('search'),filtro=el('select'),nova=btn('Nova peça','btn btn-primary'),rel=btn('Relatório em PDF');busca.placeholder='Buscar peça, código ou local';busca.setAttribute('aria-label','Buscar peça');
+  for(const [v,l] of [['','Todos os itens'],['repor','Precisa repor'],...Object.entries(CAT_ITEM).map(([k,l])=>['cat:'+k,l])]){const o=el('option',l);o.value=v;filtro.append(o);}filtro.setAttribute('aria-label','Filtro do estoque');top.append(busca,filtro,nova,rel);
   const repor=painel.produtos.filter(p=>p.ativo&&situacaoEstoque(p)!=='Normal');
   sec.append(el('h2','Estoque'),el('p',`${painel.produtos.length} peça(s) cadastrada(s) · ${repor.length} precisando repor · valor em estoque ${brl(painel.produtos.reduce((s,p)=>s+Number(p.saldo)*Number(p.custo_medio),0))}`,'section-note'),top);
   const t=el('table'),th=el('thead'),hr=el('tr'),tb=el('tbody');for(const h of ['Item','Categoria','Código','Local','Em estoque','Mínimo','Situação','Custo médio','Última compra',''])hr.append(el('th',h));th.append(hr);t.append(th,tb);const w=el('div',null,'table-scroll');w.append(t);sec.append(w);
-  const desenhar=()=>{tb.replaceChildren();const q=busca.value.toLocaleLowerCase('pt-BR').trim();
-   for(const p of painel.produtos){const sit=situacaoEstoque(p);if(filtro.value==='repor'&&sit==='Normal')continue;if(filtro.value.startsWith('cat:')&&(p.categoria||'pecas')!==filtro.value.slice(4))continue;if(q&&!(p.descricao+' '+(p.codigo_barras||'')+' '+(p.codigo_interno||'')+' '+(p.localizacao||'')+' '+(p.marca||'')+' '+(p.ultimo_fornecedor||'')).toLocaleLowerCase('pt-BR').includes(q))continue;
+  // Mesmo filtro da tabela vale para o relatório em PDF.
+  const passa=p=>{const q=busca.value.toLocaleLowerCase('pt-BR').trim(),sit=situacaoEstoque(p);if(filtro.value==='repor'&&sit==='Normal')return false;if(filtro.value.startsWith('cat:')&&(p.categoria||'pecas')!==filtro.value.slice(4))return false;return !q||(p.descricao+' '+(p.codigo_barras||'')+' '+(p.codigo_interno||'')+' '+(p.localizacao||'')+' '+(p.marca||'')+' '+(p.ultimo_fornecedor||'')).toLocaleLowerCase('pt-BR').includes(q);};
+  rel.onclick=async()=>{rel.disabled=true;const antes=rel.textContent;rel.textContent='Gerando…';try{const {gerarEstoquePdf}=await import('./estoque-pdf.mjs?v=20261128');
+    const filtroTxt=[filtro.options[filtro.selectedIndex]?.text,busca.value.trim()?'busca: '+busca.value.trim():''].filter(Boolean).join(' · ');
+    const bytes=await gerarEstoquePdf({db,company,produtos:painel.produtos.filter(passa),categorias:CAT_ITEM,filtro:filtroTxt});
+    const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})),a=el('a');a.href=url;a.download=`estoque-${new Date(Date.now()-4*3600000).toISOString().slice(0,10)}.pdf`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);status.textContent='Relatório do estoque gerado.';}
+   catch(e){status.textContent='Não foi possível gerar o relatório: '+e.message;}finally{rel.disabled=false;rel.textContent=antes;}};
+  const desenhar=()=>{tb.replaceChildren();
+   for(const p of painel.produtos){if(!passa(p))continue;const sit=situacaoEstoque(p);
     const r=el('tr'),s=el('td',sit,sit==='Normal'?'ofi-ok':'ofi-alerta'),a=el('td',null,'table-actions'),hist=btn('Histórico');hist.onclick=()=>historico(p);a.append(hist);const ed=btn('Editar');ed.onclick=()=>editarItem(p);a.append(ed);
     if(!p.codigo_barras){const gc=btn('Gerar código de barras');gc.onclick=async()=>{try{const np=await rpc('oficina_produto_gerar_codigo',{p_empresa:company.id,p_produto:p.id});await recarregar('Código '+np.codigo_barras+' gerado para '+p.descricao+'.');imprimirEtiquetas([{descricao:np.descricao,codigo:np.codigo_barras,local:np.localizacao,copias:Math.max(1,Math.ceil(Number(np.saldo))||1)}]);}catch(e){alert(e.message);}};a.append(gc);}
     else{const et=btn('Imprimir etiqueta');et.onclick=()=>imprimirEtiquetas([{descricao:p.descricao,codigo:p.codigo_barras,local:p.localizacao,copias:1}]);a.append(et);}
@@ -559,6 +566,10 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
   const vista=montarOrcamento(o);
   o.linhas.forEach((l,k)=>{const v=vista.linhas[k],r=el('tr'),a=el('td');r.append(el('td',v.tipo),el('td',v.descricao+(l.motivo?' · '+l.motivo:'')),el('td',v.quantidade),el('td',v.unitario),el('td',v.total),el('td',v.natureza),el('td',v.locatario));
    if(l.tipo==='peca'&&!Number(l.custo_unitario))r.children[3].append(el('small',' ⚠ sem valor','ofi-sem-valor'));
+   // Tipo de cada peça/serviço: dá para trocar enquanto o orçamento está em elaboração.
+   if(editavel){const s=el('select');for(const [k,lb] of Object.entries(NATUREZA)){const op=el('option',lb);op.value=k;s.append(op);}s.value=l.natureza||mm.tipo;s.setAttribute('aria-label','Tipo de '+l.descricao);
+    s.onchange=async()=>{erro.textContent='';s.disabled=true;try{await rpc('oficina_linha_natureza',{p_empresa:company.id,p_tipo:l.tipo,p_id:l.id,p_natureza:s.value});await carregar();await orcamento(m);}catch(e){erro.textContent=/oficina_linha_natureza|Could not find|schema cache/i.test(e.message)?'Aplique sql/oficina_orcamento_alquiler.sql no Supabase para trocar o tipo.':e.message;s.disabled=false;s.value=l.natureza||mm.tipo;}};
+    r.children[5].replaceChildren(s);}
    if(editavel&&l.tipo==='peca'){const bv=btn('Valor'),bx=btn('Tirar');a.append(bv,bx);
     bv.onclick=()=>{const tr=el('tr'),td=el('td');td.colSpan=8;const f=el('div',null,'ofi-linha'),v=input();v.inputMode='decimal';v.value=Number(l.custo_unitario)?String(l.custo_unitario).replace('.',','):'';v.placeholder='0,00';
      const lv=campo(f,'Custo por unidade de '+l.descricao+' (R$)',v),cad=input('checkbox'),lc=el('label');lc.style.flexDirection='row';lc.style.alignItems='center';lc.append(cad,document.createTextNode(' Gravar também no custo da peça no estoque'));cad.checked=!Number(l.custo_unitario);cad.setAttribute('aria-label','Gravar também no custo da peça');
@@ -595,7 +606,7 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
    if(!pend.length&&!lista.length)fotos.append(el('p','Nenhuma peça retirada.','section-note'));}).catch(e=>fotos.append(el('p',e.message,'ofi-erro')));
   box.append(erro);
   const acoes=el('div',null,'dialog-footer'),pdf=btn('Gerar orçamento (papel timbrado)','btn btn-primary');
-  pdf.onclick=async()=>{erro.textContent='';pdf.disabled=true;try{const {gerarOrcamentoPdf}=await import('./orcamento-pdf.mjs?v=20261124');const bytes=await gerarOrcamentoPdf({db,company,orcamento:o});
+  pdf.onclick=async()=>{erro.textContent='';pdf.disabled=true;try{const {gerarOrcamentoPdf}=await import('./orcamento-pdf.mjs?v=20261128');const bytes=await gerarOrcamentoPdf({db,company,orcamento:o});
    const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})),a=el('a');a.href=url;a.download=`orcamento-${String(mm.numero).padStart(5,'0')}-${mm.placa}.pdf`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
    catch(e){erro.textContent='Não foi possível gerar o PDF: '+e.message;}finally{pdf.disabled=false;}};
   acoes.append(pdf);

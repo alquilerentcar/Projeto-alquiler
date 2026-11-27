@@ -1,5 +1,5 @@
 import {companyStationery} from './empresa-branding.js';
-import {montarOrcamento,seguro} from './orcamento-core.mjs?v=20261124';
+import {montarOrcamento,seguro} from './orcamento-core.mjs?v=20261128';
 
 // Orçamento da manutenção no papel timbrado da empresa (o mesmo arquivo usado nos recibos).
 export async function gerarOrcamentoPdf({db,company,orcamento}){
@@ -15,7 +15,7 @@ export async function gerarOrcamentoPdf({db,company,orcamento}){
  const quebrar=(t,size,font,max)=>{const out=[];let linha='';for(const w of seguro(t).split(/\s+/)){const n=linha?linha+' '+w:w;if(font.widthOfTextAtSize(n,size)<=max)linha=n;else{if(linha)out.push(linha);linha=w;}}if(linha)out.push(linha);return out.length?out:[''];};
  const garantir=async alt=>{if(y-alt<90)await novaPagina();};
 
- escrever(o.titulo,left,y,15,bold,azul);y-=16;escrever(o.empresa,left,y,8.5,regular,cinza);y-=20;
+ escrever(o.titulo,left,y,15,bold,azul);y-=24;
  for(const [k,v] of o.cabecalho){const ls=quebrar(v,9.5,regular,content-90);await garantir(ls.length*13+4);escrever(k,left,y,9.5,bold,cinza);ls.forEach((l,i)=>escrever(l,left+90,y-i*13,9.5));y-=ls.length*13+4;}
  y-=10;
  // Tabela: tipo, descrição, qtd, unitário, total, natureza, parte do locatário.
@@ -33,7 +33,8 @@ export async function gerarOrcamentoPdf({db,company,orcamento}){
  for(const [k,v] of o.totais){const forte=/Total|locatário/.test(k);escrever(k,left+content*.55,y,forte?10:9.5,forte?bold:regular,forte?azul:preto);const w=(forte?bold:regular).widthOfTextAtSize(seguro(v),forte?10:9.5);escrever(v,left+content-w,y,forte?10:9.5,forte?bold:regular,forte?azul:preto);y-=16;}
  y-=6;for(const l of quebrar(o.regra+(o.cobrado?' '+o.cobrado:''),8,regular,content)){await garantir(12);escrever(l,left,y,8,regular,cinza);y-=11;}
  await garantir(70);y-=40;
- page.drawLine({start:{x:left,y},end:{x:left+content*.42,y},thickness:.6,color:cinza});page.drawLine({start:{x:left+content*.58,y},end:{x:left+content,y},thickness:.6,color:cinza});
- escrever('Responsável pela oficina',left,y-12,8,regular,cinza);escrever('Locatário / cliente',left+content*.58,y-12,8,regular,cinza);
+ // Assinaturas: oficina, locadora dona do carro (quando houver) e locatário.
+ const assinaturas=['Responsável pela oficina',...(o.locadora?[o.locadora]:[]),'Locatário / cliente'],gap=content*.06,larg=(content-gap*(assinaturas.length-1))/assinaturas.length;
+ assinaturas.forEach((t,i)=>{const x=left+i*(larg+gap);page.drawLine({start:{x,y},end:{x:x+larg,y},thickness:.6,color:cinza});escrever(t,x,y-12,8,regular,cinza);});
  return pdf.save();
 }

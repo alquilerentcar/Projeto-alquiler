@@ -1,6 +1,13 @@
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
 import {requireAuth,bindLogout} from './auth-guard.js';
 const db=createClient('https://xtelzwclrzzlsqjecscl.supabase.co','sb_publishable_37VAv7_GhtRLum-WVwMv0w_EiD0HqZ3');
+import {TELAS_INICIAIS} from './tela-inicial.mjs?v=20261127';
+// Tela inicial: onde o usuário cai depois de entrar. Fica fora do FormData de propósito (é salva à parte).
+const telaSel=document.createElement('select');telaSel.id='user-tela-inicial';telaSel.setAttribute('aria-label','Tela inicial');for(const [v,l] of TELAS_INICIAIS)telaSel.add(new Option(l,v));
+const telaLabel=document.createElement('label');telaLabel.append(Object.assign(document.createElement('span'),{textContent:'Tela inicial ao entrar'}),telaSel);
+document.querySelector('#user-form .form-grid')?.append(telaLabel);
+let telasIniciais=new Map(),telasEmpresa=null;
+async function carregarTelas(empresa){if(telasEmpresa===empresa)return;telasEmpresa=empresa;telasIniciais=new Map();if(!empresa)return;const {data,error}=await db.rpc('acesso_telas_iniciais',{p_empresa:empresa});telaLabel.hidden=Boolean(error);if(!error)for(const x of data||[])telasIniciais.set(x.usuario_empresa_id,x.tela);}
 await requireAuth(db);bindLogout(db);
 const control=document.body.dataset.accessView==='controle';
 const $=s=>document.querySelector(s),cf=$('#company-form'),uf=$('#user-form');
@@ -56,7 +63,7 @@ function openUser(user=null) {
   uf.elements.administrador.value=String(user?.administrador??false);uf.elements.ativo.value=String(user?.ativo??true);
   uf.elements.email.readOnly=Boolean(user);uf.elements.password.required=!user;uf.elements.password.disabled=Boolean(user);$('#password-label').hidden=Boolean(user);
   const codes=user?state.modulos.filter(m=>state.permissoes.some(p=>p.usuario_empresa_id===user.id&&p.modulo_id===m.id&&p.pode_visualizar)).map(m=>m.codigo):[];
-  checks('#user-modules',codes,licensedCodes(selected));$('#user-dialog').showModal();
+  checks('#user-modules',codes,licensedCodes(selected));telaSel.value='';carregarTelas(selected).then(()=>{telaSel.value=user?telasIniciais.get(user.id)||'':'';}).catch(()=>{telaLabel.hidden=true;});$('#user-dialog').showModal();
 }
 function lock(value){busy=value;document.querySelectorAll('#company-form button,#new-company,#user-form button,#new-user').forEach(b=>{b.disabled=value;});if(!value)$('#new-user').disabled=!selected||!state.criacao_contas_configurada;}
 async function reload(id=selected){state=await api();$('#access-content').hidden=false;$('#setup-notice').hidden=state.criacao_contas_configurada;$('#new-company').disabled=false;selectCompany(id&&state.empresas.some(e=>e.id===id)?id:state.empresas[0]?.id||null);}
@@ -71,7 +78,11 @@ uf.addEventListener('submit',async event=>{
   event.preventDefault();if(busy)return;lock(true);$('#user-message').textContent='Salvando…';
   const usuario=Object.fromEntries(new FormData(uf)),password=usuario.password;delete usuario.password;
   usuario.empresa_id=selected;usuario.administrador=usuario.administrador==='true';usuario.ativo=usuario.ativo==='true';
-  try{await api({action:usuario.id?'usuario_editar':'usuario_criar',usuario,password,modulos:checked('#user-modules')});$('#user-dialog').close();try{await reload();message('Acesso salvo. O usuário entra com e-mail e senha.');}catch{message('Acesso salvo. Atualize a página para recarregar a lista.');}}
+  const tela=telaLabel.hidden?null:telaSel.value,telaAntes=usuario.id?telasIniciais.get(usuario.id)||'':'';
+  try{await api({action:usuario.id?'usuario_editar':'usuario_criar',usuario,password,modulos:checked('#user-modules')});$('#user-dialog').close();try{await reload();
+   let aviso='';if(tela!==null&&tela!==telaAntes){const alvo=usuario.id||state.usuarios.find(u=>u.empresa_id===selected&&String(u.usuario||'').toLowerCase()===String(usuario.usuario||'').toLowerCase())?.id;
+    const {error}=alvo?await db.rpc('acesso_tela_inicial_definir',{p_empresa:selected,p_usuario_empresa:alvo,p_tela:tela||null}):{error:{message:'usuário não encontrado'}};if(error)aviso=' A tela inicial não foi salva: '+error.message;else{telasIniciais.set(alvo,tela);if(!tela)telasIniciais.delete(alvo);}}
+   message('Acesso salvo. O usuário entra com e-mail e senha.'+aviso);}catch{message('Acesso salvo. Atualize a página para recarregar a lista.');}}
   catch(error){$('#user-message').textContent=error.message;}finally{uf.elements.password.value='';lock(false);}
 });
 $('#new-company').onclick=()=>{if(!control)return;if(dirty&&!confirm('Descartar alterações não salvas?'))return;selectCompany(null);cf.elements.nome_fantasia.focus();};

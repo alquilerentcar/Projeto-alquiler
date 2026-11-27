@@ -25,7 +25,7 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
  host.replaceChildren();const wrap=el('div');wrap.id='oficina';host.append(wrap);
  const tabs=el('nav',null,'ofi-tabs');tabs.setAttribute('aria-label','Áreas da oficina');
  for(const [k,l] of ABAS){const a=el('a',l);a.href='oficina.html?secao='+k;if(k===secao)a.setAttribute('aria-current','page');tabs.append(a);}
- const status=el('p',null,'flow-note');status.setAttribute('aria-live','polite');const body=el('div');wrap.append(tabs,status,body);
+ const status=el('p',null,'flow-note');status.setAttribute('aria-live','polite');const body=el('div');wrap.append(status,body);// Navegação só pelo menu lateral (igual ao resto do sistema): as abas não aparecem mais.
  const rpc=async(name,args)=>{const r=await db.rpc(name,args);if(r.error)throw Error(missing(r.error)?SETUP:r.error.message);return r.data;};
  let painel={produtos:[],servicos:[],manutencoes:[],frota_em_manutencao:[],rateio:{corretiva:50,preventiva:0,margem_corretiva:40},analista:false};
  const regraTexto=()=>{const r=painel.rateio,mg=Number(r.margem_corretiva??0);return `Corretiva: ${mg?'peça pelo custo da nota +'+String(mg).replace('.',',')+'%, ':''}${r.corretiva}% locatário e ${100-r.corretiva}% empresa. Preventiva: ${Number(r.preventiva)?r.preventiva+'% locatário e '+(100-r.preventiva)+'% empresa':'100% empresa'}. Batida / avaria: 100% locatário.`;};
@@ -309,13 +309,14 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
   resumoEstoque();
  }
  // Resumo do estoque: patrimônio por categoria, o que entrou e saiu no período e o resultado da revenda.
+ let resumoCache=null;
  async function resumoEstoque(){
   const sec=el('section',null,'panel'),f=el('div',null,'ofi-linha'),de=campo(f,'De',input('date')),ate=campo(f,'Até',input('date')),ver=btn('Atualizar','btn btn-primary'),host=el('div');f.append(ver);
   const hoje=new Date(Date.now()-4*3600000);ate.value=hoje.toISOString().slice(0,10);de.value=new Date(hoje.getTime()-30*86400000).toISOString().slice(0,10);
+  if(resumoCache){[de.value,ate.value]=resumoCache.chave.split('|');}de.setAttribute('aria-label','Resumo de');ate.setAttribute('aria-label','Resumo até');
   sec.append(el('h2','Resumo do estoque'),el('p','Quanto há guardado (patrimônio), quanto entrou e saiu no período e quanto a revenda deu de lucro.','section-note'),f,host);body.prepend(sec);
   const tabela=(cols,rows)=>{const t=el('table'),th=el('thead'),hr=el('tr'),tb=el('tbody');for(const c of cols)hr.append(el('th',c));th.append(hr);t.append(th,tb);for(const r of rows){const tr=el('tr');for(const v of r)tr.append(el('td',v));tb.append(tr);}if(!rows.length){const tr=el('tr'),td=el('td','Nada no período.');td.colSpan=cols.length;tr.append(td);tb.append(tr);}const w=el('div',null,'table-scroll');w.append(t);return w;};
-  async function carregarResumo(){host.replaceChildren(el('p','Carregando…','section-note'));ver.disabled=true;
-   try{const r=await rpc('oficina_estoque_resumo',{p_empresa:company.id,p_de:de.value,p_ate:ate.value});host.replaceChildren();
+  const mostrarResumo=r=>{host.replaceChildren();
     const totC=r.patrimonio.reduce((s,x)=>s+Number(x.valor_custo||0),0);
     const m=el('div',null,'metrics dashboard-metrics'),met=(l,v)=>{const d=el('div',null,'metric');d.append(el('span',l),el('strong',v));return d;};
     const ent=r.periodo.filter(x=>x.tipo==='entrada').reduce((s,x)=>s+Number(x.valor_custo||0),0),sai=r.periodo.filter(x=>x.tipo==='saida').reduce((s,x)=>s+Number(x.valor_custo||0),0);
@@ -323,7 +324,10 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
     m.append(met('Patrimônio em estoque (a custo)',brl(totC)),met('Entrou no período',brl(ent)),met('Saiu no período (a custo)',brl(sai)),met('Vendido (revenda)',brl(rec)),met('Lucro da revenda',brl(luc)));host.append(m);
     host.append(el('h3','Patrimônio por categoria'),tabela(['Categoria','Itens','Unidades','Valor a custo','Valor a preço de venda'],r.patrimonio.map(x=>[CAT_ITEM[x.categoria]||x.categoria,String(x.itens),fmtQtd(x.unidades),brl(x.valor_custo),x.valor_venda==null?'—':brl(x.valor_venda)+(x.sem_preco?` (${x.sem_preco} sem preço)`:'')])));
     host.append(el('h3','Entradas e saídas do período'),tabela(['Movimento','Situação','Lançamentos','Unidades','Valor a custo','Valor vendido'],r.periodo.map(x=>[x.tipo==='entrada'?'Entrada':x.tipo==='saida'?'Saída':'Ajuste',x.tipo==='saida'?(SITUACOES_SAIDA[x.situacao]||'Outra'):'—',String(x.movimentos),fmtQtd(x.unidades),brl(x.valor_custo),x.valor_venda==null?'—':brl(x.valor_venda)])));
-    host.append(el('h3','Revenda'),tabela(['Item','Entrou','Vendido','Em estoque','Custo médio','Preço de venda','Margem','Vendido (R$)','Lucro'],r.revenda.map(x=>{const mg=Number(x.preco_venda)>0?Math.round((1-Number(x.custo_medio)/Number(x.preco_venda))*100)+'%':'—';return [x.produto,fmtQtd(x.entrou),fmtQtd(x.vendido),fmtQtd(x.saldo)+' '+x.unidade,brl(x.custo_medio),x.preco_venda==null?'sem preço':brl(x.preco_venda),mg,brl(x.receita),brl(x.lucro)];})));}
+    host.append(el('h3','Revenda'),tabela(['Item','Entrou','Vendido','Em estoque','Custo médio','Preço de venda','Margem','Vendido (R$)','Lucro'],r.revenda.map(x=>{const mg=Number(x.preco_venda)>0?Math.round((1-Number(x.custo_medio)/Number(x.preco_venda))*100)+'%':'—';return [x.produto,fmtQtd(x.entrou),fmtQtd(x.vendido),fmtQtd(x.saldo)+' '+x.unidade,brl(x.custo_medio),x.preco_venda==null?'sem preço':brl(x.preco_venda),mg,brl(x.receita),brl(x.lucro)];})));};
+  const chave=()=>de.value+'|'+ate.value;
+  async function carregarResumo(){if(resumoCache?.chave===chave())mostrarResumo(resumoCache.r);else host.replaceChildren(el('p','Carregando…','section-note'));ver.disabled=true;
+   try{const r=await rpc('oficina_estoque_resumo',{p_empresa:company.id,p_de:de.value,p_ate:ate.value});resumoCache={chave:chave(),r};mostrarResumo(r);}
    catch(e){host.replaceChildren(el('p',/oficina_estoque_resumo|Could not find|schema cache/i.test(e.message)?'Aplique sql/oficina_estoque_fluxo.sql no Supabase para ver o resumo.':e.message,'ofi-erro'));}finally{ver.disabled=false;}}
   ver.onclick=carregarResumo;await carregarResumo();
  }
@@ -613,7 +617,15 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
   dialog.append(acoes);
  }
 
- async function recarregar(msg){await carregar();body.replaceChildren();desenhar();status.textContent=msg||'';}
+ // Depois de salvar algo, a tela é redesenhada com os dados novos sem perder busca, filtros e a posição da rolagem.
+ function rolagem(){for(let n=body;n;n=n.parentElement){const o=getComputedStyle(n).overflowY;if(n.scrollHeight>n.clientHeight&&/(auto|scroll)/.test(o))return n;}return document.scrollingElement||document.documentElement;}
+ function salvarTela(){const campos=[...body.querySelectorAll('input,select,textarea')].map((e,i)=>({i,tag:e.tagName,tipo:e.type,id:e.getAttribute('aria-label')||e.placeholder||'',valor:e.value,marcado:e.checked})).filter(c=>c.tipo!=='file'&&c.tipo!=='hidden');const sc=rolagem();return {secao,campos,sc,topo:sc.scrollTop};}
+ function restaurarTela(t){if(!t||t.secao!==secao)return;const atuais=[...body.querySelectorAll('input,select,textarea')];
+  for(const c of t.campos){const e=atuais[c.i];if(!e||e.tagName!==c.tag||e.type!==c.tipo||(e.getAttribute('aria-label')||e.placeholder||'')!==c.id)continue;
+   if(c.tipo==='checkbox'||c.tipo==='radio'){if(e.checked!==c.marcado){e.checked=c.marcado;e.dispatchEvent(new Event('change',{bubbles:true}));}}
+   else if(e.value!==c.valor&&(e.tagName!=='SELECT'||[...e.options].some(op=>op.value===c.valor))){e.value=c.valor;e.dispatchEvent(new Event(e.tagName==='SELECT'?'change':'input',{bubbles:true}));}}
+  const voltar=()=>{t.sc.scrollTop=t.topo;};voltar();requestAnimationFrame(voltar);setTimeout(voltar,350);}
+ async function recarregar(msg){const t=salvarTela();await carregar();body.replaceChildren();desenhar();restaurarTela(t);status.textContent=msg||'';}
  function desenhar(){({manutencoes:abaManutencoes,entrada:abaEntrada,notas:abaNotas,saida:abaSaida,fotos:abaFotos,estoque:abaEstoque,aprovacoes:abaAprovacoes,financeiro:abaFinanceiro,movimentos:abaMovimentos,servicos:abaServicos}[secao]||abaManutencoes)();}
  desenhar();
 }

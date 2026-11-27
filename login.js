@@ -1,5 +1,5 @@
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
-import {entryDestination} from './access-policy.js';
+import {entryDestination} from './access-policy.js';import {minhaTelaInicial} from './tela-inicial.mjs?v=20261127';
 const db=createClient('https://xtelzwclrzzlsqjecscl.supabase.co','sb_publishable_37VAv7_GhtRLum-WVwMv0w_EiD0HqZ3');
 const form=document.querySelector('#system-login-form'),message=document.querySelector('#login-message'),button=document.querySelector('#system-login-button');
 form.addEventListener('submit',async event=>{
@@ -16,7 +16,8 @@ form.addEventListener('submit',async event=>{
   if(context.accessDenied)throw new Error('Esta conta não possui vínculo ativo com uma empresa.');
   if(context.company?.id&&context.companies.length===1)sessionStorage.setItem('bgsys:empresa-id',context.company.id);
   localStorage.removeItem('bgsys:empresa-cache');localStorage.removeItem('bgsys:usuario-cache');localStorage.removeItem('bgsys:empresa-cnpj');
-  location.replace(entryDestination(context));
+  const inicial=!context.developer&&context.companies?.length===1?await minhaTelaInicial(db,context.company?.id):null;
+  location.replace(inicial||entryDestination(context));
  }catch(error){await db.auth.signOut();message.textContent=error.message||'Não foi possível entrar. Tente novamente.';}
  finally{form.elements.password.value='';button.disabled=false;}
 });

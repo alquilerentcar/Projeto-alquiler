@@ -18,7 +18,7 @@ const $ = (selector) => document.querySelector(selector);
 const state = { clients: [], editing: null, loading: false };
 const fields = [
   "tipo_pessoa", "nome_completo", "nome_fantasia", "cpf", "cnpj",
-  "data_nascimento", "rg", "cnh", "nacionalidade", "profissao", "inscricao_estadual", "estado_civil", "email",
+  "data_nascimento", "rg", "cnh", "cnh_validade", "nacionalidade", "profissao", "inscricao_estadual", "estado_civil", "email",
   "cep", "endereco", "numero", "complemento", "bairro", "cidade", "uf",
   "nome_pai", "nome_mae",
   ...Array.from({ length: 4 }, (_, index) => [

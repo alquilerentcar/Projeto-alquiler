@@ -43,6 +43,9 @@ function varrer(raiz){if(raiz.nodeType!==1)return;if(raiz.matches?.('select'))co
 
 export function iniciar(){
  import('./cadastro-ajuda.mjs?v=20261128').then(x=>x.iniciarCadastros()).catch(()=>{});
+ // Contador de avisos automáticos no menu (Notificações).
+ const contar=async()=>{const c=window.alquilerContext;if(!c?.company?.id||!c.modules?.includes('locacao'))return;try{const [{getAuthenticatedClient},{contarAvisos}]=await Promise.all([import('/auth-guard.js'),import('/avisos.mjs?v=20261128')]);contarAvisos(await getAuthenticatedClient(),c.company.id);}catch{}};
+ window.addEventListener('app-context-ready',contar);if(window.alquilerContext)contar();
  botaoMenu();varrer(document.body);
  document.addEventListener('change',e=>{if(e.target instanceof HTMLSelectElement)colorir(e.target);},true);
  document.addEventListener('input',e=>{const t=e.target;if(t instanceof HTMLInputElement&&t.type==='search')agendar(t);});

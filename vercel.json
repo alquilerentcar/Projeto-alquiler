@@ -208,5 +208,11 @@
       ]
     }
   ],
-  "outputDirectory": "."
+  "outputDirectory": ".",
+  "crons": [
+    {
+      "path": "/api/avisos-diarios",
+      "schedule": "0 10 * * *"
+    }
+  ]
 }

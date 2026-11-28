@@ -16,7 +16,7 @@ const autentiqueSandbox = !/^(0|false|nao|não)$/i.test(process.env.AUTENTIQUE_S
 
 const files = Object.fromEntries([
   ['index.html','text/html'],['login.html','text/html'],['modulos.html','text/html'],['sidebar.html','text/html'],['dashboard.html','text/html'],['notificacoes.html','text/html'],['alteracoes.html','text/html'],['recibos.html','text/html'],['distratos.html','text/html'],['financeiro.html','text/html'],['oficina.html','text/html'],['empresa.html','text/html'],['clientes.html','text/html'],['fornecedores.html','text/html'],['carros.html','text/html'],['contratos.html','text/html'],['contrato.html','text/html'],['registros.html','text/html'],['modelos-contrato.html','text/html'],['locacoes.html','text/html'],['certificados.html','text/html'],
-  ['ui-theme.css','text/css'],['forge.min.js','text/javascript'],['certificado-reader.worker.js','text/javascript'],['forge-LICENSE.txt','text/plain'],['styles.css','text/css'],['assistente.css','text/css'],['sidebar.js','text/javascript'],['section-page.js','text/javascript'],['financeiro.js','text/javascript'],['oficina.js','text/javascript'],['oficina.mjs','text/javascript'],['oficina-core.mjs','text/javascript'],['nfe-core.mjs','text/javascript'],['orcamento-core.mjs','text/javascript'],['orcamento-pdf.mjs','estoque-pdf.mjs','combustivel-medidor.mjs','celebrar.mjs','devedor-pdf.mjs','cadastro-ajuda.mjs','avisos.mjs','notificacoes-avisos.mjs','ui-plus.mjs','ui-plus.css','text/javascript'],['etiqueta-core.mjs','text/javascript'],['impressora-serial.mjs','text/javascript'],['ordem-servico.mjs','text/javascript'],['pdv-estoque.html','text/html'],['pdv-estoque.js','text/javascript'],['pdv-estoque.mjs','text/javascript'],['pdv-estoque.css','text/css'],['app.js','text/javascript'],['pages.js','text/javascript'],['fleet.js','text/javascript'],['empresa.js','text/javascript'],['locacoes.js','text/javascript'],['contratos.js','text/javascript'],['contrato.js','text/javascript'],['registros.js','text/javascript'],['modelos-contrato.js','text/javascript'],['certificados.js','text/javascript'],['assistente.js','text/javascript'],['auth-guard.js','text/javascript'],['app-context.js','text/javascript'],['login.js','text/javascript'],['fluxo-login-locacao.bpmn','application/xml'],
+  ['ui-theme.css','text/css'],['forge.min.js','text/javascript'],['certificado-reader.worker.js','text/javascript'],['forge-LICENSE.txt','text/plain'],['styles.css','text/css'],['assistente.css','text/css'],['sidebar.js','text/javascript'],['section-page.js','text/javascript'],['financeiro.js','text/javascript'],['oficina.js','text/javascript'],['oficina.mjs','text/javascript'],['oficina-core.mjs','text/javascript'],['nfe-core.mjs','text/javascript'],['orcamento-core.mjs','text/javascript'],['orcamento-pdf.mjs','estoque-pdf.mjs','combustivel-medidor.mjs','celebrar.mjs','devedor-pdf.mjs','cadastro-ajuda.mjs','avisos.mjs','notificacoes-avisos.mjs','carro-documentos.mjs','ui-plus.mjs','ui-plus.css','text/javascript'],['etiqueta-core.mjs','text/javascript'],['impressora-serial.mjs','text/javascript'],['ordem-servico.mjs','text/javascript'],['pdv-estoque.html','text/html'],['pdv-estoque.js','text/javascript'],['pdv-estoque.mjs','text/javascript'],['pdv-estoque.css','text/css'],['app.js','text/javascript'],['pages.js','text/javascript'],['fleet.js','text/javascript'],['empresa.js','text/javascript'],['locacoes.js','text/javascript'],['contratos.js','text/javascript'],['contrato.js','text/javascript'],['registros.js','text/javascript'],['modelos-contrato.js','text/javascript'],['certificados.js','text/javascript'],['assistente.js','text/javascript'],['auth-guard.js','text/javascript'],['app-context.js','text/javascript'],['login.js','text/javascript'],['fluxo-login-locacao.bpmn','application/xml'],
 ].map(([name,type]) => [`/${name}`, [name, `${type}; charset=utf-8`]]));
 for (const [name,type] of [['perfil.html','text/html'],['perfil.js','text/javascript'],['conta.css','text/css'],['esqueci-senha.html','text/html'],['esqueci-senha.js','text/javascript'],['assinaturas.html','text/html'],['assinaturas.js','text/javascript'],['redefinir-senha.html','text/html'],['redefinir-senha.js','text/javascript'],['pdf-preview.js','text/javascript'],['pdfjs/pdf.mjs','text/javascript'],['pdfjs/pdf.worker.mjs','text/javascript'],['rich-document.js','text/javascript'],['documentos-modelo.html','text/html'],['documentos-modelo.js','text/javascript'],['document-model-core.js','text/javascript'],['document-model-pdf.js','text/javascript'],['document-model-records.js','text/javascript'],['empresa-branding.js','text/javascript'],['controle.html','text/html'],['acessos.html','text/html'],['acessos.js','text/javascript'],['acessos.css','text/css'],['access-policy.js','text/javascript'],['modulos.js','text/javascript']]) files['/'+name]=[name,type+'; charset=utf-8'];
 files['/ocupacoes-pendencias.js']=['ocupacoes-pendencias.js','text/javascript; charset=utf-8'];
@@ -239,7 +239,13 @@ async function handler(request,response) {
     if(!secret)return json(response,503,{error:'Configure CRON_SECRET na Vercel para ativar a rotina diária.'});
     if(request.headers.authorization!=='Bearer '+secret)return json(response,401,{error:'Não autorizado.'});
     try{const r=await fetch(supabaseUrl+'/rest/v1/rpc/avisos_gerar_todas',{method:'POST',headers:{apikey:process.env.SUPABASE_SERVICE_ROLE_KEY,Authorization:'Bearer '+process.env.SUPABASE_SERVICE_ROLE_KEY,'Content-Type':'application/json'},body:'{}'});
-      const body=await r.text();if(!r.ok)return json(response,502,{error:'Falha ao gerar avisos.'});return json(response,200,{gerados:Number(body)||0});}
+      const body=await r.text();if(!r.ok)return json(response,502,{error:'Falha ao gerar avisos.'});
+      let crlvEnviados=0;const crlv=require('./crlv-envio.cjs');
+      if(crlv.configurado()){const sh={apikey:process.env.SUPABASE_SERVICE_ROLE_KEY,Authorization:'Bearer '+process.env.SUPABASE_SERVICE_ROLE_KEY},sj={...sh,'Content-Type':'application/json'};
+        const f=await fetch(supabaseUrl+'/rest/v1/rpc/crlv_fila_pendentes_todas',{method:'POST',headers:sj,body:'{}'});
+        if(f.ok){const itens=await f.json();const er=await fetch(supabaseUrl+'/rest/v1/empresas?select=id,nome_fantasia,razao_social,email,telefone',{headers:sh});const empresas=new Map((er.ok?await er.json():[]).map(e=>[e.id,e]));
+          crlvEnviados=await crlv.processarFila({supabaseUrl,headers:sh,itens,empresas,resultado:(it,ok,motivo,doc)=>fetch(supabaseUrl+'/rest/v1/rpc/crlv_fila_resultado_servico',{method:'POST',headers:sj,body:JSON.stringify({p_id:it.id,p_ok:ok,p_motivo:motivo,p_documento:doc})})});}}
+      return json(response,200,{gerados:Number(body)||0,crlv_enviados:crlvEnviados});}
     catch{return json(response,500,{error:'Falha ao gerar avisos.'});}
   }
   if(route.startsWith('/api/')) {
@@ -263,6 +269,43 @@ async function handler(request,response) {
     if(request.method!=='POST') return json(response,405,{error:'Método não permitido.'});
     try { const body=await readJson(request,70*1024*1024);if(body?.tipo==='teste_zapsign'){if(!await rpcUser(request,'acesso_desenvolvedor',{}))return json(response,403,{error:'Somente o desenvolvedor pode executar o teste.'});return json(response,200,await zapSignTest.createTest({body,scope:request.headers['x-empresa-id']}));}return json(response,200,await sendToAutentique(body,request)); }
     catch(error) { return json(response,error.status||500,{error:error.message||'Falha ao enviar para assinatura.',uncertain:Boolean(error.uncertain)}); }
+  }
+  // Envia o CRLV do veículo ao locatário por e-mail (Brevo), na hora. Lê tudo com a sessão do usuário (respeita as permissões).
+  if(route==='/api/email-documentos'&&request.method==='POST') {
+    const crlv=require('./crlv-envio.cjs');
+    if(!crlv.configurado())return json(response,503,{error:'Envio de e-mail ainda não configurado. Cadastre BREVO_API_KEY e EMAIL_REMETENTE na Vercel.'});
+    try{
+      const body=await readJson(request,8192),empresa=request.headers['x-empresa-id'],headers={apikey:supabaseKey,Authorization:request.headers.authorization||''};
+      const uuid=/^[0-9a-f-]{36}$/i;const docs=Array.isArray(body?.documentos)?body.documentos.filter(x=>uuid.test(x)).slice(0,10):[];
+      if(!uuid.test(body?.carro_id||'')||!uuid.test(body?.cliente_id||'')||!docs.length)return json(response,400,{error:'Escolha o locatário e o documento.'});
+      const rest=async q=>{const r=await fetch(supabaseUrl+'/rest/v1/'+q,{headers,signal:AbortSignal.timeout(15000)});if(!r.ok)throw Object.assign(new Error('Não foi possível ler os dados.'),{status:r.status===401?401:502});return r.json();};
+      const [lista,[cliente],[carro],[emp]]=await Promise.all([
+        rest('carro_documentos?select=id,nome,tipo,arquivo_path&arquivado_em=is.null&empresa_id=eq.'+empresa+'&carro_id=eq.'+body.carro_id+'&id=in.('+docs.join(',')+')'),
+        rest('clientes?select=id,nome_completo,email&id=eq.'+body.cliente_id),
+        rest('carros?select=placa,marca,modelo&id=eq.'+body.carro_id),
+        rest('empresas?select=nome_fantasia,razao_social,email,telefone&id=eq.'+empresa).catch(()=>[null])]);
+      if(!lista.length)return json(response,404,{error:'Documento não encontrado neste veículo.'});
+      const email=String(cliente?.email||'').trim().toLowerCase();if(!crlv.emailValido(email))return json(response,400,{error:'O locatário não tem e-mail válido no cadastro.'});
+      let total=0;const anexos=[];
+      for(const d of lista){const buf=await crlv.baixar(supabaseUrl,headers,d.arquivo_path);total+=buf.length;if(total>15*1024*1024)throw Object.assign(new Error('Os anexos passam de 15 MB.'),{status:413});anexos.push({name:crlv.nomeArquivo(d.nome,d.arquivo_path,d.tipo),content:buf.toString('base64')});}
+      const veiculo=[carro?.placa,[carro?.marca,carro?.modelo].filter(Boolean).join(' ')].filter(Boolean).join(' · '),motivo=String(body.motivo||'').slice(0,200);
+      await crlv.enviar({para:email,nome:cliente.nome_completo,assunto:`CRLV do veículo ${carro?.placa||''} · ${emp?.nome_fantasia||'Grupo Alquiler'}`,html:crlv.corpo({nome:cliente.nome_completo,veiculo,motivo,documentos:lista.map(d=>d.nome),empresa:emp}),anexos,remetenteNome:emp?.nome_fantasia||emp?.razao_social,responderPara:emp?.email});
+      await fetch(supabaseUrl+'/rest/v1/rpc/carro_documento_envio_registrar',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({p_empresa:empresa,p_carro:body.carro_id,p_cliente:body.cliente_id,p_email:email,p_documentos:lista.map(d=>d.id),p_motivo:motivo||null})}).catch(()=>{});
+      return json(response,200,{enviado:true,email,documentos:lista.length});
+    }catch(error){return json(response,error.status||500,{error:error.message||'Falha ao enviar o e-mail.'});}
+  }
+  // Fila automática do CRLV (locação ativada, ocupação iniciada, carro trocado): chamada pelas telas, com a sessão do usuário.
+  if(route==='/api/email-crlv-fila'&&request.method==='POST') {
+    const crlv=require('./crlv-envio.cjs');
+    if(!crlv.configurado())return json(response,200,{configurado:false,enviados:0});
+    try{
+      const empresa=request.headers['x-empresa-id'],headers={apikey:supabaseKey,Authorization:request.headers.authorization||''},jh={...headers,'Content-Type':'application/json'};
+      const r=await fetch(supabaseUrl+'/rest/v1/rpc/crlv_fila_pendentes',{method:'POST',headers:jh,body:JSON.stringify({p_empresa:empresa})});if(!r.ok)return json(response,200,{configurado:true,enviados:0});
+      const itens=await r.json();if(!itens.length)return json(response,200,{configurado:true,enviados:0});
+      const er=await fetch(supabaseUrl+'/rest/v1/empresas?select=id,nome_fantasia,razao_social,email,telefone&id=eq.'+empresa,{headers});const empresas=new Map((er.ok?await er.json():[]).map(e=>[e.id,e]));
+      const enviados=await crlv.processarFila({supabaseUrl,headers,itens,empresas,resultado:(it,ok,motivo,doc)=>fetch(supabaseUrl+'/rest/v1/rpc/crlv_fila_resultado',{method:'POST',headers:jh,body:JSON.stringify({p_empresa:empresa,p_id:it.id,p_ok:ok,p_motivo:motivo,p_documento:doc})})});
+      return json(response,200,{configurado:true,enviados});
+    }catch(error){return json(response,500,{error:'Falha ao processar os envios do CRLV.'});}
   }
   if(route==='/api/modelo-contrato-texto'&&request.method==='GET') {
     try { const text=fs.readFileSync(path.join(__dirname,'modelo_contrato_texto.txt'),'utf8'); response.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}); return response.end(text); }

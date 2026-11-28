@@ -41,7 +41,7 @@ function rowButton(row, callback) {
   const button = el("button", "Editar", "btn btn-quiet");
   button.type = "button"; if(row.empresa_id && row.empresa_id !== company.id){button.disabled=true;button.title="Edite o cadastro na empresa proprietária do veículo.";}
   button.addEventListener("click", () => callback(row));
-  const history=el('a','Histórico completo','btn btn-quiet');history.href='/historico?carro='+encodeURIComponent(row.id);const fleet=el('a','Ver frota','btn btn-quiet');fleet.href='/frota?placa='+encodeURIComponent(row.placa);cell.append(button,history,fleet);
+  const history=el('a','Histórico completo','btn btn-quiet');history.href='/historico?carro='+encodeURIComponent(row.id);const fleet=el('a','Ver frota','btn btn-quiet');fleet.href='/frota?placa='+encodeURIComponent(row.placa);const docs=el('button','CRLV','btn btn-quiet');docs.type='button';docs.onclick=()=>import('./carro-documentos.mjs?v=20261128b').then(m=>m.abrirDocumentos(db,company,{id:row.id,placa:row.placa,empresa_id:row.empresa_id||company.id}));cell.append(button,docs,history,fleet);
   return cell;
 }
 const situation=row=>vehicleSituation(row,state.periods,state.rentals,state.occupations,state.verified);

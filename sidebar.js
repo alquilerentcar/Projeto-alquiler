@@ -1,7 +1,7 @@
 // Pacote visual: menu recolhido lembrado neste aparelho, estilos e enfeites carregados em todas as telas.
 try{if(localStorage.getItem('bgsys:menu-recolhido')==='1')document.documentElement.classList.add('menu-recolhido');}catch{}
 if(!document.querySelector('link[href*="ui-plus.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='/ui-plus.css?v=20261128b';document.head.append(l);}
-import('/ui-plus.mjs?v=20261128d').then(m=>m.iniciar()).catch(()=>{});
+import('/ui-plus.mjs?v=20261128e').then(m=>m.iniciar()).catch(()=>{});
 const currentPage=location.pathname.split('/').pop()||'dashboard.html'; let page=currentPage.includes('.')?currentPage:currentPage+'.html';
 let section=new URLSearchParams(location.search).get('secao')||'';
 let cachedCompany={nome_fantasia:'Grupo Alquiler',logo_url:'/app-192.png'},cachedUser={nome:''};

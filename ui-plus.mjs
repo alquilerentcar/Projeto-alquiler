@@ -46,6 +46,12 @@ export function iniciar(){
  // Contador de avisos automáticos no menu (Notificações).
  const contar=async()=>{const c=window.alquilerContext;if(!c?.company?.id||!c.modules?.includes('locacao'))return;try{const [{getAuthenticatedClient},{contarAvisos}]=await Promise.all([import('/auth-guard.js'),import('/avisos.mjs?v=20261128')]);contarAvisos(await getAuthenticatedClient(),c.company.id);}catch{}};
  window.addEventListener('app-context-ready',contar);if(window.alquilerContext)contar();
+ // Envio automático do CRLV: quando uma locação/ocupação começa, o servidor manda o e-mail na próxima tela aberta.
+ const filaCrlv=async()=>{const c=window.alquilerContext;if(!c?.company?.id||!c.modules?.includes('locacao'))return;const k='bgsys:crlv-fila:'+c.company.id;
+  try{const u=JSON.parse(sessionStorage.getItem(k)||'null');if(u&&Date.now()<u.ate)return;}catch{}
+  try{const r=await fetch('/api/email-crlv-fila',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});const j=await r.json().catch(()=>({}));
+   sessionStorage.setItem(k,JSON.stringify({ate:Date.now()+(j.configurado===false?1800000:120000)}));if(j.enviados)sessionStorage.removeItem('bgsys:avisos:'+c.company.id);}catch{}};
+ window.addEventListener('app-context-ready',filaCrlv);if(window.alquilerContext)setTimeout(filaCrlv,1500);
  botaoMenu();varrer(document.body);
  document.addEventListener('change',e=>{if(e.target instanceof HTMLSelectElement)colorir(e.target);},true);
  document.addEventListener('input',e=>{const t=e.target;if(t instanceof HTMLInputElement&&t.type==='search')agendar(t);});

@@ -57,3 +57,8 @@ async function load(){
 }
 await load();
 window.addEventListener('pageshow',event=>{if(event.persisted)load();});
+// CRLV do carro desta locação: conferir, anexar e reenviar ao locatário por e-mail.
+{const voltar=document.querySelector('.topbar a[href="locacoes.html"]'),b=document.createElement('button');b.type='button';b.className='btn btn-quiet';b.textContent='CRLV do carro';
+ b.onclick=async()=>{if(!state.row?.carro_id)return toast('Esta locação ainda não tem carro.',true);const {abrirDocumentos}=await import('./carro-documentos.mjs?v=20261128b');
+  abrirDocumentos(db,window.alquilerContext.company,{id:state.row.carro_id,placa:state.car?.placa,empresa_id:company},{clienteId:state.row.cliente_id,motivo:'Entrega do veículo (locação)',focoEnvio:true});};
+ if(voltar){const box=document.createElement('div');box.style.cssText='display:flex;gap:8px;flex-wrap:wrap';voltar.replaceWith(box);box.append(b,voltar);}}

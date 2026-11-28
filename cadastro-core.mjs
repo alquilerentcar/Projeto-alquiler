@@ -6,7 +6,9 @@ export function formatCnpj(value){const s=normalizeCnpj(value);return s.length==
 export function validCpf(value){const s=onlyDigits(value);if(!/^\d{11}$/.test(s)||/^(\d)\1{10}$/.test(s))return false;for(const n of [9,10]){let sum=0;for(let i=0;i<n;i++)sum+=Number(s[i])*(n+1-i);const check=(sum*10)%11%10;if(check!==Number(s[n]))return false;}return true;}
 export function validCnpj(value){const s=normalizeCnpj(value);if(!/^[A-Z0-9]{12}\d{2}$/.test(s)||/^(\d)\1{13}$/.test(s))return false;for(const n of [12,13]){let sum=0;for(let i=0;i<n;i++)sum+=(s.charCodeAt(i)-48)*((n-1-i)%8+2);const rest=sum%11,check=rest<2?0:11-rest;if(check!==Number(s[n]))return false;}return true;}
 export function normalizePhone(value){let s=onlyDigits(value);if([12,13].includes(s.length)&&s.startsWith('55'))s=s.slice(2);return s;}
-export function validPhone(value){const s=normalizePhone(value);return /^[1-9]\d(?:[2-9]\d{7}|9\d{8})$/.test(s);}
+// DDDs que existem no Brasil (Anatel).
+export const DDDS=new Set([11,12,13,14,15,16,17,18,19,21,22,24,27,28,31,32,33,34,35,37,38,41,42,43,44,45,46,47,48,49,51,53,54,55,61,62,63,64,65,66,67,68,69,71,73,74,75,77,79,81,82,83,84,85,86,87,88,89,91,92,93,94,95,96,97,98,99]);
+export function validPhone(value){const s=normalizePhone(value);return /^[1-9]\d(?:[2-9]\d{7}|9\d{8})$/.test(s)&&DDDS.has(Number(s.slice(0,2)));}
 export function formatPhone(value){const s=normalizePhone(value);return s.length===11?s.replace(/(\d{2})(\d{5})(\d{4})/,'($1) $2-$3'):s.length===10?s.replace(/(\d{2})(\d{4})(\d{4})/,'($1) $2-$3'):s;}
 export const validEmail=value=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value??'').trim());
 export function verifyDraft(input){const draft={...input},warnings=[];for(const key of ['nome_completo','nome_fantasia','nome_pai','nome_mae',...Array.from({length:4},(_,i)=>'contato_'+(i+1)+'_responsavel')])if(draft[key])draft[key]=upperName(draft[key]);

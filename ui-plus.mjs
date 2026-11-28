@@ -42,6 +42,7 @@ function botaoMenu(){const brand=document.querySelector('.sidebar .sidebar-brand
 function varrer(raiz){if(raiz.nodeType!==1)return;if(raiz.matches?.('select'))colorir(raiz);raiz.querySelectorAll?.('select').forEach(colorir);if(raiz.matches?.('table'))rotular(raiz);raiz.querySelectorAll?.('table').forEach(rotular);const t=raiz.closest?.('table');if(t)rotular(t);}
 
 export function iniciar(){
+ import('./cadastro-ajuda.mjs?v=20261128').then(x=>x.iniciarCadastros()).catch(()=>{});
  botaoMenu();varrer(document.body);
  document.addEventListener('change',e=>{if(e.target instanceof HTMLSelectElement)colorir(e.target);},true);
  document.addEventListener('input',e=>{const t=e.target;if(t instanceof HTMLInputElement&&t.type==='search')agendar(t);});

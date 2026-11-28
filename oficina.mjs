@@ -1,6 +1,8 @@
 import {lerQuantidade,lerValor,normalizarCodigo,adicionarItem,situacaoEstoque,conferirItens,itensEntrada,itensSaida,fmtQtd,STATUS,rotuloManutencao,SITUACOES_SAIDA} from './oficina-core.mjs?v=20261124';
 import {lerNFe,casarItens} from './nfe-core.mjs?v=20261123b';
-import {ITENS_VISTORIA,COMBUSTIVEL,paginaOrdemServico} from './ordem-servico.mjs?v=20261128c';
+import {celebrar} from './celebrar.mjs?v=20261128';
+import {montarMedidor,NIVEIS,nivelDoTexto} from './combustivel-medidor.mjs?v=20261128b';
+import {ITENS_VISTORIA,COMBUSTIVEL,paginaOrdemServico} from './ordem-servico.mjs?v=20261128d';
 import {montarOrcamento,resumoSaidas,CATEGORIAS,NATUREZA} from './orcamento-core.mjs?v=20261128c';
 import {paginaEtiquetas,ean13Valido,FORMATOS} from './etiqueta-core.mjs?v=20261118b';
 import {serialSuportado,portaAutorizada,conectarImpressora,imprimirSerial} from './impressora-serial.mjs?v=20261118';
@@ -300,7 +302,7 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
   rel.onclick=async()=>{rel.disabled=true;const antes=rel.textContent;rel.textContent='Gerando…';try{const {gerarEstoquePdf}=await import('./estoque-pdf.mjs?v=20261128c');
     const filtroTxt=[filtro.options[filtro.selectedIndex]?.text,busca.value.trim()?'busca: '+busca.value.trim():''].filter(Boolean).join(' · ');
     const bytes=await gerarEstoquePdf({db,company,produtos:painel.produtos.filter(passa),categorias:CAT_ITEM,filtro:filtroTxt});
-    const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})),a=el('a');a.href=url;a.download=`estoque-${new Date(Date.now()-4*3600000).toISOString().slice(0,10)}.pdf`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);status.textContent='Relatório do estoque gerado.';}
+    const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})),a=el('a');a.href=url;a.download=`estoque-${new Date(Date.now()-4*3600000).toISOString().slice(0,10)}.pdf`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);status.textContent='Relatório do estoque gerado.';celebrar('Relatório gerado!','Estoque em PDF baixado.');}
    catch(e){status.textContent='Não foi possível gerar o relatório: '+e.message;}finally{rel.disabled=false;rel.textContent=antes;}};
   const desenhar=()=>{tb.replaceChildren();
    for(const p of painel.produtos){if(!passa(p))continue;const sit=situacaoEstoque(p);
@@ -516,7 +518,8 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
   const atual=lista.find(v=>v.tipo===tipo),ent=lista.find(v=>v.tipo==='entrada'),erro=el('p',null,'ofi-erro');
   const g=el('div',null,'form-grid'),kmI=campo(g,'KM',input());kmI.inputMode='numeric';
   kmI.value=atual?.km==null?'':String(atual.km);kmI.placeholder=tipo==='saida'&&ent?.km!=null?'Na entrada: '+Number(ent.km).toLocaleString('pt-BR'):(m.km?String(m.km):'KM do painel (opcional)');
-  const comb=el('select');const o0=el('option','Escolha…');o0.value='';comb.append(o0);COMBUSTIVEL.forEach((l,i)=>{const op=el('option',l);op.value=String(i);comb.append(op);});comb.value=atual?String(atual.combustivel):'';campo(g,'Combustível',comb);
+  // Combustível: medidor igual ao painel do carro (8 tracinhos); guarda o nível de 0 a 8.
+  const comb=input('hidden'),fc=el('div',null,'fuel-field'),fh=el('div');fc.append(el('span','Combustível (como está no painel)'),comb,fh);g.append(fc);montarMedidor(fh,comb);comb.value=atual&&atual.combustivel!=null?NIVEIS[atual.combustivel]||'':'';
   const itensBox=el('fieldset',null,'ofi-checks');itensBox.append(el('legend','Itens conferidos'));const marc={};
   for(const [k,l] of Object.entries(ITENS_VISTORIA)){const c=input('checkbox');c.checked=Boolean(atual?atual.itens?.[k]:ent?.itens?.[k]);marc[k]=c;const lb=el('label');lb.style.flexDirection='row';lb.style.alignItems='center';lb.append(c,document.createTextNode(' '+l));itensBox.append(lb);}
   const av=el('textarea');av.value=atual?.avarias||'';av.placeholder=tipo==='entrada'?'Riscos, amassados, vidros, pneus… (em branco se não houver)':'Alguma avaria nova desde a entrada?';const lav=el('label');lav.append(el('span','Avarias'),av);
@@ -531,7 +534,7 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
   box.append(g,itensBox,lav,lob,flab,fl,erro);
   const cancel=btn('Cancelar'),ok=el('button','Salvar relatório','btn btn-primary');ok.type='submit';cancel.onclick=()=>dialog.close();foot.append(cancel,ok);form.append(head,box,foot);dialog.append(form);
   form.onsubmit=async e=>{e.preventDefault();erro.textContent='';ok.disabled=true;
-   try{await rpc('oficina_vistoria_salvar',{p_empresa:company.id,p_manutencao:m.id,p_tipo:tipo,p_dados:{km:kmI.value,combustivel:comb.value===''?null:Number(comb.value),itens:Object.fromEntries(Object.entries(marc).map(([k,c])=>[k,c.checked])),avarias:av.value,observacao:ob.value,fotos}});
+   try{await rpc('oficina_vistoria_salvar',{p_empresa:company.id,p_manutencao:m.id,p_tipo:tipo,p_dados:{km:kmI.value,combustivel:nivelDoTexto(comb.value),itens:Object.fromEntries(Object.entries(marc).map(([k,c])=>[k,c.checked])),avarias:av.value,observacao:ob.value,fotos}});
     dialog.close();await recarregar((tipo==='entrada'?'Relatório de entrada':'Relatório de saída')+' da manutenção #'+m.numero+' salvo.');}
    catch(err){erro.textContent=err.message;}finally{ok.disabled=false;}};
   dialog.showModal();kmI.focus();
@@ -607,7 +610,7 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
   box.append(erro);
   const acoes=el('div',null,'dialog-footer'),pdf=btn('Gerar orçamento (papel timbrado)','btn btn-primary');
   pdf.onclick=async()=>{erro.textContent='';pdf.disabled=true;try{const {gerarOrcamentoPdf}=await import('./orcamento-pdf.mjs?v=20261128c');const bytes=await gerarOrcamentoPdf({db,company,orcamento:o});
-   const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})),a=el('a');a.href=url;a.download=`orcamento-${String(mm.numero).padStart(5,'0')}-${mm.placa}.pdf`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
+   const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})),a=el('a');a.href=url;a.download=`orcamento-${String(mm.numero).padStart(5,'0')}-${mm.placa}.pdf`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);celebrar('Orçamento gerado!','PDF baixado · '+mm.placa);}
    catch(e){erro.textContent='Não foi possível gerar o PDF: '+e.message;}finally{pdf.disabled=false;}};
   acoes.append(pdf);
   const acao=async(nome,args,msg)=>{erro.textContent='';try{await rpc(nome,{p_empresa:company.id,p_manutencao:m.id,...args});await carregar();await orcamento(m);status.textContent=msg;}catch(e){erro.textContent=e.message;}};

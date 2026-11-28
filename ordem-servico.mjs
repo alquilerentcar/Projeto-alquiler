@@ -1,5 +1,5 @@
 // Ordem de serviço da oficina: relatório de entrada, peças e serviços, relatório de saída e assinaturas.
-import {montarOrcamento} from './orcamento-core.mjs?v=20261128b';
+import {montarOrcamento} from './orcamento-core.mjs?v=20261128c';
 
 export const ITENS_VISTORIA={documento:'Documento (CRLV)',estepe:'Estepe',macaco:'Macaco',chave_roda:'Chave de roda',triangulo:'Triângulo',tapetes:'Tapetes',multimidia:'Rádio / multimídia',calotas:'Calotas',painel_ok:'Painel sem luz de alerta'};
 export const COMBUSTIVEL=['Vazio','1/8','1/4','3/8','1/2','5/8','3/4','7/8','Cheio'];

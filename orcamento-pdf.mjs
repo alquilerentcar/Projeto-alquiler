@@ -1,5 +1,5 @@
 import {companyStationery} from './empresa-branding.js';
-import {montarOrcamento,seguro} from './orcamento-core.mjs?v=20261128b';
+import {montarOrcamento,seguro} from './orcamento-core.mjs?v=20261128c';
 
 // Orçamento da manutenção no papel timbrado da empresa (o mesmo arquivo usado nos recibos).
 export async function gerarOrcamentoPdf({db,company,orcamento}){

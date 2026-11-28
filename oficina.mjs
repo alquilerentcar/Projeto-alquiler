@@ -1,7 +1,7 @@
 import {lerQuantidade,lerValor,normalizarCodigo,adicionarItem,situacaoEstoque,conferirItens,itensEntrada,itensSaida,fmtQtd,STATUS,rotuloManutencao,SITUACOES_SAIDA} from './oficina-core.mjs?v=20261124';
 import {lerNFe,casarItens} from './nfe-core.mjs?v=20261123b';
-import {ITENS_VISTORIA,COMBUSTIVEL,paginaOrdemServico} from './ordem-servico.mjs?v=20261128b';
-import {montarOrcamento,resumoSaidas,CATEGORIAS,NATUREZA} from './orcamento-core.mjs?v=20261128b';
+import {ITENS_VISTORIA,COMBUSTIVEL,paginaOrdemServico} from './ordem-servico.mjs?v=20261128c';
+import {montarOrcamento,resumoSaidas,CATEGORIAS,NATUREZA} from './orcamento-core.mjs?v=20261128c';
 import {paginaEtiquetas,ean13Valido,FORMATOS} from './etiqueta-core.mjs?v=20261118b';
 import {serialSuportado,portaAutorizada,conectarImpressora,imprimirSerial} from './impressora-serial.mjs?v=20261118';
 const FORMATO_USB='usb';
@@ -297,7 +297,7 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
   const t=el('table'),th=el('thead'),hr=el('tr'),tb=el('tbody');for(const h of ['Item','Categoria','Código','Local','Em estoque','Mínimo','Situação','Custo médio','Última compra',''])hr.append(el('th',h));th.append(hr);t.append(th,tb);const w=el('div',null,'table-scroll');w.append(t);sec.append(w);
   // Mesmo filtro da tabela vale para o relatório em PDF.
   const passa=p=>{const q=busca.value.toLocaleLowerCase('pt-BR').trim(),sit=situacaoEstoque(p);if(filtro.value==='repor'&&sit==='Normal')return false;if(filtro.value.startsWith('cat:')&&(p.categoria||'pecas')!==filtro.value.slice(4))return false;return !q||(p.descricao+' '+(p.codigo_barras||'')+' '+(p.codigo_interno||'')+' '+(p.localizacao||'')+' '+(p.marca||'')+' '+(p.ultimo_fornecedor||'')).toLocaleLowerCase('pt-BR').includes(q);};
-  rel.onclick=async()=>{rel.disabled=true;const antes=rel.textContent;rel.textContent='Gerando…';try{const {gerarEstoquePdf}=await import('./estoque-pdf.mjs?v=20261128b');
+  rel.onclick=async()=>{rel.disabled=true;const antes=rel.textContent;rel.textContent='Gerando…';try{const {gerarEstoquePdf}=await import('./estoque-pdf.mjs?v=20261128c');
     const filtroTxt=[filtro.options[filtro.selectedIndex]?.text,busca.value.trim()?'busca: '+busca.value.trim():''].filter(Boolean).join(' · ');
     const bytes=await gerarEstoquePdf({db,company,produtos:painel.produtos.filter(passa),categorias:CAT_ITEM,filtro:filtroTxt});
     const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})),a=el('a');a.href=url;a.download=`estoque-${new Date(Date.now()-4*3600000).toISOString().slice(0,10)}.pdf`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);status.textContent='Relatório do estoque gerado.';}
@@ -606,7 +606,7 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
    if(!pend.length&&!lista.length)fotos.append(el('p','Nenhuma peça retirada.','section-note'));}).catch(e=>fotos.append(el('p',e.message,'ofi-erro')));
   box.append(erro);
   const acoes=el('div',null,'dialog-footer'),pdf=btn('Gerar orçamento (papel timbrado)','btn btn-primary');
-  pdf.onclick=async()=>{erro.textContent='';pdf.disabled=true;try{const {gerarOrcamentoPdf}=await import('./orcamento-pdf.mjs?v=20261128b');const bytes=await gerarOrcamentoPdf({db,company,orcamento:o});
+  pdf.onclick=async()=>{erro.textContent='';pdf.disabled=true;try{const {gerarOrcamentoPdf}=await import('./orcamento-pdf.mjs?v=20261128c');const bytes=await gerarOrcamentoPdf({db,company,orcamento:o});
    const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})),a=el('a');a.href=url;a.download=`orcamento-${String(mm.numero).padStart(5,'0')}-${mm.placa}.pdf`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
    catch(e){erro.textContent='Não foi possível gerar o PDF: '+e.message;}finally{pdf.disabled=false;}};
   acoes.append(pdf);

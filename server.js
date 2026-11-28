@@ -233,6 +233,15 @@ async function handler(request,response) {
     try { return json(response,request.method==='POST'?201:200,await accessApi(request,request.method==='POST'?await readJson(request,8192):null)); }
     catch(error) { return json(response,error.status||500,{error:error.status?error.message:'Não foi possível acessar o serviço de usuários.'}); }
   }
+  // Rotina diária da Vercel (Cron): gera os avisos automáticos de todas as empresas. Só com o segredo CRON_SECRET.
+  if(route==='/api/avisos-diarios'&&request.method==='GET') {
+    const secret=process.env.CRON_SECRET;
+    if(!secret)return json(response,503,{error:'Configure CRON_SECRET na Vercel para ativar a rotina diária.'});
+    if(request.headers.authorization!=='Bearer '+secret)return json(response,401,{error:'Não autorizado.'});
+    try{const r=await fetch(supabaseUrl+'/rest/v1/rpc/avisos_gerar_todas',{method:'POST',headers:{apikey:process.env.SUPABASE_SERVICE_ROLE_KEY,Authorization:'Bearer '+process.env.SUPABASE_SERVICE_ROLE_KEY,'Content-Type':'application/json'},body:'{}'});
+      const body=await r.text();if(!r.ok)return json(response,502,{error:'Falha ao gerar avisos.'});return json(response,200,{gerados:Number(body)||0});}
+    catch{return json(response,500,{error:'Falha ao gerar avisos.'});}
+  }
   if(route.startsWith('/api/')) {
     try { await requireModule(request, 'locacao');
       if(route==='/api/assistente/configurar') {const allowed=await rpcUser(request,'acesso_desenvolvedor',{});if(!allowed)throw Object.assign(new Error('Somente o desenvolvedor pode configurar a integração.'),{status:403});}
@@ -254,15 +263,6 @@ async function handler(request,response) {
     if(request.method!=='POST') return json(response,405,{error:'Método não permitido.'});
     try { const body=await readJson(request,70*1024*1024);if(body?.tipo==='teste_zapsign'){if(!await rpcUser(request,'acesso_desenvolvedor',{}))return json(response,403,{error:'Somente o desenvolvedor pode executar o teste.'});return json(response,200,await zapSignTest.createTest({body,scope:request.headers['x-empresa-id']}));}return json(response,200,await sendToAutentique(body,request)); }
     catch(error) { return json(response,error.status||500,{error:error.message||'Falha ao enviar para assinatura.',uncertain:Boolean(error.uncertain)}); }
-  }
-  // Rotina diária da Vercel (Cron): gera os avisos automáticos de todas as empresas. Só com o segredo CRON_SECRET.
-  if(route==='/api/avisos-diarios'&&request.method==='GET') {
-    const secret=process.env.CRON_SECRET;
-    if(!secret)return json(response,503,{error:'Configure CRON_SECRET na Vercel para ativar a rotina diária.'});
-    if(request.headers.authorization!=='Bearer '+secret)return json(response,401,{error:'Não autorizado.'});
-    try{const r=await fetch(supabaseUrl+'/rest/v1/rpc/avisos_gerar_todas',{method:'POST',headers:{apikey:process.env.SUPABASE_SERVICE_ROLE_KEY,Authorization:'Bearer '+process.env.SUPABASE_SERVICE_ROLE_KEY,'Content-Type':'application/json'},body:'{}'});
-      const body=await r.text();if(!r.ok)return json(response,502,{error:'Falha ao gerar avisos.'});return json(response,200,{gerados:Number(body)||0});}
-    catch{return json(response,500,{error:'Falha ao gerar avisos.'});}
   }
   if(route==='/api/modelo-contrato-texto'&&request.method==='GET') {
     try { const text=fs.readFileSync(path.join(__dirname,'modelo_contrato_texto.txt'),'utf8'); response.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}); return response.end(text); }

@@ -1,3 +1,5 @@
+// Menu recolhido lembrado neste aparelho: aplicado antes de desenhar, sem a tela pular.
+try{if(localStorage.getItem('bgsys:menu-recolhido')==='1')document.documentElement.classList.add('menu-recolhido');}catch{}
 // Runs in the document head, before content is painted. No permissions are cached.
 (function(){
  const root=document.documentElement,colors={cor_primaria:['--company-primary','--company-on-primary','#1d3fa8'],cor_sidebar:['--company-sidebar','--company-on-sidebar','#16191f'],cor_fundo:['--company-background','--company-on-background','#f4f5f7'],cor_paineis:['--company-surface','--company-on-surface','#ffffff']};

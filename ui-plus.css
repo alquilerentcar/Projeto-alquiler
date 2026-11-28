@@ -4,8 +4,8 @@
 /* ---------- Menu lateral que recolhe (computador) ---------- */
 .menu-recolher{display:none}
 @media(min-width:851px){
- .interface-v2 .sidebar{position:sticky;transition:width .22s ease,padding .22s ease,box-shadow .22s ease}
- .interface-v2 .app-shell{transition:grid-template-columns .22s ease}
+ html.menu-anima .interface-v2 .sidebar{transition:width .2s ease,padding .2s ease}
+ html.menu-anima .interface-v2 .app-shell{transition:grid-template-columns .2s ease}
  .menu-recolher{display:inline-flex;align-items:center;justify-content:center;flex:none;width:30px;height:30px;margin-left:auto;border:0;border-radius:8px;background:color-mix(in srgb,var(--company-on-sidebar,#fff) 10%,transparent);color:var(--company-on-sidebar,#fff);cursor:pointer;transition:background .15s,transform .22s ease}
  .menu-recolher:hover{background:color-mix(in srgb,var(--company-on-sidebar,#fff) 18%,transparent)}
  .menu-recolher svg{width:16px;height:16px}
@@ -18,19 +18,11 @@
  html.menu-recolhido .interface-v2 .sidebar-user,
  html.menu-recolhido .interface-v2 .sidebar-bottom .logout,
  html.menu-recolhido .interface-v2 .professional-menu :is(.menu-link,summary)>span:not(.menu-symbol){opacity:0;width:0;overflow:hidden;white-space:nowrap}
- html.menu-recolhido .interface-v2 .sidebar:not(:hover):not(:focus-within) :is(.menu-count,.menu-section-label){display:none}
+ html.menu-recolhido .interface-v2 :is(.menu-count,.menu-section-label){display:none}
  html.menu-recolhido .interface-v2 .professional-menu details[open]>.menu-children{display:none}
  html.menu-recolhido .interface-v2 .professional-menu>.menu-link:not(:has(.menu-symbol)){display:none}
  html.menu-recolhido .interface-v2 .professional-menu :is(.menu-link,summary){justify-content:center;padding-inline:0}
  html.menu-recolhido .interface-v2 .professional-menu summary::after,html.menu-recolhido .interface-v2 .professional-menu summary::marker{display:none;content:''}
- /* Passar o mouse abre o menu por cima da tela, sem empurrar o conteúdo. */
- html.menu-recolhido .interface-v2 .sidebar:hover,html.menu-recolhido .interface-v2 .sidebar:focus-within{width:250px;padding-inline:18px;box-shadow:12px 0 32px rgba(15,23,42,.22)}
- html.menu-recolhido .interface-v2 .sidebar:is(:hover,:focus-within) :is(.sidebar-brand>div:not(.brand-mark),.menu-section-label,.sidebar-user,.sidebar-bottom .logout,.professional-menu :is(.menu-link,summary)>span:not(.menu-symbol)){opacity:1;width:auto;transition:opacity .18s ease .08s}
- html.menu-recolhido .interface-v2 .sidebar:is(:hover,:focus-within) .sidebar-brand{flex-direction:row}
- html.menu-recolhido .interface-v2 .sidebar:is(:hover,:focus-within) .professional-menu :is(.menu-link,summary){justify-content:flex-start;padding-inline:12px}
- html.menu-recolhido .interface-v2 .sidebar:is(:hover,:focus-within) .professional-menu details[open]>.menu-children{display:block}
- html.menu-recolhido .interface-v2 .sidebar:is(:hover,:focus-within) .professional-menu>.menu-link:not(:has(.menu-symbol)){display:flex}
- html.menu-recolhido .interface-v2 .sidebar:is(:hover,:focus-within) .menu-recolher{margin:0 0 0 auto}
 }
 /* Gaveta do celular desliza em vez de aparecer de uma vez. */
 @media(max-width:850px){.interface-v2 .app-shell>.sidebar{transition:transform .25s ease,opacity .25s ease}.mobile-menu-veil{transition:opacity .25s ease}}

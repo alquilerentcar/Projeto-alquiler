@@ -1,0 +1,81 @@
+/* Pacote visual 1: menu que recolhe, seleções coloridas, busca padrão e tabelas em cartões no celular. */
+:root{--tom-verde:#15803d;--tom-verde-bg:#ecfdf3;--tom-laranja:#b45309;--tom-laranja-bg:#fff7e6;--tom-azul:#1d4ed8;--tom-azul-bg:#eef4ff;--tom-vermelho:#c0362c;--tom-vermelho-bg:#fff1f0;--tom-cinza:#475569;--tom-cinza-bg:#f1f5f9}
+
+/* ---------- Menu lateral que recolhe (computador) ---------- */
+.menu-recolher{display:none}
+@media(min-width:851px){
+ .interface-v2 .sidebar{position:sticky;transition:width .22s ease,padding .22s ease,box-shadow .22s ease}
+ .interface-v2 .app-shell{transition:grid-template-columns .22s ease}
+ .menu-recolher{display:inline-flex;align-items:center;justify-content:center;flex:none;width:30px;height:30px;margin-left:auto;border:0;border-radius:8px;background:color-mix(in srgb,var(--company-on-sidebar,#fff) 10%,transparent);color:var(--company-on-sidebar,#fff);cursor:pointer;transition:background .15s,transform .22s ease}
+ .menu-recolher:hover{background:color-mix(in srgb,var(--company-on-sidebar,#fff) 18%,transparent)}
+ .menu-recolher svg{width:16px;height:16px}
+ html.menu-recolhido .interface-v2 .app-shell{grid-template-columns:76px minmax(0,1fr)}
+ html.menu-recolhido .interface-v2 .sidebar{width:76px;padding-inline:12px;overflow:hidden;z-index:40}
+ html.menu-recolhido .menu-recolher{transform:rotate(180deg);margin:0 auto}
+ html.menu-recolhido .interface-v2 .sidebar-brand{flex-direction:column;gap:10px;padding-inline:0}
+ html.menu-recolhido .interface-v2 .sidebar-brand>div:not(.brand-mark),
+ html.menu-recolhido .interface-v2 .menu-section-label,
+ html.menu-recolhido .interface-v2 .sidebar-user,
+ html.menu-recolhido .interface-v2 .sidebar-bottom .logout,
+ html.menu-recolhido .interface-v2 .professional-menu :is(.menu-link,summary)>span:not(.menu-symbol){opacity:0;width:0;overflow:hidden;white-space:nowrap}
+ html.menu-recolhido .interface-v2 .sidebar:not(:hover):not(:focus-within) :is(.menu-count,.menu-section-label){display:none}
+ html.menu-recolhido .interface-v2 .professional-menu details[open]>.menu-children{display:none}
+ html.menu-recolhido .interface-v2 .professional-menu>.menu-link:not(:has(.menu-symbol)){display:none}
+ html.menu-recolhido .interface-v2 .professional-menu :is(.menu-link,summary){justify-content:center;padding-inline:0}
+ html.menu-recolhido .interface-v2 .professional-menu summary::after,html.menu-recolhido .interface-v2 .professional-menu summary::marker{display:none;content:''}
+ /* Passar o mouse abre o menu por cima da tela, sem empurrar o conteúdo. */
+ html.menu-recolhido .interface-v2 .sidebar:hover,html.menu-recolhido .interface-v2 .sidebar:focus-within{width:250px;padding-inline:18px;box-shadow:12px 0 32px rgba(15,23,42,.22)}
+ html.menu-recolhido .interface-v2 .sidebar:is(:hover,:focus-within) :is(.sidebar-brand>div:not(.brand-mark),.menu-section-label,.sidebar-user,.sidebar-bottom .logout,.professional-menu :is(.menu-link,summary)>span:not(.menu-symbol)){opacity:1;width:auto;transition:opacity .18s ease .08s}
+ html.menu-recolhido .interface-v2 .sidebar:is(:hover,:focus-within) .sidebar-brand{flex-direction:row}
+ html.menu-recolhido .interface-v2 .sidebar:is(:hover,:focus-within) .professional-menu :is(.menu-link,summary){justify-content:flex-start;padding-inline:12px}
+ html.menu-recolhido .interface-v2 .sidebar:is(:hover,:focus-within) .professional-menu details[open]>.menu-children{display:block}
+ html.menu-recolhido .interface-v2 .sidebar:is(:hover,:focus-within) .professional-menu>.menu-link:not(:has(.menu-symbol)){display:flex}
+ html.menu-recolhido .interface-v2 .sidebar:is(:hover,:focus-within) .menu-recolher{margin:0 0 0 auto}
+}
+/* Gaveta do celular desliza em vez de aparecer de uma vez. */
+@media(max-width:850px){.interface-v2 .app-shell>.sidebar{transition:transform .25s ease,opacity .25s ease}.mobile-menu-veil{transition:opacity .25s ease}}
+
+/* ---------- Seleções coloridas pela situação escolhida ---------- */
+.interface-v2 select:not([multiple]):not([size]){appearance:none;-webkit-appearance:none;padding-right:34px!important;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;border-radius:10px;cursor:pointer;transition:border-color .15s,background-color .2s,box-shadow .15s}
+.interface-v2 select:not([multiple]):not([size]):hover{border-color:color-mix(in srgb,var(--ui-accent) 45%,var(--ui-border))}
+.interface-v2 select[data-tom]{font-weight:650;border-left-width:4px!important}
+.interface-v2 select[data-tom=verde]{color:var(--tom-verde);background-color:var(--tom-verde-bg)!important;border-color:color-mix(in srgb,var(--tom-verde) 35%,transparent)!important;border-left-color:var(--tom-verde)!important}
+.interface-v2 select[data-tom=laranja]{color:var(--tom-laranja);background-color:var(--tom-laranja-bg)!important;border-color:color-mix(in srgb,var(--tom-laranja) 35%,transparent)!important;border-left-color:var(--tom-laranja)!important}
+.interface-v2 select[data-tom=azul]{color:var(--tom-azul);background-color:var(--tom-azul-bg)!important;border-color:color-mix(in srgb,var(--tom-azul) 35%,transparent)!important;border-left-color:var(--tom-azul)!important}
+.interface-v2 select[data-tom=vermelho]{color:var(--tom-vermelho);background-color:var(--tom-vermelho-bg)!important;border-color:color-mix(in srgb,var(--tom-vermelho) 35%,transparent)!important;border-left-color:var(--tom-vermelho)!important}
+.interface-v2 select[data-tom=cinza]{color:var(--tom-cinza);background-color:var(--tom-cinza-bg)!important;border-left-color:var(--tom-cinza)!important}
+.interface-v2 select option{color:#17243b;background:#fff;font-weight:400}
+/* Caixas de marcar: na cor da empresa e um pouco maiores. */
+.interface-v2 input[type=checkbox],.interface-v2 input[type=radio]{accent-color:var(--ui-accent);width:18px;height:18px;cursor:pointer;vertical-align:middle}
+/* Etiquetas de situação (quando a tela usa a classe tom-*). */
+.tom{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:650;white-space:nowrap}
+.tom::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor}
+.tom-verde{color:var(--tom-verde);background:var(--tom-verde-bg)}.tom-laranja{color:var(--tom-laranja);background:var(--tom-laranja-bg)}.tom-azul{color:var(--tom-azul);background:var(--tom-azul-bg)}.tom-vermelho{color:var(--tom-vermelho);background:var(--tom-vermelho-bg)}.tom-cinza{color:var(--tom-cinza);background:var(--tom-cinza-bg)}
+
+/* ---------- Barra de pesquisa padrão ---------- */
+.interface-v2 input[type=search]{min-height:42px;border:1px solid var(--ui-border);border-radius:999px!important;padding:10px 16px 10px 40px!important;background:var(--company-surface,#fff) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 15px center;transition:border-color .15s,box-shadow .15s,width .2s}
+.interface-v2 input[type=search]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E")!important;background-repeat:no-repeat!important;background-position:15px center!important}
+.interface-v2 .search input[type=search]{background-image:none!important}
+.interface-v2 input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;cursor:pointer;background:#94a3b8 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='4' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6 6 18'/%3E%3C/svg%3E") no-repeat center}
+.busca-contagem{display:inline-flex;align-items:center;align-self:center;padding:3px 10px;border-radius:999px;background:var(--tom-cinza-bg);color:var(--tom-cinza);font-size:12px;font-weight:650;white-space:nowrap;animation:busca-entra .2s ease}
+.busca-contagem.vazia{background:var(--tom-laranja-bg);color:var(--tom-laranja)}
+@keyframes busca-entra{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+
+/* ---------- Tabelas ---------- */
+.interface-v2 .table-scroll tbody tr{transition:background .12s ease}
+@media(max-width:700px){
+ .interface-v2 .table-scroll table.em-cartoes,.interface-v2 .table-scroll table.em-cartoes tbody{display:block;width:100%!important;min-width:0!important}
+ .interface-v2 .table-scroll table.em-cartoes thead{display:none}
+ .interface-v2 .table-scroll table.em-cartoes tr{display:block;margin:10px 0;padding:10px 14px;border:1px solid var(--ui-border);border-radius:14px;background:var(--company-surface,#fff);box-shadow:0 2px 10px rgba(15,23,42,.05)}
+ .interface-v2 .table-scroll table.em-cartoes td{display:grid;grid-template-columns:minmax(80px,34%) minmax(0,1fr);min-width:0;overflow-wrap:anywhere;gap:10px;align-items:start;padding:7px 0!important;border:0!important;border-bottom:1px dashed var(--ui-border)!important;text-align:left}
+ .interface-v2 .table-scroll table.em-cartoes td:last-child{border-bottom:0!important}
+ .interface-v2 .table-scroll table.em-cartoes td::before{content:attr(data-label);font-size:11px;font-weight:700;letter-spacing:.03em;color:var(--ui-muted);text-transform:uppercase}
+ .interface-v2 .table-scroll table.em-cartoes td:not([data-label]),.interface-v2 .table-scroll table.em-cartoes td[data-label=""],.interface-v2 .table-scroll table.em-cartoes td[colspan]{display:block}
+ .interface-v2 .table-scroll table.em-cartoes td:not([data-label])::before,.interface-v2 .table-scroll table.em-cartoes td[data-label=""]::before,.interface-v2 .table-scroll table.em-cartoes td[colspan]::before{content:none}
+ .interface-v2 .table-scroll table.em-cartoes td.table-actions{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+ .interface-v2 .table-scroll table.em-cartoes td.table-actions :is(button,a){width:auto;flex:1 1 auto;margin:0}
+ .interface-v2 .table-scroll table.em-cartoes td :is(select,input){max-width:100%}
+ .interface-v2 .table-scroll:has(table.em-cartoes){border-top:0;overflow-x:visible}
+}
+@media (prefers-reduced-motion:reduce){.interface-v2 *{transition:none!important}.busca-contagem{animation:none}}
+@media print{.menu-recolher,.busca-contagem{display:none!important}}

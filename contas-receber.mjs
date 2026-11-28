@@ -28,7 +28,10 @@ export async function mountContasReceber({db,company,host,admin}){
   for(const g of groups){if(filter.value&&g.situacao!==filter.value)continue;if(q&&!(g.nome+' '+g.placas.join(' ')).toLocaleLowerCase('pt-BR').includes(q))continue;shown++;
    const tr=el('tr'),name=el('td'),button=el('button',g.nome,'btn btn-quiet entradas-nome');button.type='button';button.onclick=()=>openHistory(g);name.append(button);if(g.placas.length)name.append(el('small',' '+g.placas.join(' · ')));tr.append(name);
    for(const v of [money(g.vencido.diarias),money(g.vencido.caucao),money(g.vencido.extras),money(g.vencidoTotal),money(g.aVencer),brDate(g.proximo)])tr.append(el('td',v));
-   const act=el('td',null,'table-actions'),pay=el('button','Receber','btn btn-primary');pay.type='button';pay.onclick=()=>openPayment(g);act.append(pay);tr.append(act);body.append(tr);}
+   const act=el('td',null,'table-actions'),pay=el('button','Receber','btn btn-primary');pay.type='button';pay.onclick=()=>openPayment(g);act.append(pay);
+   const rel=el('button','O que falta pagar (PDF)','btn btn-quiet');rel.type='button';rel.onclick=async()=>{rel.disabled=true;try{const {gerarDevedorPdf}=await import('./devedor-pdf.mjs?v=20261128');const bytes=await gerarDevedorPdf({db,company,grupo:g,hoje:today});
+    const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})),a=el('a');a.href=url;a.download='falta-pagar-'+g.nome.replace(/[^a-z0-9]+/gi,'-').toLowerCase()+'.pdf';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+    import('./celebrar.mjs?v=20261128').then(m=>m.celebrar('Relatório gerado!','O que falta pagar · '+g.nome)).catch(()=>{});}catch(e){status.textContent='Não foi possível gerar o relatório: '+e.message;}finally{rel.disabled=false;}};act.append(rel);tr.append(act);body.append(tr);}
   if(!shown){const tr=el('tr'),td=el('td',groups.length?'Nenhum locatário corresponde à busca.':'Nenhum valor em aberto.');td.colSpan=8;tr.append(td);body.append(tr);}
   status.textContent=shown+' de '+groups.length+' locatário(s) com valores em aberto';
  }

@@ -624,8 +624,11 @@ export async function mountOficina({db,company,host,admin,secao='manutencoes',pa
   if(st==='aprovado'&&o.responsavel&&!mm.cobranca_debito_id&&Number(o.totais.locatario)>0){
    const c=el('div',null,'ofi-linha'),par=campo(c,'Parcelas diárias',input('number')),pri=campo(c,'Primeira parcela',input('date')),prev=el('span',null,'section-note'),cob=btn('Lançar na locação do locatário','btn btn-primary');
    par.min='1';par.max='120';par.value=String(Math.min(120,Math.max(1,Math.ceil(Number(o.totais.locatario)/50))));pri.value=new Date(Date.now()-4*3600000).toISOString().slice(0,10);
-   const calc=()=>{const n=Math.max(1,Math.min(120,Number(par.value)||1));prev.textContent=`${n} × ${brl(Number(o.totais.locatario)/n)} por dia, junto com a diária.`;};par.oninput=calc;calc();c.append(prev,cob);
-   cob.onclick=()=>{const n=Number(par.value);if(!confirm(`Lançar ${brl(o.totais.locatario)} para ${o.responsavel.nome} em ${n} parcela(s) diária(s) a partir de ${pri.value.split('-').reverse().join('/')}? Depois disso a manutenção não aceita novas peças nem serviços.`))return;
+   // Fila: a primeira parcela entra depois da última parcela em aberto do locatário (fora o caução).
+   const fila=el('p',null,'section-note');let filaIni=null;
+   rpc('oficina_fila_inicio',{p_empresa:company.id,p_manutencao:m.id}).then(f=>{filaIni=f.inicio;pri.value=f.inicio;fila.textContent=f.ultimo_vencimento?`Entra na fila: ${o.responsavel.nome} já tem parcelas até ${f.ultimo_vencimento.split('-').reverse().join('/')} (${f.ultima_descricao}). A primeira parcela fica para ${f.inicio.split('-').reverse().join('/')}.`:'Sem outras parcelas em aberto: começa junto com a diária.';}).catch(()=>{});
+   const calc=()=>{const n=Math.max(1,Math.min(120,Number(par.value)||1));prev.textContent=`${n} × ${brl(Number(o.totais.locatario)/n)} por dia, junto com a diária e o caução.`;};par.oninput=calc;calc();c.append(prev,cob,fila);
+   cob.onclick=()=>{const n=Number(par.value);if(filaIni&&pri.value<filaIni&&!confirm(`A data escolhida fica antes do fim das parcelas que o locatário já tem (fila começa em ${filaIni.split('-').reverse().join('/')}). Vão cair duas parcelas no mesmo dia. Continuar mesmo assim?`))return;if(!confirm(`Lançar ${brl(o.totais.locatario)} para ${o.responsavel.nome} em ${n} parcela(s) diária(s) a partir de ${pri.value.split('-').reverse().join('/')}? Depois disso a manutenção não aceita novas peças nem serviços.`))return;
     acao('oficina_cobrar_locatario',{p_parcelas:n,p_primeiro:pri.value},`${brl(o.totais.locatario)} lançados na locação de ${o.responsavel.nome} em ${n} parcela(s) diária(s).`);};
    box.append(el('h3','Cobrança do locatário'),c);}
   dialog.append(acoes);

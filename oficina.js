@@ -1,6 +1,6 @@
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
 import {requireAuth,bindLogout} from './auth-guard.js';
-import {mountOficina} from './oficina.mjs?v=20261128';
+import {mountOficina} from './oficina.mjs?v=20261128b';
 const db=createClient('https://xtelzwclrzzlsqjecscl.supabase.co','sb_publishable_37VAv7_GhtRLum-WVwMv0w_EiD0HqZ3');
 await requireAuth(db);bindLogout(db);
 const params=new URLSearchParams(location.search),secao=params.get('secao')||'manutencoes';

@@ -12,7 +12,10 @@ export const seguro=t=>String(t??'').replace(/[–—]/g,'-').replace(/[‘’]/
 export function montarOrcamento(o){
  const m=o.manutencao,v=o.veiculo,r=o.responsavel,loc=o.locadora;
  // Ordem pedida: oficina, locadora dona do carro, carro, manutenção, locatário.
- const empresa=e=>[e?.nome_fantasia||e?.razao_social,e?.nome_fantasia&&e?.razao_social&&e.razao_social!==e.nome_fantasia?e.razao_social:'',e?.cnpj?'CNPJ '+cnpj(e.cnpj):''].filter(Boolean).join(' · ');
+ // Nome fantasia só aparece quando não está contido na razão social (evita "ALQUILER RENT A CAR · ALQUILER RENT A CAR LTDA").
+ const nrm=t=>String(t||'').normalize('NFD').replace(/\p{M}/gu,'').toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim();
+ const fantasiaExtra=e=>e?.nome_fantasia&&!(e?.razao_social&&nrm(e.razao_social).includes(nrm(e.nome_fantasia)))?e.nome_fantasia:'';
+ const empresa=e=>[e?.razao_social||e?.nome_fantasia,e?.razao_social?fantasiaExtra(e):'',e?.cnpj?'CNPJ '+cnpj(e.cnpj):''].filter(Boolean).join(' · ');
  const cabecalho=[
   ['Orçamento','Nº '+String(m.numero).padStart(5,'0')+' · '+data(m.entrada_em)],
   ['Oficina',empresa(o.empresa)],
@@ -23,7 +26,7 @@ export function montarOrcamento(o){
   ['Locatário',r?r.nome:(m.cliente_externo?m.cliente_externo+' (cliente)':'Sem locatário · custo da empresa')]].filter(([,v])=>v);
  // Carro da locadora: o orçamento sai em nome dela (bloco do cliente no topo) e o locatário vem depois.
  const cliente=loc?{nome:loc.razao_social||loc.nome_fantasia,linhas:[
-   loc.nome_fantasia&&loc.razao_social&&loc.nome_fantasia!==loc.razao_social?loc.nome_fantasia:'',
+   loc.razao_social?fantasiaExtra(loc):'',
    loc.cnpj?'CNPJ '+cnpj(loc.cnpj):'',
    [[loc.endereco,loc.numero].filter(Boolean).join(', '),loc.complemento,loc.bairro,[loc.cidade,loc.uf].filter(Boolean).join('/'),loc.cep?'CEP '+loc.cep:''].filter(Boolean).join(' · '),
    [loc.telefone?'Tel. '+loc.telefone:'',loc.email].filter(Boolean).join(' · ')].filter(Boolean)}:null;

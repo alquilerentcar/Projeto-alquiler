@@ -1,7 +1,7 @@
 import {criarEntradasClientes} from './entradas-clientes.mjs?v=20261030';
 import {criarBaixaComposta} from './financeiro-baixa.mjs?v=20261027';
 import {mountExtras} from './cliente-complementos.mjs';
-import {mountContasReceber} from './contas-receber.mjs?v=20261112-levantamento';import {mountLevantamento} from './levantamento.mjs?v=20261112';
+import {mountContasReceber} from './contas-receber.mjs?v=20261128-falta';import {mountLevantamento} from './levantamento.mjs?v=20261112';
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
 import {requireAuth,bindLogout} from './auth-guard.js';
 import {money,localDate,totals} from './frota-core.mjs';

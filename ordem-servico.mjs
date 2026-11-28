@@ -2,7 +2,7 @@
 import {montarOrcamento} from './orcamento-core.mjs?v=20261128c';
 
 export const ITENS_VISTORIA={documento:'Documento (CRLV)',estepe:'Estepe',macaco:'Macaco',chave_roda:'Chave de roda',triangulo:'Triângulo',tapetes:'Tapetes',multimidia:'Rádio / multimídia',calotas:'Calotas',painel_ok:'Painel sem luz de alerta'};
-export const COMBUSTIVEL=['Vazio','1/8','1/4','3/8','1/2','5/8','3/4','7/8','Cheio'];
+export const COMBUSTIVEL=['Reserva (vazio)','Reserva (1/8)','1/4','Entre 1/4 e 1/2 (3/8)','1/2','Entre 1/2 e 3/4 (5/8)','3/4','Quase cheio (7/8)','Cheio'];
 
 const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const quando=v=>v?new Date(v).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short',timeZone:'America/Manaus'}):'—';

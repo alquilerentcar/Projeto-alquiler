@@ -33,7 +33,11 @@ const CHAVE='bgsys:menu-recolhido';
 function botaoMenu(){const brand=document.querySelector('.sidebar .sidebar-brand');if(!brand||brand.querySelector('.menu-recolher'))return;const b=document.createElement('button');b.type='button';b.className='menu-recolher';
  b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>';
  const rotulo=()=>{const r=document.documentElement.classList.contains('menu-recolhido');b.setAttribute('aria-label',r?'Abrir o menu':'Recolher o menu');b.title=r?'Abrir o menu':'Recolher o menu';b.setAttribute('aria-expanded',String(!r));};
- b.onclick=()=>{const r=document.documentElement.classList.toggle('menu-recolhido');try{localStorage.setItem(CHAVE,r?'1':'0');}catch{}rotulo();b.blur();};rotulo();brand.append(b);}
+ const alternar=forcar=>{const h=document.documentElement;h.classList.add('menu-anima');const r=h.classList.toggle('menu-recolhido',forcar);try{localStorage.setItem(CHAVE,r?'1':'0');}catch{}rotulo();b.blur();setTimeout(()=>h.classList.remove('menu-anima'),260);};
+ b.onclick=()=>alternar();rotulo();brand.append(b);
+ // Recolhido: o nome aparece ao passar o mouse; abrir um grupo (Cadastros, Financeiro…) abre o menu.
+ const sb=brand.closest('.sidebar');sb.querySelectorAll('.professional-menu :is(.menu-link,summary)').forEach(x=>{if(!x.title)x.title=x.textContent.trim();});
+ sb.addEventListener('click',e=>{const s=e.target.closest('.professional-menu summary');if(s&&document.documentElement.classList.contains('menu-recolhido')){alternar(false);s.parentElement.open=true;e.preventDefault();}});}
 
 function varrer(raiz){if(raiz.nodeType!==1)return;if(raiz.matches?.('select'))colorir(raiz);raiz.querySelectorAll?.('select').forEach(colorir);if(raiz.matches?.('table'))rotular(raiz);raiz.querySelectorAll?.('table').forEach(rotular);const t=raiz.closest?.('table');if(t)rotular(t);}
 

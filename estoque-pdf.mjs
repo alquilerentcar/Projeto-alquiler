@@ -1,5 +1,5 @@
 import {companyStationery} from './empresa-branding.js';
-import {brl,qtd,seguro} from './orcamento-core.mjs?v=20261128';
+import {brl,qtd,seguro} from './orcamento-core.mjs?v=20261128b';
 
 // Linhas do relatório: só o que tem saldo, agrupado por categoria, com subtotal e total a custo.
 export function montarRelatorioEstoque(produtos,categorias){

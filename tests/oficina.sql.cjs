@@ -434,6 +434,9 @@ const servN=ol.linhas.find(l=>l.tipo==='servico');
 if(servN){await db.query('select oficina_linha_natureza($1,$2,$3,$4)',[tempo,'servico',servN.id,'avaria']);assert.equal((await one('select oficina_orcamento($1,$2) p',[tempo,mMg.id])).p.linhas.find(l=>l.id===servN.id).natureza,'avaria');}
 await assert.rejects(()=>db.query('select oficina_linha_natureza($1,$2,$3,$4)',[tempo,'peca',pecaJ.id,'avaria']),/já foi tirada/);
 await assert.rejects(()=>db.query('select oficina_linha_natureza($1,$2,$3,$4)',[tempo,'peca',movCobrado,'avaria']),/cobrada|encerrada|aprovado/);
+await db.exec(fs.readFileSync(root+'/sql/oficina_orcamento_cliente_completo.sql','utf8'));
+await db.exec(fs.readFileSync(root+'/sql/oficina_orcamento_cliente_completo.sql','utf8')); // rodar de novo não quebra
+const locC=(await one('select oficina_orcamento($1,$2) p',[tempo,mMg.id])).p.locadora;assert.ok(locC&&'cnpj' in locC,'locadora com CNPJ');assert.ok(!('papel_timbrado_path' in locC),'só os campos do cabeçalho');
 
 // Sem login, nada.
 await db.exec("set test.uid='';");await assert.rejects(()=>db.query('select oficina_painel($1)',[tempo]),/Sem acesso/);

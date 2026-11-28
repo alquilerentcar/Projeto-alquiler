@@ -1,5 +1,5 @@
 import {companyStationery} from './empresa-branding.js';
-import {montarOrcamento,seguro} from './orcamento-core.mjs?v=20261128';
+import {montarOrcamento,seguro} from './orcamento-core.mjs?v=20261128b';
 
 // Orçamento da manutenção no papel timbrado da empresa (o mesmo arquivo usado nos recibos).
 export async function gerarOrcamentoPdf({db,company,orcamento}){
@@ -16,8 +16,14 @@ export async function gerarOrcamentoPdf({db,company,orcamento}){
  const garantir=async alt=>{if(y-alt<90)await novaPagina();};
 
  escrever(o.titulo,left,y,15,bold,azul);y-=24;
- for(const [k,v] of o.cabecalho){const ls=quebrar(v,9.5,regular,content-90);await garantir(ls.length*13+4);escrever(k,left,y,9.5,bold,cinza);ls.forEach((l,i)=>escrever(l,left+90,y-i*13,9.5));y-=ls.length*13+4;}
+ // Bloco em destaque (cliente do orçamento / locatário): nome em negrito e os dados embaixo.
+ const bloco=async(rotulo,b)=>{const ls=b.linhas.flatMap(l=>quebrar(l,9,regular,content-24)),ns=quebrar(b.nome,11,bold,content-24),alt=22+ns.length*14+ls.length*12;await garantir(alt+8);
+  page.drawRectangle({x:left,y:y-alt+12,width:content,height:alt,color:claro});escrever(rotulo,left+12,y,7.5,bold,azul);y-=13;
+  for(const l of ns){escrever(l,left+12,y,11,bold);y-=14;}for(const l of ls){escrever(l,left+12,y,9,regular,cinza);y-=12;}y-=20;};
+ if(o.cliente)await bloco('ORÇAMENTO EM NOME DE',o.cliente);
+ for(const [k,v] of o.cabecalho.filter(([k])=>!(o.cliente&&['Cliente','Locatário'].includes(k)))){const ls=quebrar(v,9.5,regular,content-90);await garantir(ls.length*13+4);escrever(k,left,y,9.5,bold,cinza);ls.forEach((l,i)=>escrever(l,left+90,y-i*13,9.5));y-=ls.length*13+4;}
  y-=10;
+ if(o.locatario){y+=4;await bloco('LOCATÁRIO',o.locatario);}
  // Tabela: tipo, descrição, qtd, unitário, total, natureza, parte do locatário.
  const cols=[{t:'Tipo',w:.11},{t:'Descrição',w:.31},{t:'Qtd',w:.08},{t:'Unitário',w:.12},{t:'Total',w:.12},{t:'Natureza',w:.11},{t:'Locatário',w:.15}].map(c=>({...c,w:c.w*content}));
  const cabecalhoTabela=async()=>{await garantir(24);page.drawRectangle({x:left,y:y-6,width:content,height:20,color:azul});let x=left;for(const c of cols){escrever(c.t,x+4,y,8,bold,rgb(1,1,1));x+=c.w;}y-=22;};
